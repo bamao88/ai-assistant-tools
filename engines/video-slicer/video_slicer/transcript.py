@@ -5,7 +5,7 @@ from html import unescape
 from pathlib import Path
 import re
 
-from .timecode import parse_timecode
+from .timecode import format_timecode, parse_timecode
 
 
 TIMING_RE = re.compile(
@@ -14,6 +14,8 @@ TIMING_RE = re.compile(
 )
 INLINE_TIMESTAMP_RE = re.compile(r"<\d{1,2}:\d{2}:\d{2}[\.,]\d{1,3}>")
 TAG_RE = re.compile(r"<[^>]+>")
+# WebVTT voice span: <v Speaker>text — the standard way to tag who is speaking.
+VOICE_RE = re.compile(r"<v\s+([^>]+)>")
 
 
 @dataclass(frozen=True)
@@ -53,6 +55,7 @@ def parse_vtt(text: str) -> list[Cue]:
         if not timing:
             continue
         body = " ".join(lines[timing_idx + 1 :]).strip()
+        voice = VOICE_RE.search(body)
         clean = clean_caption_text(body)
         if not clean:
             continue
@@ -62,6 +65,7 @@ def parse_vtt(text: str) -> list[Cue]:
                 start=parse_timecode(timing.group("start")),
                 end=parse_timecode(timing.group("end")),
                 text=clean,
+                speaker=voice.group(1).strip() if voice else None,
             )
         )
     return cues
@@ -81,6 +85,7 @@ def parse_srt(text: str) -> list[Cue]:
         if not timing:
             continue
         body = " ".join(line.strip() for line in lines[timing_idx + 1 :])
+        voice = VOICE_RE.search(body)
         clean = clean_caption_text(body)
         if not clean:
             continue
@@ -90,6 +95,7 @@ def parse_srt(text: str) -> list[Cue]:
                 start=parse_timecode(timing.group("start")),
                 end=parse_timecode(timing.group("end")),
                 text=clean,
+                speaker=voice.group(1).strip() if voice else None,
             )
         )
     return cues
@@ -127,12 +133,16 @@ def detect_language(cues: list[Cue], path: str | Path | None = None) -> str:
     return "unknown"
 
 
-def cues_to_prompt_lines(cues: list[Cue], limit: int = 500) -> str:
+def cues_to_prompt_lines(cues: list[Cue], limit: int = 1200) -> str:
+    """Render cues for the planner prompt: real HH:MM:SS.mmm timecodes (so the
+    model can copy boundaries verbatim) and a speaker label when known (so the
+    host-only rule is enforceable)."""
     lines = []
     for cue in cues[:limit]:
-        lines.append(f"[{cue.index}] {cue.start:.3f}-{cue.end:.3f}: {cue.text}")
+        speaker = f"{cue.speaker}: " if cue.speaker else ""
+        lines.append(f"[{format_timecode(cue.start)}–{format_timecode(cue.end)}] {speaker}{cue.text}")
     if len(cues) > limit:
-        lines.append(f"... {len(cues) - limit} more cues omitted ...")
+        lines.append(f"... 省略 {len(cues) - limit} 条 cue ...")
     return "\n".join(lines)
 
 

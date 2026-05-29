@@ -15,7 +15,7 @@ def validate_clip_plan(
     video_duration: float | None = None,
     cues: list[Cue] | None = None,
     min_duration: float = 0.1,
-    max_duration: float = 180,
+    max_duration: float = 3600,
 ) -> None:
     if plan.defaults.layout not in VALID_LAYOUTS:
         raise ValueError(f"Invalid layout: {plan.defaults.layout!r}")

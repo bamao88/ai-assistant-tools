@@ -1,0 +1,4 @@
+目标自动排版和发布的skill
+
+发布仓库：https://github.com/tyrchen/wx-uploader
+排版仓库：https://github.com/liuxiaopai-ai/raphael-publish

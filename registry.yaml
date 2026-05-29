@@ -1,0 +1,355 @@
+schema_version: 2
+root: /Volumes/ExtSSD2601/AI_Assistant/tools
+updated: 2026-05-27
+
+# Single source of truth for the shared tools directory.
+# Four-tier layout:
+#   skills/  - first-party triggerable skills (each a dir with SKILL.md).
+#   engines/ - code / CLIs called by skills. NOT triggerable on their own.
+#   vendor/  - external clones (own upstream git); some expose a skill.
+#   var/     - runtime: state, output, data, logs, drafts, review (gitignored).
+#
+# Skills are installed into ~/.claude/skills as symlinks (see scripts/sync-skills.py).
+# Nothing under skills/ holds heavy code; nothing under engines/ triggers directly.
+#
+# install_kind:
+#   dir  -> symlink ~/.claude/skills/<name> -> <source dir>
+#   file -> symlink ~/.claude/skills/<name>/SKILL.md -> <source SKILL.md> (for vendor clones)
+
+skills:
+  # --- L1 verb routers (cross-platform entry points) ---
+  - name: platform-fetch
+    layer: L1
+    source: skills/platform-fetch
+    install_kind: dir
+    purpose: 封闭平台内容抓取统一入口（小红书 / 公众号 / 腾讯会议 / 视频字幕封面关键帧）
+    uses_engines: [xiaohongshu, gzh-scraper, tencent-meeting, video-research]
+  - name: platform-publish
+    layer: L1
+    source: skills/platform-publish
+    install_kind: dir
+    purpose: 内容发布与多平台分发统一入口（小红书 / 公众号 / 视频号 / wechatsync 全平台）
+    uses_engines: [xiaohongshu, gzh-publish, tencent-video-publish, markdown-to-cards, route-bypass]
+    uses_vendor: [wechatsync]
+
+  # --- L2 workflows ---
+  - name: blogger-research
+    layer: L2
+    source: skills/blogger-research
+    install_kind: dir
+    purpose: 博主调研：批量抓取博主公开内容 + 结构化分析报告
+    uses_engines: [xiaohongshu, gzh-scraper]
+  - name: xhs-ops
+    layer: L2
+    source: skills/xhs-ops
+    install_kind: dir
+    purpose: 小红书复合运营工作流（搜索+详情+发布+互动）
+    uses_engines: [xiaohongshu]
+  - name: video-content
+    layer: L2
+    source: skills/video-content
+    install_kind: dir
+    purpose: 视频内容处理（本地/URL 逐字稿、字幕、关键帧、素材研究、标题备选）
+    uses_engines: [video-research]
+  - name: creator-profile
+    layer: L2
+    source: skills/creator-profile
+    install_kind: dir
+    purpose: 自媒体人前期对标剖析综合工作流，四大子能力（teardown 博主拆解 / benchmark 博主对比 / niche-mapping 赛道测绘 / hook-decoding 钩子解码），带 fixture 与 checklist。产出止于结构化报告，不做物料包装。
+    uses_engines: [xiaohongshu]
+  - name: deep-research
+    layer: L2
+    source: vendor/deep-research/SKILL.md
+    install_kind: file
+    external: true
+    purpose: 多源研究、证据持久化、引用跟踪报告
+
+  # --- atomic / utility ---
+  - name: xhs-auth
+    layer: atomic
+    source: skills/xhs-auth
+    install_kind: dir
+    purpose: 小红书登录 / 登录态检查 / 多账号管理
+    uses_engines: [xiaohongshu]
+  - name: xhs-interact
+    layer: atomic
+    source: skills/xhs-interact
+    install_kind: dir
+    purpose: 小红书评论 / 回复 / 点赞 / 收藏
+    uses_engines: [xiaohongshu]
+  - name: markdown-to-cards
+    layer: util
+    source: skills/markdown-to-cards
+    install_kind: dir
+    purpose: Markdown 转小红书风格卡片图片
+    uses_engines: [markdown-to-cards]
+  - name: find-images
+    layer: util
+    source: skills/find-images
+    install_kind: dir
+    purpose: 为文章寻找合适配图，支持直接截图和登录墙场景下的网络搜索提取
+    uses_engines: [screenshot]
+  - name: humanizer
+    layer: util
+    source: vendor/humanizer/SKILL.md
+    install_kind: file
+    external: true
+    purpose: 去 AI 味写作润色
+  - name: dbs
+    layer: external
+    source: vendor/dbskill/skills/dbs
+    install_kind: dir
+    external: true
+    purpose: dontbesilent 商业工具箱主入口，按意图路由到 dbs-* skills
+    uses_vendor: [dbskill]
+  - name: dbs-diagnosis
+    layer: external
+    source: vendor/dbskill/skills/dbs-diagnosis
+    install_kind: dir
+    external: true
+    purpose: 商业模式诊断，消解问题优先于回答问题
+    uses_vendor: [dbskill]
+  - name: dbs-benchmark
+    layer: external
+    source: vendor/dbskill/skills/dbs-benchmark
+    install_kind: dir
+    external: true
+    purpose: 对标分析，五重过滤排除噪音
+    uses_vendor: [dbskill]
+  - name: dbs-content
+    layer: external
+    source: vendor/dbskill/skills/dbs-content
+    install_kind: dir
+    external: true
+    purpose: 内容创作诊断，五维检测
+    uses_vendor: [dbskill]
+  - name: dbs-hook
+    layer: external
+    source: vendor/dbskill/skills/dbs-hook
+    install_kind: dir
+    external: true
+    purpose: 短视频开头优化，诊断并生成方案
+    uses_vendor: [dbskill]
+  - name: dbs-xhs-title
+    layer: external
+    source: vendor/dbskill/skills/dbs-xhs-title
+    install_kind: dir
+    external: true
+    purpose: 小红书标题公式，按 75 个爆款公式匹配标题
+    uses_vendor: [dbskill]
+  - name: dbs-ai-check
+    layer: external
+    source: vendor/dbskill/skills/dbs-ai-check
+    install_kind: dir
+    external: true
+    purpose: AI 写作特征识别，只诊断不改写
+    uses_vendor: [dbskill]
+  - name: dbs-slowisfast
+    layer: external
+    source: vendor/dbskill/skills/dbs-slowisfast
+    install_kind: dir
+    external: true
+    purpose: 慢就是快，识别关键决策中的捷径诱惑
+    uses_vendor: [dbskill]
+  - name: dbs-action
+    layer: external
+    source: vendor/dbskill/skills/dbs-action
+    install_kind: dir
+    external: true
+    purpose: 执行力诊断，使用阿德勒框架定位卡点
+    uses_vendor: [dbskill]
+  - name: dbs-deconstruct
+    layer: external
+    source: vendor/dbskill/skills/dbs-deconstruct
+    install_kind: dir
+    external: true
+    purpose: 概念拆解，做维特根斯坦式审查
+    uses_vendor: [dbskill]
+  - name: dbs-goal
+    layer: external
+    source: vendor/dbskill/skills/dbs-goal
+    install_kind: dir
+    external: true
+    purpose: 目标清晰化，把模糊愿望改成可检查目标
+    uses_vendor: [dbskill]
+  - name: dbs-good-question
+    layer: external
+    source: vendor/dbskill/skills/dbs-good-question
+    install_kind: dir
+    external: true
+    purpose: 好问题生成器，把模糊问题改成 Agent 可推理说明书
+    uses_vendor: [dbskill]
+  - name: dbs-agent-migration
+    layer: external
+    source: vendor/dbskill/skills/dbs-agent-migration
+    install_kind: dir
+    external: true
+    purpose: Agent 工作台迁移，统一 Claude Code 与 Codex 规则桥接
+    uses_vendor: [dbskill]
+  - name: dbs-chatroom
+    layer: external
+    source: vendor/dbskill/skills/dbs-chatroom
+    install_kind: dir
+    external: true
+    purpose: 定向聊天室，多角色对话与判官总结
+    uses_vendor: [dbskill]
+  - name: dbs-chatroom-austrian
+    layer: external
+    source: vendor/dbskill/skills/dbs-chatroom-austrian
+    install_kind: dir
+    external: true
+    purpose: 奥派经济聊天室
+    uses_vendor: [dbskill]
+  - name: dbs-learning
+    layer: external
+    source: vendor/dbskill/skills/dbs-learning
+    install_kind: dir
+    external: true
+    purpose: 交互式学习，根据反馈连续生成学习文章
+    uses_vendor: [dbskill]
+  - name: dbs-save
+    layer: external
+    source: vendor/dbskill/skills/dbs-save
+    install_kind: dir
+    external: true
+    purpose: 保存诊断状态到本地存档
+    uses_vendor: [dbskill]
+  - name: dbs-restore
+    layer: external
+    source: vendor/dbskill/skills/dbs-restore
+    install_kind: dir
+    external: true
+    purpose: 恢复本地诊断状态存档
+    uses_vendor: [dbskill]
+  - name: dbs-report
+    layer: external
+    source: vendor/dbskill/skills/dbs-report
+    install_kind: dir
+    external: true
+    purpose: 合并多次诊断存档为报告
+    uses_vendor: [dbskill]
+
+engines:
+  - id: xiaohongshu
+    path: engines/xiaohongshu
+    runtime: "python (.venv) — scripts/cli.py"
+    purpose: 小红书登录/搜索/发布/互动/图文视频长文自动化
+  - id: gzh-publish
+    path: engines/gzh-publish
+    runtime: "node/tsx — src/index.ts"
+    purpose: 微信公众号 Markdown 排版、草稿、发布（历史目录名 gzh_pubulish 已修正）
+  - id: tencent-video-publish
+    path: engines/tencent-video-publish
+    runtime: "python (.venv) — scripts/cli.py"
+    purpose: 微信视频号扫码登录、视频上传、保存草稿、正式/定时发表
+  - id: gzh-scraper
+    path: engines/gzh-scraper
+    runtime: "python — scripts/cli.py + wechat-article-exporter 服务"
+    purpose: 微信公众号搜索/文章列表/下载/监控
+  - id: markdown-to-cards
+    path: engines/markdown-to-cards
+    runtime: "node — cli.js"
+    purpose: Markdown 转小红书卡片图片
+  - id: video-research
+    path: engines/video-research
+    runtime: "python (.venv) — scripts/cli.py"
+    purpose: 视频字幕/关键帧/元数据/研究摘要
+  - id: video-slicer
+    path: engines/video-slicer
+    runtime: "python — video_slicer 包"
+    purpose: 视频切片/裁剪（无独立触发 skill；按需被调用）
+  - id: tencent-meeting
+    path: engines/tencent-meeting
+    runtime: "python — agents/"
+    purpose: 腾讯会议逐字稿与录制下载（由 platform-fetch 调用）
+  - id: screenshot
+    path: engines/screenshot
+    runtime: "node — screenshot.js (+ export_cookies.py)"
+    purpose: 网页截图；凭证读 var/state
+  - id: route-bypass
+    path: engines/route-bypass
+    runtime: "zsh — scripts/xhs-route-bypass.zsh"
+    purpose: 小红书/视频号发布网络分流（被 platform-publish 调用）
+  - id: calendar-task
+    path: engines/calendar-task
+    runtime: "sh — calendar-task.sh"
+    purpose: Apple 日历提醒脚本
+
+vendor:
+  - id: wechatsync
+    path: vendor/wechatsync
+    upstream: https://github.com/wechatsync/Wechatsync
+    purpose: 多平台文章同步（知乎/掘金/CSDN/头条/B站/百家号/搜狐号/简书/博客园/抖音图文）；含 MCP server，被 platform-publish 调用
+  - id: humanizer
+    path: vendor/humanizer
+    upstream: https://github.com/blader/humanizer
+    purpose: 去 AI 味写作 skill（外部 clone，暴露 humanizer skill）
+  - id: deep-research
+    path: vendor/deep-research
+    upstream: https://github.com/199-biotechnologies/claude-deep-research-skill
+    purpose: 多源研报 skill（外部 clone，暴露 deep-research skill）
+  - id: dbskill
+    path: vendor/dbskill
+    upstream: https://github.com/dontbesilent2025/dbskill
+    purpose: dontbesilent 商业诊断工具箱，暴露 dbs-* 系列 skills
+  - id: wechat-article-exporter
+    path: vendor/wechat-article-exporter
+    purpose: gzh-scraper 依赖的公众号文章导出服务（外部代码）
+
+var:
+  description: 运行时目录，全部 gitignore，永不放代码
+  subdirs:
+    state: 凭证与登录态（accounts.json, storage_state.json, *.runtime）
+    output: 生成产物（卡片图等，CLI 用 --output-dir 指向）
+    data: 抓取/下载数据
+    logs: 日志
+    drafts: 临时草稿与实验（含 ai_topic_scout）
+    review: 评审文档与 _deprecated 归档（含 content_research_hub）
+    _migration_backup: 重构期备份
+
+# Triggers intentionally removed (folded into the L1 routers / superseded).
+# sync-skills.py removes any stale ~/.claude/skills entry matching these names.
+deprecated:
+  - id: shipinhao-publish
+    replaced_by: platform-publish
+    note: 视频号发布能力并入统一发布入口，正文在 skills/platform-publish/references/shipinhao.md
+  - id: video-research
+    replaced_by: video-content
+    note: 触发入口扩展为本地/URL 视频内容处理；底层 engine 仍为 engines/video-research
+  - id: xhs-publish
+    replaced_by: platform-publish
+    note: 正文迁入 skills/platform-publish/references/xiaohongshu.md
+  - id: gzh-publish
+    replaced_by: platform-publish
+    note: 正文迁入 skills/platform-publish/references/gongzhonghao.md
+  - id: wechatsync
+    replaced_by: platform-publish
+    note: 发布触发整合进 platform-publish；正文迁入 references/wechatsync.md（CLI 仍在 vendor/wechatsync）
+  - id: content-research-hub
+    replaced_by: platform-fetch
+    note: 已归档到 var/review/_deprecated/content_research_hub
+  - id: xhs-fetch
+    replaced_by: platform-fetch
+  - id: gzh-scraper
+    replaced_by: platform-fetch
+    note: 抓取触发归入 platform-fetch（CLI 仍是 engines/gzh-scraper）
+  - id: tencent-meeting-downloader
+    replaced_by: platform-fetch
+  - id: xhs-search-note
+    replaced_by: platform-fetch
+  - id: xhs-fetch-note
+    replaced_by: platform-fetch
+  - id: xhs-fetch-user
+    replaced_by: platform-fetch
+  - id: xhs-comment
+    replaced_by: xhs-interact
+  - id: xhs-like
+    replaced_by: xhs-interact
+  - id: xhs-long-article-publish
+    replaced_by: platform-publish
+  - id: xhs-publish-article
+    replaced_by: platform-publish
+  - id: xhs-publish-post
+    replaced_by: platform-publish
+  - id: xhs-publish-video
+    replaced_by: platform-publish

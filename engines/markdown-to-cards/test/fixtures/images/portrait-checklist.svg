@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1080" viewBox="0 0 720 1080">
+  <rect width="720" height="1080" rx="32" fill="#f8f6f1"/>
+  <rect x="70" y="74" width="580" height="932" rx="24" fill="#ffffff" stroke="#e3d8bf" stroke-width="4"/>
+  <text x="112" y="154" font-family="PingFang SC, Arial, sans-serif" font-size="44" font-weight="800" fill="#202020">发布前检查表</text>
+  <g font-family="PingFang SC, Arial, sans-serif" font-size="30" fill="#252525">
+    <circle cx="126" cy="246" r="14" fill="#a07830"/>
+    <text x="160" y="257">标题是否准确承诺</text>
+    <circle cx="126" cy="338" r="14" fill="#a07830"/>
+    <text x="160" y="349">插图是否能看清</text>
+    <circle cx="126" cy="430" r="14" fill="#a07830"/>
+    <text x="160" y="441">段落是否连续跨页</text>
+    <circle cx="126" cy="522" r="14" fill="#a07830"/>
+    <text x="160" y="533">表格是否未溢出</text>
+    <circle cx="126" cy="614" r="14" fill="#a07830"/>
+    <text x="160" y="625">代码块是否可读</text>
+  </g>
+  <rect x="112" y="730" width="496" height="160" rx="18" fill="#f2eadb"/>
+  <text x="148" y="792" font-family="PingFang SC, Arial, sans-serif" font-size="30" font-weight="700" fill="#785a2c">竖图用于测试</text>
+  <text x="148" y="848" font-family="PingFang SC, Arial, sans-serif" font-size="26" fill="#555">独立图片页、页尾缩放和容器贴合。</text>
+</svg>

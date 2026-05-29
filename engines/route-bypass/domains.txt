@@ -1,0 +1,25 @@
+# One domain per line. Comments and blank lines are ignored.
+
+# Xiaohongshu publishing.
+xiaohongshu.com
+www.xiaohongshu.com
+creator.xiaohongshu.com
+
+edith.xiaohongshu.com
+
+# Tencent Meeting API + recording CDN (geo-blocked when traffic exits via overseas Tailscale node).
+# Both must be bypassed: the API needs CN source IP to issue CN-bound download tokens,
+# the CDN host filters this SNI on its overseas POPs.
+meeting.tencent.com
+ylz.cos.meeting.tencent.com
+
+# WeChat Channels publishing.
+channels.weixin.qq.com
+open.weixin.qq.com
+res.wx.qq.com
+mp.weixin.qq.com
+store.mp.video.tencent-cloud.com
+finderpre.video.qq.com
+finder.video.qq.com
+wxapp.tc.qq.com
+aladin.wxqcloud.qq.com

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" rx="28" fill="#f7f4ed"/>
+  <rect x="60" y="62" width="840" height="416" rx="22" fill="#ffffff" stroke="#e1d7c2" stroke-width="4"/>
+  <text x="100" y="132" font-family="PingFang SC, Arial, sans-serif" font-size="42" font-weight="700" fill="#1f1f1f">内容生产流程总览</text>
+  <g font-family="PingFang SC, Arial, sans-serif" font-size="26" font-weight="600">
+    <rect x="100" y="198" width="160" height="92" rx="14" fill="#eadfca"/>
+    <text x="138" y="253" fill="#6f5227">选题</text>
+    <rect x="310" y="198" width="160" height="92" rx="14" fill="#dfe8e1"/>
+    <text x="348" y="253" fill="#315c42">资料</text>
+    <rect x="520" y="198" width="160" height="92" rx="14" fill="#e5e1ef"/>
+    <text x="558" y="253" fill="#4b4167">成稿</text>
+    <rect x="730" y="198" width="130" height="92" rx="14" fill="#f1e1dc"/>
+    <text x="756" y="253" fill="#7a483c">发布</text>
+  </g>
+  <g stroke="#9a7a3d" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M270 244H300"/>
+    <path d="M480 244H510"/>
+    <path d="M690 244H720"/>
+  </g>
+  <text x="100" y="360" font-family="PingFang SC, Arial, sans-serif" font-size="26" fill="#555">横向流程图用于测试图片按比例缩放、容器随图片尺寸变化。</text>
+</svg>

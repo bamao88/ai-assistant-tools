@@ -1,0 +1,29 @@
+{
+  "skill_name": "platform-fetch",
+  "evals": [
+    {
+      "id": 1,
+      "name": "xhs-note-detail",
+      "prompt": "https://www.xiaohongshu.com/explore/64a1b2c3d4e5f6789012abcd?xsec_token=ABC123XYZ 这条笔记讲了啥？把正文和热门评论给我看看。",
+      "expected_behavior": "应使用 platform-fetch，读 references/xiaohongshu.md，构造 get-feed-detail 命令（含 --feed-id 和 --xsec-token），可能先 list-accounts。不应使用 WebFetch / mcp-fetch。"
+    },
+    {
+      "id": 2,
+      "name": "gzh-monitor-list",
+      "prompt": "帮我看看「机器之心」这个公众号最近一周发了什么爆款文章，阅读量 1 万以上的列出来。",
+      "expected_behavior": "应使用 platform-fetch，读 references/gongzhonghao.md，构造 check-auth → search-accounts → list-articles 流程。可能涉及 add-watch。不应该用 WebFetch 抓 mp.weixin.qq.com。"
+    },
+    {
+      "id": 3,
+      "name": "tencent-meeting-batch",
+      "prompt": "我有一个 markdown 文件 /tmp/links.md，里面有 5 个腾讯会议分享链接，把逐字稿和录屏都下载到 ~/Downloads/meetings/ 目录。",
+      "expected_behavior": "应使用 platform-fetch，读 references/tencent-meeting.md，构造 cli.py both --output-dir ~/Downloads/meetings/ /tmp/links.md 命令。"
+    },
+    {
+      "id": 4,
+      "name": "generic-url-negative",
+      "prompt": "https://www.anthropic.com/news/claude-opus-4-7 这篇文章讲了什么？",
+      "expected_behavior": "不应使用 platform-fetch。应使用 mcp-fetch（fetch_markdown 或 fetch_html）或 WebFetch 处理通用网页。如果触发了 platform-fetch 算 fail。"
+    }
+  ]
+}

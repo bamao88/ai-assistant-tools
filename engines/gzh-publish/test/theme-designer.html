@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公众号主题设计器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; height: 100vh; background: #f0f0f0; }
+
+/* 左侧控制面板 */
+.panel {
+  width: 300px; min-width: 300px; background: #fff; border-right: 1px solid #ddd;
+  overflow-y: auto; padding: 16px; font-size: 13px;
+}
+.panel h2 { font-size: 16px; margin-bottom: 12px; color: #333; }
+.section { margin-bottom: 16px; border-bottom: 1px solid #eee; padding-bottom: 12px; }
+.section:last-child { border-bottom: none; }
+.section-title { font-weight: 600; font-size: 13px; color: #666; margin-bottom: 8px; }
+
+/* 模板按钮 */
+.template-btns { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.template-btns button {
+  flex: 1; min-width: 60px; padding: 8px 4px; border: 2px solid #ddd; border-radius: 6px;
+  background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.15s;
+}
+.template-btns button.active { border-color: #333; background: #333; color: #fff; }
+.template-btns button:hover:not(.active) { border-color: #999; }
+
+/* 控件行 */
+.ctrl { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.ctrl label { color: #444; flex-shrink: 0; }
+.ctrl input[type="color"] { width: 40px; height: 28px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; padding: 1px; }
+.ctrl input[type="range"] { width: 110px; }
+.ctrl select { width: 110px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; }
+.ctrl .val { font-size: 11px; color: #999; width: 36px; text-align: right; }
+
+/* 复制按钮 */
+.copy-btn {
+  width: 100%; padding: 10px; background: #333; color: #fff; border: none;
+  border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;
+}
+.copy-btn:hover { background: #555; }
+.copy-btn.copied { background: #2a7; }
+
+/* 右侧预览 */
+.preview-wrap {
+  flex: 1; overflow-y: auto; display: flex; justify-content: center;
+  background: #e8e8e8; padding: 24px;
+}
+.preview {
+  width: 100%; max-width: 680px; min-height: 100%;
+  background-color: var(--bg);
+  color: var(--text);
+  padding: 24px var(--padding) 48px var(--padding);
+  font-family: var(--font);
+  font-size: var(--base-size);
+  line-height: var(--line-height);
+  word-wrap: break-word;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  align-self: flex-start;
+}
+
+/* 预览区样式全部由 CSS 变量驱动 */
+.preview h1 { font-size: var(--h1); font-weight: var(--heading-weight); color: var(--heading); line-height: 1.3; margin: 38px 0 16px; letter-spacing: -0.02em; }
+.preview h2 { font-size: var(--h2); font-weight: var(--heading-weight); color: var(--heading); line-height: 1.35; margin: 32px 0 16px; letter-spacing: -0.01em; }
+.preview h3 { font-size: var(--h3); font-weight: var(--heading-weight); color: var(--text); line-height: 1.4; margin: 28px 0 14px; }
+.preview h4 { font-size: var(--h4); font-weight: var(--heading-weight); color: var(--text); line-height: 1.4; margin: 24px 0 12px; }
+.preview p { margin: var(--p-gap) 0; line-height: var(--line-height); color: var(--text); }
+.preview strong { font-weight: var(--bold-weight); color: var(--accent); }
+.preview em { font-style: italic; color: #666; }
+.preview a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent); padding-bottom: 1px; }
+.preview ul, .preview ol { margin: 16px 0; padding-left: 28px; }
+.preview li { margin: 8px 0; line-height: var(--line-height); color: var(--text); }
+.preview blockquote {
+  margin: 24px 0; padding: 16px 20px;
+  border-left: var(--bq-border-width) solid var(--accent); color: #555; border-radius: 0;
+  background-color: var(--bq-bg);
+  font-style: var(--bq-font-style);
+}
+.preview blockquote p { color: inherit; margin: 0 !important; }
+.preview code {
+  font-family: "SF Mono", Consolas, monospace; padding: 3px 6px;
+  background-color: var(--code-bg); color: var(--accent); border-radius: 4px; font-size: 13px;
+}
+.preview pre {
+  margin: 24px 0; padding: 20px; background-color: var(--code-bg);
+  border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5;
+}
+.preview pre code { padding: 0; background: none; font-size: inherit; color: var(--text); border-radius: 0; }
+.preview .code-dots { padding: 8px 16px 4px; margin-bottom: 4px; }
+.preview .code-dots span { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+.preview .code-dots .dot-r { background: #ff5f56; }
+.preview .code-dots .dot-y { background: #ffbd2e; }
+.preview .code-dots .dot-g { background: #27c93f; }
+.preview hr { margin: 36px auto; border: none; height: 1px; background: #eaeaea; }
+.preview img, .preview .placeholder-img {
+  max-width: 100%; height: auto; display: block; margin: 24px auto;
+  border-radius: var(--img-radius);
+  box-shadow: var(--img-shadow);
+}
+/* 表格：两种风格通过 class 切换 */
+.preview table { width: 100%; margin: 24px 0; border-collapse: collapse; font-size: 15px; }
+.preview table.grid th { background-color: var(--code-bg); padding: 12px 16px; text-align: left; font-weight: 600; border: 1px solid #e0e0e0; }
+.preview table.grid td { padding: 12px 16px; border: 1px solid #e0e0e0; color: var(--text); }
+.preview table.minimal th { padding: 10px 14px; text-align: left; font-weight: 600; color: var(--heading); border-bottom: 1px solid #d1d5db; background: none; font-size: 13px; }
+.preview table.minimal td { padding: 10px 14px; color: var(--text); border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+.preview table.minimal tr:last-child td { border-bottom: none; }
+.preview .placeholder-img {
+  width: 100%; height: 200px; background: linear-gradient(135deg, #d4d0c8, #b8b4ac);
+  display: flex; align-items: center; justify-content: center;
+  color: #888; font-size: 14px;
+}
+.preview .tag {
+  display: inline-block; font-size: 11px; color: #e8514b; background: #fff0ef;
+  padding: 2px 8px; border-radius: 3px; margin-top: 16px; font-family: "SF Mono", Consolas, monospace;
+  border: 1px solid #f5c6c2; line-height: 1.4;
+}
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <h2>主题设计器</h2>
+
+  <div class="section">
+    <div class="section-title">模板</div>
+    <div class="template-btns">
+      <button onclick="switchTemplate('classic')" id="btn-classic">经典</button>
+      <button onclick="switchTemplate('essay')" id="btn-essay">随笔</button>
+      <button onclick="switchTemplate('vibrant')" id="btn-vibrant">活力</button>
+      <button onclick="switchTemplate('openai')" id="btn-openai">OpenAI</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">颜色</div>
+    <div class="ctrl"><label>标题色</label><input type="color" id="heading" oninput="update()"></div>
+    <div class="ctrl"><label>强调色</label><input type="color" id="accent" oninput="update()"></div>
+    <div class="ctrl"><label>背景色</label><input type="color" id="bg" oninput="update()"></div>
+    <div class="ctrl"><label>正文色</label><input type="color" id="text" oninput="update()"></div>
+    <div class="ctrl"><label>代码底色</label><input type="color" id="codeBg" oninput="update()"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">字体与字重</div>
+    <div class="ctrl">
+      <label>正文字体</label>
+      <select id="font" onchange="update()">
+        <option value="sans">无衬线</option>
+        <option value="pingfang">PingFang SC</option>
+        <option value="song">宋体</option>
+        <option value="kai">楷体</option>
+        <option value="round">圆体</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>标题字重</label>
+      <select id="headingWeight" onchange="update()">
+        <option value="500">中等 (500)</option>
+        <option value="600">半粗 (600)</option>
+        <option value="700">粗体 (700)</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>加粗字重</label>
+      <select id="boldWeight" onchange="update()">
+        <option value="600">半粗 (600)</option>
+        <option value="700">粗体 (700)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">字号与间距</div>
+    <div class="ctrl"><label>正文字号</label><input type="range" id="fontSize" min="14" max="20" oninput="update()"><span class="val" id="fontSize-val"></span></div>
+    <div class="ctrl"><label>H1 字号</label><input type="range" id="h1" min="20" max="36" oninput="update()"><span class="val" id="h1-val"></span></div>
+    <div class="ctrl"><label>H2 字号</label><input type="range" id="h2" min="16" max="30" oninput="update()"><span class="val" id="h2-val"></span></div>
+    <div class="ctrl"><label>H3 字号</label><input type="range" id="h3" min="14" max="24" oninput="update()"><span class="val" id="h3-val"></span></div>
+    <div class="ctrl"><label>H4 字号</label><input type="range" id="h4" min="14" max="22" oninput="update()"><span class="val" id="h4-val"></span></div>
+    <div class="ctrl"><label>侧边距</label><input type="range" id="padding" min="0" max="40" oninput="update()"><span class="val" id="padding-val"></span></div>
+    <div class="ctrl"><label>段间距</label><input type="range" id="pGap" min="10" max="30" oninput="update()"><span class="val" id="pGap-val"></span></div>
+    <div class="ctrl"><label>行高</label><input type="range" id="lineHeight" min="14" max="22" oninput="update()"><span class="val" id="lineHeight-val"></span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">图片</div>
+    <div class="ctrl"><label>圆角</label><input type="range" id="imgRadius" min="0" max="20" oninput="update()"><span class="val" id="imgRadius-val"></span></div>
+    <div class="ctrl">
+      <label>阴影</label>
+      <select id="imgShadow" onchange="update()">
+        <option value="none">无</option>
+        <option value="light">轻微</option>
+        <option value="medium">中等</option>
+        <option value="heavy">强烈</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">组件风格</div>
+    <div class="ctrl">
+      <label>表格样式</label>
+      <select id="tableStyle" onchange="update()">
+        <option value="grid">网格边框</option>
+        <option value="minimal">极简行线</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>引用样式</label>
+      <select id="bqStyle" onchange="update()">
+        <option value="filled">填充背景</option>
+        <option value="line">仅左边框</option>
+        <option value="italic">斜体+边框</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>代码圆点</label>
+      <select id="codeDots" onchange="update()">
+        <option value="show">显示</option>
+        <option value="none">隐藏</option>
+      </select>
+    </div>
+    <div class="ctrl">
+      <label>高亮配色</label>
+      <select id="codeHighlight" onchange="update()">
+        <option value="github">GitHub 彩色</option>
+        <option value="mono">单色</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="copy-btn" id="copyBtn" onclick="copyParams()">复制参数</button>
+  </div>
+</div>
+
+<div class="preview-wrap">
+  <div class="preview" id="preview">
+
+    <!-- h1 -->
+    <div class="tag">h1</div>
+    <h1>AI Agent 的崛起：从工具到伙伴</h1>
+
+    <!-- p + strong + em + a + code(inline) -->
+    <div class="tag">p / strong / em / a</div>
+    <p>2024 年被称为 AI Agent 元年。从 ChatGPT 的横空出世，到各类 Agent 框架百花齐放，<strong>人工智能正在从"问答工具"进化为"自主行动者"</strong>。这种范式转变对开发者来说意味着<em>全新的机遇与挑战</em>。更多详情可参见 <a href="#">OpenAI 官方博客</a>。</p>
+
+    <!-- h2 -->
+    <div class="tag">h2</div>
+    <h2>什么是 AI Agent？</h2>
+
+    <p>简单来说，AI Agent 是一个<strong>能够自主感知环境、制定计划并执行行动</strong>的智能系统。与传统的聊天机器人不同，Agent 具有以下关键特征：</p>
+
+    <!-- ul + li -->
+    <div class="tag">ul / li</div>
+    <ul>
+      <li><strong>自主性</strong>：能够独立决策，而非仅仅响应指令</li>
+      <li><strong>目标导向</strong>：围绕目标分解任务、制定计划</li>
+      <li><strong>工具使用</strong>：能调用 API、执行代码、搜索网络</li>
+      <li><strong>记忆能力</strong>：维护对话历史和长期记忆</li>
+    </ul>
+
+    <!-- blockquote -->
+    <div class="tag">blockquote</div>
+    <blockquote>
+      <p>"AI Agent 不是更聪明的聊天机器人，而是一种全新的人机协作范式。它代表了从被动响应到主动执行的根本转变。" —— 吴恩达</p>
+    </blockquote>
+
+    <h2>Agent 的核心架构</h2>
+
+    <p>一个完整的 AI Agent 系统通常包含以下几个模块：</p>
+
+    <!-- ol + li -->
+    <div class="tag">ol / li</div>
+    <ol>
+      <li><strong>感知层</strong>（Perception）：接收用户输入和环境信息</li>
+      <li><strong>推理层</strong>（Reasoning）：基于 LLM 进行思考和规划</li>
+      <li><strong>行动层</strong>（Action）：调用工具执行具体操作</li>
+      <li><strong>记忆层</strong>（Memory）：存储和检索历史信息</li>
+    </ol>
+
+    <!-- h3 -->
+    <div class="tag">h3</div>
+    <h3>ReAct 框架详解</h3>
+
+    <!-- code (inline) -->
+    <div class="tag">code (inline)</div>
+    <p>目前最流行的 Agent 架构是 <em>ReAct</em>（Reasoning + Acting），它将推理和行动交替进行。在代码中常用 <code>langchain</code> 或 <code>llamaindex</code> 来实现。</p>
+
+    <!-- pre + code (代码块) + codeDots + codeHighlight -->
+    <div class="tag">pre / code / codeDots / codeHighlight</div>
+    <pre><div class="code-dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div><code><span class="hljs-keyword">def</span> <span class="hljs-title">react_loop</span>(query, tools, max_steps=<span class="hljs-number">10</span>):
+    context = [{<span class="hljs-string">"role"</span>: <span class="hljs-string">"user"</span>, <span class="hljs-string">"content"</span>: query}]
+    <span class="hljs-keyword">for</span> step <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(max_steps):
+        response = llm.chat(context)
+        <span class="hljs-keyword">if</span> response.tool_calls:
+            result = execute_tool(response.tool_calls[<span class="hljs-number">0</span>])
+            context.append({<span class="hljs-string">"role"</span>: <span class="hljs-string">"tool"</span>, <span class="hljs-string">"content"</span>: result})
+        <span class="hljs-keyword">else</span>:
+            <span class="hljs-keyword">return</span> response.content</code></pre>
+
+    <!-- h4 -->
+    <div class="tag">h4</div>
+    <h4>关键实现细节</h4>
+
+    <p>在实际工程中，Agent 的<strong>错误处理</strong>和<strong>超时控制</strong>至关重要。一个健壮的 Agent 系统需要处理工具调用失败、上下文溢出、以及无限循环等边界情况。</p>
+
+    <!-- img -->
+    <div class="tag">img</div>
+    <div class="placeholder-img">[ 图片：AI Agent 架构示意图 ]</div>
+
+    <!-- table + th + td + tr -->
+    <div class="tag">table / th / td / tr</div>
+    <h2>应用场景一览</h2>
+
+    <table id="previewTable">
+      <thead>
+        <tr><th>场景</th><th>典型应用</th><th>关键能力</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>代码开发</td><td>Cursor、Claude Code</td><td>代码生成、调试、重构</td></tr>
+        <tr><td>数据分析</td><td>Code Interpreter</td><td>数据清洗、可视化、建模</td></tr>
+        <tr><td>内容创作</td><td>Jasper、Copy.ai</td><td>文案撰写、排版发布</td></tr>
+        <tr><td>客户服务</td><td>Intercom AI</td><td>多轮对话、工单处理</td></tr>
+      </tbody>
+    </table>
+
+    <!-- hr -->
+    <div class="tag">hr</div>
+    <hr>
+
+    <h2>未来展望</h2>
+
+    <p>AI Agent 的发展还处于<em>非常早期的阶段</em>。未来，我们可能看到：</p>
+
+    <ul>
+      <li>多个 Agent 之间的<strong>自主协作</strong>与任务分工</li>
+      <li>更强大的<strong>长期记忆</strong>和知识管理能力</li>
+      <li>从文本交互扩展到<strong>多模态感知</strong>（视觉、语音、传感器）</li>
+      <li>与物理世界深度融合的<strong>具身智能</strong></li>
+    </ul>
+
+    <p>正如 OpenAI 首席科学家 Ilya Sutskever 所说：<strong>"Agent 是通向 AGI 的必经之路。"</strong> 无论你是开发者、产品经理还是创业者，理解和掌握 AI Agent 都将成为未来最重要的核心竞争力之一。</p>
+
+  </div>
+</div>
+
+<script>
+const FONT_MAP = {
+  sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  pingfang: '"PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  song: '"Songti SC", "SimSun", "Noto Serif CJK SC", serif',
+  kai: '"Kaiti SC", "STKaiti", "KaiTi", serif',
+  round: '"Yuanti SC", "PingFang SC", -apple-system, sans-serif'
+};
+
+const SHADOW_MAP = {
+  none: 'none',
+  light: '0 2px 8px rgba(0,0,0,0.08)',
+  medium: '0 4px 16px rgba(0,0,0,0.12)',
+  heavy: '0 16px 34px rgba(15,23,42,0.22), 0 4px 10px rgba(15,23,42,0.12)'
+};
+
+const BQ_STYLES = {
+  filled:  { bg: 'rgba(128,128,128,0.06)', borderWidth: '4px', fontStyle: 'normal' },
+  line:    { bg: 'transparent', borderWidth: '3px', fontStyle: 'normal' },
+  italic:  { bg: 'transparent', borderWidth: '2px', fontStyle: 'italic' }
+};
+
+const HLJS_GITHUB = { 'hljs-keyword': '#d73a49', 'hljs-string': '#032f62', 'hljs-title': '#6f42c1', 'hljs-number': '#005cc5', 'hljs-built_in': '#005cc5' };
+const HLJS_MONO   = { 'hljs-keyword': '#333',    'hljs-string': '#555',    'hljs-title': '#333',    'hljs-number': '#555',    'hljs-built_in': '#333' };
+
+const TEMPLATES = {
+  classic: {
+    heading: '#111111', accent: '#374151', bg: '#ffffff', text: '#333333', codeBg: '#f5f5f5',
+    font: 'sans', headingWeight: '700', boldWeight: '700',
+    fontSize: 16, h1: 28, h2: 22, h3: 18, h4: 16,
+    padding: 10, pGap: 16, lineHeight: 18,
+    imgRadius: 14, imgShadow: 'heavy',
+    tableStyle: 'grid', bqStyle: 'line',
+    codeDots: 'show', codeHighlight: 'github'
+  },
+  essay: {
+    heading: '#111111', accent: '#1a8917', bg: '#fcfcfc', text: '#242424', codeBg: '#f2f3f5',
+    font: 'sans', headingWeight: '700', boldWeight: '700',
+    fontSize: 16, h1: 32, h2: 26, h3: 21, h4: 18,
+    padding: 10, pGap: 24, lineHeight: 19,
+    imgRadius: 14, imgShadow: 'heavy',
+    tableStyle: 'grid', bqStyle: 'line',
+    codeDots: 'show', codeHighlight: 'github'
+  },
+  vibrant: {
+    heading: '#b75c3d', accent: '#b75c3d', bg: '#f8f6f0', text: '#2b2b2b', codeBg: '#f0ece4',
+    font: 'sans', headingWeight: '700', boldWeight: '700',
+    fontSize: 16, h1: 32, h2: 26, h3: 21, h4: 18,
+    padding: 36, pGap: 18, lineHeight: 17,
+    imgRadius: 14, imgShadow: 'heavy',
+    tableStyle: 'grid', bqStyle: 'filled',
+    codeDots: 'show', codeHighlight: 'github'
+  },
+  openai: {
+    heading: '#000000', accent: '#000000', bg: '#ffffff', text: '#000000', codeBg: '#f5f5f5',
+    font: 'pingfang', headingWeight: '500', boldWeight: '600',
+    fontSize: 17, h1: 26, h2: 26, h3: 20, h4: 17,
+    padding: 10, pGap: 24, lineHeight: 16,
+    imgRadius: 0, imgShadow: 'none',
+    tableStyle: 'minimal', bqStyle: 'italic',
+    codeDots: 'none', codeHighlight: 'mono'
+  }
+};
+
+const saved = JSON.parse(JSON.stringify(TEMPLATES));
+let current = 'openai';
+
+function switchTemplate(id) {
+  saveCurrentToSaved();
+  current = id;
+  loadFromSaved();
+  updateBtnStates();
+  update();
+}
+
+function saveCurrentToSaved() { saved[current] = getParams(); }
+
+function getParams() {
+  return {
+    heading: document.getElementById('heading').value,
+    accent: document.getElementById('accent').value,
+    bg: document.getElementById('bg').value,
+    text: document.getElementById('text').value,
+    codeBg: document.getElementById('codeBg').value,
+    font: document.getElementById('font').value,
+    headingWeight: document.getElementById('headingWeight').value,
+    boldWeight: document.getElementById('boldWeight').value,
+    fontSize: +document.getElementById('fontSize').value,
+    h1: +document.getElementById('h1').value,
+    h2: +document.getElementById('h2').value,
+    h3: +document.getElementById('h3').value,
+    h4: +document.getElementById('h4').value,
+    padding: +document.getElementById('padding').value,
+    pGap: +document.getElementById('pGap').value,
+    lineHeight: +document.getElementById('lineHeight').value,
+    imgRadius: +document.getElementById('imgRadius').value,
+    imgShadow: document.getElementById('imgShadow').value,
+    tableStyle: document.getElementById('tableStyle').value,
+    bqStyle: document.getElementById('bqStyle').value,
+    codeDots: document.getElementById('codeDots').value,
+    codeHighlight: document.getElementById('codeHighlight').value
+  };
+}
+
+function loadFromSaved() {
+  const p = saved[current];
+  document.getElementById('heading').value = p.heading;
+  document.getElementById('accent').value = p.accent;
+  document.getElementById('bg').value = p.bg;
+  document.getElementById('text').value = p.text;
+  document.getElementById('codeBg').value = p.codeBg;
+  document.getElementById('font').value = p.font;
+  document.getElementById('headingWeight').value = p.headingWeight;
+  document.getElementById('boldWeight').value = p.boldWeight;
+  document.getElementById('fontSize').value = p.fontSize;
+  document.getElementById('h1').value = p.h1;
+  document.getElementById('h2').value = p.h2;
+  document.getElementById('h3').value = p.h3;
+  document.getElementById('h4').value = p.h4;
+  document.getElementById('padding').value = p.padding;
+  document.getElementById('pGap').value = p.pGap;
+  document.getElementById('lineHeight').value = p.lineHeight;
+  document.getElementById('imgRadius').value = p.imgRadius;
+  document.getElementById('imgShadow').value = p.imgShadow;
+  document.getElementById('tableStyle').value = p.tableStyle;
+  document.getElementById('bqStyle').value = p.bqStyle;
+  document.getElementById('codeDots').value = p.codeDots;
+  document.getElementById('codeHighlight').value = p.codeHighlight;
+}
+
+function updateBtnStates() {
+  document.querySelectorAll('.template-btns button').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + current).classList.add('active');
+}
+
+function update() {
+  const p = getParams();
+  const el = document.getElementById('preview');
+
+  el.style.setProperty('--heading', p.heading);
+  el.style.setProperty('--accent', p.accent);
+  el.style.setProperty('--bg', p.bg);
+  el.style.setProperty('--text', p.text);
+  el.style.setProperty('--code-bg', p.codeBg);
+  el.style.setProperty('--font', FONT_MAP[p.font]);
+  el.style.setProperty('--heading-weight', p.headingWeight);
+  el.style.setProperty('--bold-weight', p.boldWeight);
+  el.style.setProperty('--base-size', p.fontSize + 'px');
+  el.style.setProperty('--padding', p.padding + 'px');
+  el.style.setProperty('--p-gap', p.pGap + 'px');
+  el.style.setProperty('--line-height', (p.lineHeight / 10).toFixed(1));
+  el.style.setProperty('--h1', p.h1 + 'px');
+  el.style.setProperty('--h2', p.h2 + 'px');
+  el.style.setProperty('--h3', p.h3 + 'px');
+  el.style.setProperty('--h4', p.h4 + 'px');
+  el.style.setProperty('--img-radius', p.imgRadius + 'px');
+  el.style.setProperty('--img-shadow', SHADOW_MAP[p.imgShadow]);
+
+  // 表格
+  document.getElementById('previewTable').className = p.tableStyle;
+
+  // 引用
+  const bq = BQ_STYLES[p.bqStyle];
+  el.style.setProperty('--bq-bg', bq.bg);
+  el.style.setProperty('--bq-border-width', bq.borderWidth);
+  el.style.setProperty('--bq-font-style', bq.fontStyle);
+
+  // 代码圆点
+  document.querySelectorAll('.code-dots').forEach(d => {
+    d.style.display = p.codeDots === 'none' ? 'none' : 'block';
+  });
+
+  // 代码高亮配色
+  const scheme = p.codeHighlight === 'mono' ? HLJS_MONO : HLJS_GITHUB;
+  document.querySelectorAll('.preview pre span[class^="hljs-"]').forEach(span => {
+    const cls = Array.from(span.classList).find(c => c.startsWith('hljs-'));
+    if (cls && scheme[cls]) {
+      span.style.color = scheme[cls];
+      span.style.fontWeight = (cls === 'hljs-keyword' || cls === 'hljs-title') ? '600' : 'normal';
+    }
+  });
+
+  // 滑块数值
+  document.getElementById('fontSize-val').textContent = p.fontSize + 'px';
+  document.getElementById('padding-val').textContent = p.padding + 'px';
+  document.getElementById('pGap-val').textContent = p.pGap + 'px';
+  document.getElementById('lineHeight-val').textContent = (p.lineHeight / 10).toFixed(1);
+  document.getElementById('h1-val').textContent = p.h1 + 'px';
+  document.getElementById('h2-val').textContent = p.h2 + 'px';
+  document.getElementById('h3-val').textContent = p.h3 + 'px';
+  document.getElementById('h4-val').textContent = p.h4 + 'px';
+  document.getElementById('imgRadius-val').textContent = p.imgRadius + 'px';
+}
+
+function copyParams() {
+  const p = getParams();
+  const output = {
+    template: current,
+    heading: p.heading, accent: p.accent, bg: p.bg, text: p.text, codeBg: p.codeBg,
+    font: p.font, headingWeight: p.headingWeight, boldWeight: p.boldWeight,
+    fontSize: p.fontSize + 'px',
+    h1: p.h1 + 'px', h2: p.h2 + 'px', h3: p.h3 + 'px', h4: p.h4 + 'px',
+    padding: p.padding + 'px', pGap: p.pGap + 'px',
+    lineHeight: (p.lineHeight / 10).toFixed(1),
+    imgRadius: p.imgRadius + 'px', imgShadow: p.imgShadow,
+    tableStyle: p.tableStyle, bqStyle: p.bqStyle,
+    codeDots: p.codeDots, codeHighlight: p.codeHighlight
+  };
+  navigator.clipboard.writeText(JSON.stringify(output, null, 2)).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '已复制!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制参数'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+// 初始化：直接加载，不走 saveCurrentToSaved 避免覆盖模板默认值
+current = 'openai';
+loadFromSaved();
+updateBtnStates();
+update();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+interface:
+  display_name: "Tencent Meeting Downloader"
+  short_description: "批量下载腾讯会议逐字稿和视频"
+  default_prompt: "Use $tencent-meeting-downloader to download Tencent Meeting transcripts or recording videos from shared links."
+
+policy:
+  allow_implicit_invocation: true
+

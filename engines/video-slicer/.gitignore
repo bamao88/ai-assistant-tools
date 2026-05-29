@@ -1,0 +1,6 @@
+# Never commit credentials. .env here is a symlink to the shared
+# knowledge_base/.env (single source of truth for MINIMAX_*/KIMI_* keys).
+.env
+.env.local
+outputs/
+*.concat.txt

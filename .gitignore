@@ -1,0 +1,36 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+
+# macOS
+.DS_Store
+
+# Credentials / backups / logs
+*.json.bak
+*.log
+
+# All runtime: state, output, data, logs, drafts, review, scratch, migration backups
+# (new four-tier layout — nothing under var/ is ever code)
+var/
+
+# External vendored clones keep their own upstream git (avoid nested-repo conflicts)
+vendor/
+
+# Intermediate staging / runtime caches left by tools
+**/.staging/
+**/.runtime/
+
+# Engine-local runtime data written at run time (kept beside the engine, never tracked)
+engines/**/data/
+engines/**/output/
+engines/video-slicer/samples/

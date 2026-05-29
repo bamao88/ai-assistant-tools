@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-slicer"
+version = "0.1.0"
+description = "Local-first video slicing CLI driven by timestamped transcripts."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+video-slicer = "video_slicer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["video_slicer*"]

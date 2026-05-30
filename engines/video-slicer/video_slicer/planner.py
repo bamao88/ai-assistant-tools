@@ -53,7 +53,7 @@ def generate_ai_clip_plan(
     cues: list[Cue],
     mode: str,
     query: str | None = None,
-    max_clips: int = 6,
+    max_clips: int = 3,
     client: OpenAICompatibleClient | None = None,
     layout: str | None = None,
     subtitle: str | None = None,

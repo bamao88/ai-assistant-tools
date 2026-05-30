@@ -52,9 +52,8 @@ python cli.py --account 测试号 get-feed-detail \
 赛道扫描或验证选题热度时：
 
 ```bash
-python cli.py search-feeds \
-  --account 测试号 \
-  --keyword "押金避坑" \
+python cli.py --account 测试号 search-feeds \
+  --keyword "押金避坍" \
   --sort-by 最多点赞 \
   --publish-time 半年内
 ```

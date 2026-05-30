@@ -96,6 +96,11 @@ def generate_ai_clip_plan(
     result.setdefault("source", {"video": video, "transcript": transcript, "language": language})
     plan = clip_plan_from_dict(result)
     plan.clips = _enforce_clip_lengths(plan.clips)
+    # Privacy is a hard rule the prompt can't guarantee: deterministically trim
+    # each clip to its longest host-only sub-span (drop it if none qualifies).
+    plan.clips = _enforce_host_only(plan.clips, cues, resolved_host)
+    if not plan.clips:
+        raise ValueError(f"精选后没有满足 host-only 的片段。{note}".strip())
     plan.selection_note = note  # why other candidates were dropped; surfaced by the CLI
     # Rendering settings are operator choices, not the model's — override whatever
     # the model may have emitted with the values passed on the CLI.

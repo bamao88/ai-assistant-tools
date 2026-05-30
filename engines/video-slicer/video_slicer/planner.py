@@ -88,14 +88,15 @@ def generate_ai_clip_plan(
         json_mode=True,
     )
     result = _coerce_plan_json(raw)
+    note = str(result.get("note") or "")
+    if not (result.get("clips") or []):
+        # The prompt is allowed to refuse — nothing in this video clears the bar.
+        raise ValueError(f"模型判定：不建议切片。{note}".strip())
     result.setdefault("version", 1)
     result.setdefault("source", {"video": video, "transcript": transcript, "language": language})
     plan = clip_plan_from_dict(result)
-    # Coverage-audit second pass: the first pass drops short / mid-stream
-    # arguments inconsistently, so we ask the model to find what it missed and
-    # merge those in. This is what makes recall reliably clear the bar.
-    plan.clips = _merge_clips(plan.clips, _coverage_audit(client, payload, plan.clips, max_clips))
     plan.clips = _enforce_clip_lengths(plan.clips)
+    plan.selection_note = note  # why other candidates were dropped; surfaced by the CLI
     # Rendering settings are operator choices, not the model's — override whatever
     # the model may have emitted with the values passed on the CLI.
     if layout is not None:
@@ -105,63 +106,6 @@ def generate_ai_clip_plan(
     if join is not None:
         plan.defaults.join = join
     return plan
-
-
-def _coverage_audit(client, payload: dict, existing, max_clips: int):
-    """Second pass: list the clips found so far and ask the model to walk the
-    transcript again and return only the complete host arguments that were
-    missed (especially short Q&A). Returns a list[Clip] (possibly empty)."""
-    found = "\n".join(f"- [{_fmt(c.start)}–{_fmt(c.end)}] {c.title}" for c in existing)
-    audit_payload = {
-        "host": payload["host"],
-        "max_clips": max_clips,
-        "已切出的片段": found,
-        "transcript_cues": payload["transcript_cues"],
-    }
-    system = (
-        SYSTEM_PROMPT
-        + "\n\n【本次任务：查漏】下面给出「已切出的片段」列表。请你从头到尾按时间顺序重新通览逐字稿，"
-        "只找出其中被遗漏的、host 讲的完整论点（重点是较短的答疑、收尾论点），"
-        "按相同 JSON schema 只输出这些遗漏项；如果确实没有遗漏，返回 {\"clips\":[]}。不要重复已切出的片段。"
-    )
-    try:
-        raw = client.chat(
-            [
-                {"role": "system", "content": system},
-                {"role": "user", "content": json.dumps(audit_payload, ensure_ascii=False)},
-            ],
-            temperature=0.0,
-            json_mode=True,
-        )
-        data = _coerce_plan_json(raw)
-        data.setdefault("version", 1)
-        return clip_plan_from_dict(data).clips
-    except (ValueError, RuntimeError):
-        return []  # audit is best-effort; never fail the whole plan on it
-
-
-def _fmt(seconds: float) -> str:
-    s = int(seconds)
-    return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
-
-
-def _merge_clips(base: list, extra: list) -> list:
-    """Add audited clips that don't substantially overlap an existing one, then
-    sort chronologically and reassign clean sequential ids."""
-    merged = list(base)
-    for clip in extra:
-        if not any(_overlaps(clip, kept) for kept in merged):
-            merged.append(clip)
-    merged.sort(key=lambda c: c.start)
-    for index, clip in enumerate(merged, start=1):
-        clip.id = f"clip-{index:02d}"
-    return merged
-
-
-def _overlaps(a, b, ratio: float = 0.5) -> bool:
-    overlap = max(0.0, min(a.end, b.end) - max(a.start, b.start))
-    shorter = min(a.duration, b.duration) or 1
-    return overlap / shorter >= ratio
 
 
 def _coerce_plan_json(content: str) -> dict:

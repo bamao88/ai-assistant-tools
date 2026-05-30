@@ -65,14 +65,12 @@ description: |
 核心命令（必带 `--account 测试号`）：
 ```bash
 # 步骤 2.1：拿主页 + 笔记列表（一次性返回 feeds 数组）
-python cli.py user-profile \
-  --account 测试号 \
+python cli.py --account 测试号 user-profile \
   --user-id <USER_ID> \
   --xsec-token <XSEC_TOKEN>
 
 # 步骤 2.2：拿 Top 10-15 高互动笔记详情（feed-id 和 xsec-token 都从上一步输出的 feeds[] 拿）
-python cli.py get-feed-detail \
-  --account 测试号 \
+python cli.py --account 测试号 get-feed-detail \
   --feed-id <FEED_ID> \
   --xsec-token <FEED_XSEC_TOKEN> \
   --load-all-comments \

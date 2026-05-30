@@ -24,8 +24,7 @@ CLI 入口：`python /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/
 ### 步骤 1：拿博主主页 + 笔记列表
 
 ```bash
-python cli.py user-profile \
-  --account 测试号 \
+python cli.py --account 测试号 user-profile \
   --user-id <USER_ID> \
   --xsec-token <XSEC_TOKEN>
 ```

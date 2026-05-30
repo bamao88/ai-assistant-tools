@@ -44,6 +44,7 @@ class ClipPlan:
     source_language: str | None
     defaults: ClipDefaults
     clips: list[Clip]
+    selection_note: str = ""  # model's rationale for what it dropped (selective mode)
 
     def to_dict(self) -> dict[str, Any]:
         return {

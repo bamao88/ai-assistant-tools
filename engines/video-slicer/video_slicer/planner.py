@@ -145,3 +145,37 @@ def _enforce_clip_lengths(clips: list) -> list:
         raise ValueError("Model returned no usable clips.")
     return kept
 
+
+def _enforce_host_only(clips: list, cues: list[Cue], host: str | None) -> list:
+    """Guarantee each clip's [start,end] contains only the host. Trim every clip
+    to the longest contiguous window free of non-host speech; drop clips with no
+    host-only window long enough. This is the deterministic backstop behind the
+    prompt's privacy rule."""
+    if not host:
+        return clips
+    intruders = [(c.start, c.end) for c in cues if c.speaker and c.speaker != host]
+    kept = []
+    for clip in clips:
+        window = _largest_host_window(clip.start, clip.end, intruders)
+        if window and (window[1] - window[0]) >= MIN_CLIP_SECONDS:
+            if (window[0], window[1]) != (clip.start, clip.end):
+                clip.reason = (clip.reason + " ｜ [自动校正] 已剔除区间内非主讲人发言").strip(" ｜")
+            clip.start, clip.end = window
+            kept.append(clip)
+    return kept
+
+
+def _largest_host_window(start: float, end: float, intruders: list) -> tuple[float, float] | None:
+    """Within [start,end], return the longest sub-interval not covered by any
+    intruder span. Returns (start,end) unchanged when there are no intruders."""
+    blocks = sorted((max(start, a), min(end, b)) for a, b in intruders if b > start and a < end)
+    best: tuple[float, float] | None = None
+    cursor = start
+    for a, b in blocks:
+        if a > cursor and (best is None or (a - cursor) > best[1] - best[0]):
+            best = (cursor, a)
+        cursor = max(cursor, b)
+    if end > cursor and (best is None or (end - cursor) > best[1] - best[0]):
+        best = (cursor, end)
+    return best
+

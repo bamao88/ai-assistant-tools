@@ -79,7 +79,7 @@ def build_parser() -> argparse.ArgumentParser:
     plan.add_argument("--layout", choices=["original", "vertical", "square"], default="original")
     plan.add_argument("--subtitle", choices=["auto", "none", "soft", "burned", "bilingual"], default="auto")
     plan.add_argument("--join", action="store_true")
-    plan.add_argument("--max-clips", type=int, default=6)
+    plan.add_argument("--max-clips", type=int, default=3, help="精选上限，通常 1-3 条。")
     plan.add_argument("--host", help="主讲人姓名；只切此人说话的内容（留空则取出现最多的说话人）。")
 
     render = subparsers.add_parser("render", help="Render clips from a plan or --clip ranges.")

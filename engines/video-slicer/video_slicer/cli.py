@@ -150,7 +150,10 @@ def command_plan(args: argparse.Namespace) -> None:
     duration = ffprobe_duration(args.video)
     validate_clip_plan(plan, video_duration=duration, cues=cues)
     write_clip_plan(plan, args.out)
-    print(f"wrote {args.out}")
+    print(f"wrote {args.out} ({len(plan.clips)} clips)")
+    note = getattr(plan, "selection_note", "")
+    if note:
+        print(f"筛选说明: {note}")
 
 
 def command_render(args: argparse.Namespace) -> None:

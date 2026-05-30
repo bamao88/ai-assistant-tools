@@ -53,7 +53,7 @@ python cli.py --account 测试号 get-feed-detail \
 
 ```bash
 python cli.py --account 测试号 search-feeds \
-  --keyword "押金避坍" \
+  --keyword "押金避坑" \
   --sort-by 最多点赞 \
   --publish-time 半年内
 ```

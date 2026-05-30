@@ -38,8 +38,7 @@ python cli.py --account 测试号 user-profile \
 按 `liked_count + collected_count` 降序排，取 Top 10-15：
 
 ```bash
-python cli.py get-feed-detail \
-  --account 测试号 \
+python cli.py --account 测试号 get-feed-detail \
   --feed-id <FEED_ID> \
   --xsec-token <FEED_XSEC_TOKEN> \
   --load-all-comments \

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!-- 封面 · 编辑杂志(浅色)。渲染尺寸固定，勿改。 -->
+<meta name="render-size" content="1600x900">
+<style>
+  /* ===== 调色板：主色（边栏/强调）改 --accent；底色改 --paper ===== */
+  :root{ --accent:#e8533f; --paper:#f4f1ea; --ink:#1a1a1a; --muted:#8a8378; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ width:1600px; height:900px; }
+  body{ font-family:"PingFang SC","Helvetica Neue",sans-serif;
+    background:var(--paper); color:var(--ink); display:flex; position:relative; overflow:hidden; }
+  .rail{ width:26px; background:var(--accent); height:100%; }
+  .main{ flex:1; padding:96px 100px 80px; display:flex; flex-direction:column; }
+  .top{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:3px solid var(--ink); padding-bottom:24px; }
+  .mast{ font-size:30px; font-weight:800; letter-spacing:2px; }
+  .issue{ font-size:24px; color:var(--muted); font-family:"SF Mono",ui-monospace,monospace; }
+  .cat{ margin-top:54px; font-size:26px; font-weight:700; letter-spacing:5px; color:var(--accent); }
+  h1{ margin-top:26px; font-size:118px; line-height:1.08; font-weight:800; letter-spacing:-2px; max-width:1240px; }
+  h1 u{ text-decoration:none; box-shadow:inset 0 -26px 0 rgba(232,83,63,0.28); }
+  .sub{ margin-top:auto; font-size:32px; color:#4a463e; line-height:1.55; font-weight:400; max-width:1080px;
+    border-left:5px solid var(--accent); padding-left:28px; }
+  .foot{ margin-top:46px; display:flex; gap:14px; align-items:center; }
+  .tag{ font-size:23px; font-weight:600; color:var(--ink); border:2px solid var(--ink); padding:8px 20px; border-radius:6px; }
+  .by{ margin-left:auto; font-size:25px; font-weight:700; color:var(--muted); }
+</style>
+</head>
+<body>
+  <div class="rail"></div>
+  <div class="main">
+    <!-- EDIT: 刊头名 + 期号 -->
+    <div class="top"><div class="mast">AI 实验室 / FIELD NOTES</div><div class="issue">No.07 · 2026</div></div>
+    <!-- EDIT: 分类标签（英文+中文更有杂志感） -->
+    <div class="cat">AUTOMATION · 自动化</div>
+    <!-- EDIT: 主标题，用 <u>…</u> 给关键词加底色高亮（换 --accent 时记得同步 box-shadow 的 rgba） -->
+    <h1>当 AI 学会<u>自己打工</u></h1>
+    <!-- EDIT: 导语一句 -->
+    <div class="sub">我搭了一套多 Agent 内容运营系统——写文章、配图、排版、发布，全部交给一群各司其职的 AI 数字员工。</div>
+    <div class="foot">
+      <!-- EDIT: 3 个标签 + 署名 -->
+      <span class="tag">多 Agent</span>
+      <span class="tag">Claude Code</span>
+      <span class="tag">内容运营</span>
+      <span class="by">@assistant_zh</span>
+    </div>
+  </div>
+</body>
+</html>

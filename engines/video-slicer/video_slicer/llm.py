@@ -21,6 +21,15 @@ def _strip_thinking(content: str) -> str:
     return _THINK_BLOCK_RE.sub("", content).strip() if content else content
 
 
+def _request_timeout() -> float:
+    """Per-request read timeout. Reasoning models (e.g. Kimi) over a long
+    transcript can run for minutes, so allow override via LLM_REQUEST_TIMEOUT."""
+    try:
+        return float(os.environ.get("LLM_REQUEST_TIMEOUT", "180"))
+    except ValueError:
+        return 180.0
+
+
 def _provider_config(name: str) -> dict[str, Any] | None:
     """Resolve one OpenAI-compatible provider from env, using the same key
     names as the knowledge_ingest pipeline so a single shared .env serves both."""

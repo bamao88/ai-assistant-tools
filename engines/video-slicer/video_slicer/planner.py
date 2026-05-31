@@ -93,16 +93,13 @@ def generate_ai_clip_plan(
         "transcript_cues": transcript_lines,
     }
     # Low temperature: clip selection should be consistent, not creative — this
-    # is the main lever against run-to-run recall variance.
-    raw = client.chat(
-        [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-        ],
-        temperature=0.0,
-        json_mode=True,
-    )
-    result = _coerce_plan_json(raw)
+    # is the main lever against run-to-run recall variance. MiniMax still emits
+    # malformed JSON occasionally, so retry once before surfacing a clean error.
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+    ]
+    result = _request_plan_json(client, messages)
     note = str(result.get("note") or "")
     if not (result.get("clips") or []):
         # The prompt is allowed to refuse — nothing in this video clears the bar.

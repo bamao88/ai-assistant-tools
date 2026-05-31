@@ -53,15 +53,11 @@ def render_plan(
     outputs = []
     for clip in plan.clips:
         output_path = str(output_dir / f"{clip.id}.mp4")
-        clip_start, clip_end = padded_range(clip, plan)
-        clip_cues = extract_cues(cues, clip_start, clip_end)
-        subtitle_cues = resolve_subtitle_cues(clip_cues, selected_subtitle, language, zh_cues, clip_start, clip_end)
+        subtitle_cues = _render_ranges(
+            video, padded_ranges(clip, plan), output_path, selected_layout, selected_subtitle,
+            language, zh_cues, cues, crf, preset, max_sub_chars,
+        )
         write_sidecar_subtitles(output_dir, clip.id, selected_subtitle, subtitle_cues)
-        if should_burn(selected_subtitle):
-            with SubtitleTempFile(split_long_cues(subtitle_cues, max_sub_chars)) as subtitle_path:
-                render_segment(video, output_path, clip_start, clip_end, selected_layout, subtitle_path, crf, preset)
-        else:
-            render_segment(video, output_path, clip_start, clip_end, selected_layout, crf=crf, preset=preset)
         outputs.append(output_path)
     return outputs
 
@@ -79,34 +75,86 @@ def render_joined(
     preset: str = "medium",
     max_sub_chars: int = 16,
 ) -> None:
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    joined_subtitle_cues: list[Cue] = []
-    running_offset = 0.0
-    with TemporaryDirectory() as temp_dir:
-        segment_paths = []
-        for index, clip in enumerate(plan.clips, start=1):
-            clip_start, clip_end = padded_range(clip, plan)
-            clip_cues = extract_cues(cues, clip_start, clip_end)
-            subtitle_cues = resolve_subtitle_cues(clip_cues, subtitle_mode, language, zh_cues, clip_start, clip_end)
-            joined_subtitle_cues.extend(offset_cues(subtitle_cues, running_offset))
-            segment_path = str(Path(temp_dir) / f"segment-{index:03d}.mp4")
-            if should_burn(subtitle_mode):
-                with SubtitleTempFile(split_long_cues(subtitle_cues, max_sub_chars)) as subtitle_path:
-                    render_segment(video, segment_path, clip_start, clip_end, layout, subtitle_path, crf, preset)
-            else:
-                render_segment(video, segment_path, clip_start, clip_end, layout, crf=crf, preset=preset)
-            segment_paths.append(segment_path)
-            running_offset += clip_end - clip_start
-        concat_segments(segment_paths, output_path)
+    # Joining flattens every clip's segments into one continuous play order.
+    ranges = [span for clip in plan.clips for span in padded_ranges(clip, plan)]
+    joined_subtitle_cues = _render_ranges(
+        video, ranges, output_path, layout, subtitle_mode,
+        language, zh_cues, cues, crf, preset, max_sub_chars,
+    )
     if subtitle_mode in {"soft", "auto", "bilingual"}:
         write_srt(joined_subtitle_cues, Path(output_path).with_suffix(".srt"))
 
 
-def padded_range(clip: Clip, plan: ClipPlan) -> tuple[float, float]:
-    return (
-        max(0, clip.start - plan.defaults.padding_start_seconds),
-        clip.end + plan.defaults.padding_end_seconds,
-    )
+def _render_ranges(
+    video: str,
+    ranges: list[tuple[float, float]],
+    output_path: str,
+    layout: str,
+    subtitle_mode: str,
+    language: str,
+    zh_cues: list[Cue] | None,
+    cues: list[Cue],
+    crf: int,
+    preset: str,
+    max_sub_chars: int,
+) -> list[Cue]:
+    """Render an ordered list of (start,end) ranges into one file: each range is
+    cut (with its subtitles), then concatenated. Returns the subtitle cues
+    re-timed onto the stitched output's timeline (for sidecar/joined SRTs).
+
+    A single range renders straight to output_path — identical to a plain clip —
+    so non-stitched output is byte-for-byte unchanged."""
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    if len(ranges) == 1:
+        start, end = ranges[0]
+        clip_cues = extract_cues(cues, start, end)
+        subtitle_cues = resolve_subtitle_cues(clip_cues, subtitle_mode, language, zh_cues, start, end)
+        _cut(video, output_path, start, end, layout, subtitle_mode, subtitle_cues, crf, preset, max_sub_chars)
+        return subtitle_cues
+
+    joined_subtitle_cues: list[Cue] = []
+    running_offset = 0.0
+    with TemporaryDirectory() as temp_dir:
+        segment_paths = []
+        for index, (start, end) in enumerate(ranges, start=1):
+            clip_cues = extract_cues(cues, start, end)
+            subtitle_cues = resolve_subtitle_cues(clip_cues, subtitle_mode, language, zh_cues, start, end)
+            joined_subtitle_cues.extend(offset_cues(subtitle_cues, running_offset))
+            segment_path = str(Path(temp_dir) / f"segment-{index:03d}.mp4")
+            _cut(video, segment_path, start, end, layout, subtitle_mode, subtitle_cues, crf, preset, max_sub_chars)
+            segment_paths.append(segment_path)
+            running_offset += end - start
+        concat_segments(segment_paths, output_path)
+    return joined_subtitle_cues
+
+
+def _cut(
+    video: str,
+    output_path: str,
+    start: float,
+    end: float,
+    layout: str,
+    subtitle_mode: str,
+    subtitle_cues: list[Cue],
+    crf: int,
+    preset: str,
+    max_sub_chars: int,
+) -> None:
+    if should_burn(subtitle_mode):
+        with SubtitleTempFile(split_long_cues(subtitle_cues, max_sub_chars)) as subtitle_path:
+            render_segment(video, output_path, start, end, layout, subtitle_path, crf, preset)
+    else:
+        render_segment(video, output_path, start, end, layout, crf=crf, preset=preset)
+
+
+def padded_ranges(clip: Clip, plan: ClipPlan) -> list[tuple[float, float]]:
+    return [
+        (
+            max(0, segment.start - plan.defaults.padding_start_seconds),
+            segment.end + plan.defaults.padding_end_seconds,
+        )
+        for segment in clip.segments
+    ]
 
 
 def resolve_subtitle_cues(

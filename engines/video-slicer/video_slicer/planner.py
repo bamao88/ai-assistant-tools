@@ -116,6 +116,14 @@ def generate_ai_clip_plan(
     plan.clips = _enforce_host_only(plan.clips, cues, resolved_host)
     if not plan.clips:
         raise ValueError(f"精选后没有满足 host-only 的片段。{note}".strip())
+    # "成片成本低" as a deterministic gate: a clip that only survives host-only by
+    # being stitched from many tiny fragments is a back-and-forth dialogue region,
+    # not a clean talk. Drop those — they're exactly what criterion 5 excludes.
+    plan.clips, dropped = _reject_overstitched(plan.clips)
+    if not plan.clips:
+        raise ValueError(f"精选后只剩对话型碎片，不建议切。{note}".strip())
+    if dropped:
+        note = (note + f" ｜ [自动校正] 丢弃 {dropped} 条需大量跳剪的对话型片段（成片成本过高）").strip(" ｜")
     plan.selection_note = note  # why other candidates were dropped; surfaced by the CLI
     # Rendering settings are operator choices, not the model's — override whatever
     # the model may have emitted with the values passed on the CLI.

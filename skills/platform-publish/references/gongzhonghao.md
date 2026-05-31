@@ -24,6 +24,18 @@ npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts 
 
 **更多风格：** openai(OpenAI), cards-claude(卡片 Claude), coral(珊瑚极简), monograph_all_both(黑白书页)
 
+## 账号样式映射（按账号匹配 profile + 主题 + 封面）
+
+每个公众号账号绑定一套固定的发布身份：发布用哪个 `--profile`、排版用哪个主题、封面用哪套 cover kit。做该账号的公众号发布时直接按这张表取，不要每次重新问。
+
+| 账号 | `--profile` | 固定主题 | 封面 cover kit |
+|---|---|---|---|
+| AI PM 超级小助理（副号） | `wxp-ai` | `coral`（珊瑚极简，唯一粉红/珊瑚系） | `assets/gongzhonghao/ai-pm-assistant/`（粉紫渐变 #ff67c0→#9521b5） |
+
+约定来源：用户 2026-05-31 指定。后续每接入一个新公众号账号，就往这张表加一行（profile、专属主题、专属封面 kit）。封面和模板都按账号专属化——当前 AI PM 小助理这套封面样式与 coral 主题就是该账号专属，不要混用到别的账号。
+
+config 里 `~/.gzh-publish/config.json` 现有 profile：`mdx`(default) / `wxp-ai` / `wxp-self`。其中 `wxp-ai` = AI PM 小助理号。
+
 ## 公众号封面资产
 
 公众号横版封面与小红书竖版卡片封面分开管理。不要把小红书 `markdown-to-cards` 封面直接当公众号封面使用。

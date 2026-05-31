@@ -13,18 +13,44 @@ SAFE_ID_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
 
 
 @dataclass
-class Clip:
-    id: str
+class Segment:
+    """One continuous host-only span. A published clip ("视频") is the ordered
+    concatenation of its segments — non-contiguous moments stitched by theme,
+    with other speakers' speech cut out in between."""
+
     start: float
     end: float
-    title: str = ""
-    reason: str = ""
-    tags: list[str] = field(default_factory=list)
-    subtitle_mode: str | None = None
 
     @property
     def duration(self) -> float:
         return self.end - self.start
+
+
+@dataclass
+class Clip:
+    id: str
+    start: float = 0.0
+    end: float = 0.0
+    title: str = ""
+    reason: str = ""
+    tags: list[str] = field(default_factory=list)
+    subtitle_mode: str | None = None
+    segments: list[Segment] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        # A clip is always expressed as segments internally. Callers that pass a
+        # single (start,end) span get a one-segment clip for free; multi-segment
+        # callers pass segments and we derive the envelope from them.
+        if not self.segments:
+            self.segments = [Segment(self.start, self.end)]
+        self.start = self.segments[0].start
+        self.end = self.segments[-1].end
+
+    @property
+    def duration(self) -> float:
+        """Playable length = sum of segment durations (not the envelope), since
+        the gaps between stitched segments are cut out."""
+        return sum(segment.duration for segment in self.segments)
 
 
 @dataclass

@@ -24,6 +24,46 @@ npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts 
 
 **更多风格：** openai(OpenAI), cards-claude(卡片 Claude), coral(珊瑚极简), monograph_all_both(黑白书页)
 
+## 公众号封面资产
+
+公众号横版封面与小红书竖版卡片封面分开管理。不要把小红书 `markdown-to-cards` 封面直接当公众号封面使用。
+
+AI PM 小助理号的公众号封面资产：
+
+```text
+/Volumes/ExtSSD2601/AI_Assistant/tools/skills/platform-publish/assets/gongzhonghao/ai-pm-assistant/
+```
+
+- 普通文章底图：`covers/article-cover-base.png`
+- 日报底图：`covers/daily-cover-base.png`
+- 封面生成脚本：`generate_cover.py`
+- 字体和文字区域清单：`cover-kit.json`
+- 字体准备说明：`fonts/README.md`
+
+当前底图尺寸均为 `1283x383`。生成最终封面时，应按 `cover-kit.json` 的文字区域自动适配字号：在不溢出区域的前提下尽量填满区域，并保留 Figma 里的左对齐、右对齐、居中和旋转角度。导出为新的文章本地封面文件，再写入 Markdown frontmatter 的 `cover` 字段。
+
+字体约定：
+- 普通文章封面动态文字：目标字体是 `可画文黑-简`。当前本地 `fonts/HYWenHei-85W.otf` 的真实字体名是 `汉仪文黑 85W`，只是 fallback；如果用户提供真正的可画文黑字体文件，应替换普通文章 4 个槽位的 `font_file`。
+- 日报封面日期：`思源黑体超粗体`，本地文件 `fonts/SourceHanSansSC-Heavy.otf`。
+
+普通文章封面是一张图拆两个场景使用：
+- 左侧长方形区域：公众号推荐页封面标题。把原始标题拆成上下两段，每段目标不超过 10 个中文等效字符；英文专名按整词保留；每段文字在各自 Figma 区域里自动放到最大。
+- 右侧正方形区域：私聊/聊天场景封面关键词。提取 2 个关键词；每个关键词是单个英文词，或不超过 3 个中文字符；关键词在各自 Figma 区域里自动放到最大。
+
+日报封面只填日期，统一格式为 `M月D日`，例如 `5月26日`、`11月23日`。
+
+生成命令：
+
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/skills/platform-publish/assets/gongzhonghao/ai-pm-assistant/generate_cover.py article \
+  --title "<文章标题>" \
+  --output "/absolute/path/cover.png"
+
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/skills/platform-publish/assets/gongzhonghao/ai-pm-assistant/generate_cover.py daily \
+  --date "5月26日" \
+  --output "/absolute/path/daily-cover.png"
+```
+
 ## 执行流程
 
 ### 1. 检查文件

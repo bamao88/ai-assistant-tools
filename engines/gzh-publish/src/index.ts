@@ -325,7 +325,8 @@ async function main(): Promise<void> {
   // Validate theme
   const validTheme = THEMES.find(t => t.id === themeId);
   if (!validTheme) {
-    console.error(`错误：未知主题 "${themeId}"。使用 --list-themes 查看可用主题。`);
+    console.error(`错误：未知主题 "${themeId}"。可用主题如下（不要凭记忆编造主题名）：`);
+    printThemes();
     process.exit(1);
   }
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import re
 
+import os
+
 from .llm import OpenAICompatibleClient, parse_json_response
 from .models import ClipPlan, Segment, clip_plan_from_dict
 from .transcript import Cue, cues_to_prompt_lines, detect_language
@@ -11,6 +13,17 @@ from .transcript import Cue, cues_to_prompt_lines, detect_language
 # Only drop degenerate sub-clips/segments; length is judged by argument
 # completeness, not a budget. The operator reviews/edits the plan before render.
 MIN_CLIP_SECONDS = 2
+
+# Clip planning is a nuanced judgment task: MiniMax-M2 is fast but swings 1-3
+# clips run-to-run, while Kimi groups themes stably and matches the human
+# baselines. Plan on Kimi by default (MiniMax as fallback) — independent of the
+# shared LLM_PROVIDER that knowledge_ingest uses. Override via env.
+DEFAULT_PLAN_PROVIDERS = ["kimi", "minimax"]
+
+
+def _plan_providers() -> list[str]:
+    override = os.environ.get("VIDEO_SLICER_PLAN_PROVIDER", "").strip()
+    return [name for name in override.split(",") if name.strip()] or DEFAULT_PLAN_PROVIDERS
 
 
 SYSTEM_PROMPT = """你是视频切片助手。输入是一份带时间戳、带说话人标注的会议/直播/答疑逐字稿。你的任务不是按时间顺序把讲得好的段落一段段切出来，而是【先定主题，再缝合】：从整场里挑出极少数最值得独立成片的【主题】，每个主题把分散在各处、只属于主讲人(host)的发言缝合成一条视频。只输出严格 JSON，不要 markdown。

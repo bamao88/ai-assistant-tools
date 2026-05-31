@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!-- 数据/对比卡（竖版 4:5）。渲染尺寸固定，勿改。 -->
+<meta name="render-size" content="1080x1350">
+<style>
+  /* ===== 风格预设：默认极简深色。换风格 = 替换下面这一组 :root 值 =====
+     渐变亮:  --bg:#f5f3ff; --card:#ffffff; --ink:#2e1065; --muted:#7c6f9e; --accent:#8b5cf6; --line:#e9e2f8;
+     编辑浅:  --bg:#f4f1ea; --card:#fffdf8; --ink:#1a1a1a; --muted:#8a8378; --accent:#e8533f; --line:#e2dccf;
+  */
+  :root{ --bg:#0a0e14; --card:#141b26; --ink:#e7ecf3; --muted:#8b97a8; --accent:#38bdf8; --line:rgba(255,255,255,0.12); }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ width:1080px; height:1350px; }
+  body{ font-family:"PingFang SC","Helvetica Neue",sans-serif; background:var(--bg); color:var(--ink);
+    display:flex; flex-direction:column; padding:100px 90px; }
+  .cat{ font-size:24px; letter-spacing:5px; color:var(--accent); font-weight:600; }
+  h1{ font-size:60px; font-weight:800; letter-spacing:-1px; margin-top:14px; line-height:1.2; }
+  .list{ margin-top:64px; display:flex; flex-direction:column; gap:30px; flex:1; }
+  .row{ background:var(--card); border:1.5px solid var(--line); border-radius:22px;
+    padding:40px 44px; display:flex; align-items:center; gap:34px; }
+  .num{ font-size:64px; font-weight:800; color:var(--accent); min-width:170px;
+    font-feature-settings:"tnum"; letter-spacing:-1px; }
+  .meta .t{ font-size:36px; font-weight:700; }
+  .meta .d{ font-size:26px; color:var(--muted); margin-top:8px; line-height:1.4; }
+  .foot{ margin-top:50px; font-size:26px; color:var(--muted); display:flex; justify-content:space-between; }
+</style>
+</head>
+<body>
+  <!-- EDIT: 分类 + 标题 -->
+  <div class="cat">BY THE NUMBERS · 数据一览</div>
+  <h1>这套系统跑出来的结果</h1>
+  <!-- EDIT: 每个 .row 一条数据。.num 放数字/指标，.t 是名称，.d 是说明。3-4 条最佳。 -->
+  <div class="list">
+    <div class="row"><div class="num">7×24</div><div class="meta"><div class="t">无人值守运行</div><div class="d">pm2 守护，全天候在线</div></div></div>
+    <div class="row"><div class="num">2</div><div class="meta"><div class="t">协作 Agent</div><div class="d">内容 + 管理，各司其职</div></div></div>
+    <div class="row"><div class="num">0</div><div class="meta"><div class="t">手动排版</div><div class="d">配图与发布全自动</div></div></div>
+  </div>
+  <div class="foot">
+    <!-- EDIT: 说明 + 署名 -->
+    <span>多 Agent 内容运营系统</span><span>@assistant_zh</span>
+  </div>
+</body>
+</html>

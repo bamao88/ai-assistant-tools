@@ -137,6 +137,19 @@ def generate_ai_clip_plan(
     return plan
 
 
+def _request_plan_json(client: OpenAICompatibleClient, messages: list[dict]) -> dict:
+    """Call the model and parse a clip plan, retrying once on malformed JSON —
+    MiniMax occasionally truncates or breaks JSON even in json_mode."""
+    last_error: Exception | None = None
+    for _ in range(2):
+        raw = client.chat(messages, temperature=0.0, json_mode=True)
+        try:
+            return _coerce_plan_json(raw)
+        except ValueError as error:
+            last_error = error
+    raise ValueError(f"模型多次返回无法解析的 JSON，请重试。{last_error}".strip())
+
+
 def _coerce_plan_json(content: str) -> dict:
     """Accept either {"clips": [...]} or a bare top-level [...] array — models
     drift between the two, especially as max_clips grows."""
@@ -146,7 +159,10 @@ def _coerce_plan_json(content: str) -> dict:
         pass
     match = re.search(r"\[.*\]", content, flags=re.DOTALL)
     if match:
-        array = json.loads(match.group(0))
+        try:
+            array = json.loads(match.group(0))
+        except json.JSONDecodeError as error:
+            raise ValueError("Could not parse a clip plan from the model response.") from error
         if isinstance(array, list):
             return {"clips": array}
     raise ValueError("Could not parse a clip plan from the model response.")

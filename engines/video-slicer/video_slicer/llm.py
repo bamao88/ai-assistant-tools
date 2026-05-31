@@ -91,8 +91,17 @@ class OpenAICompatibleClient:
         api_key: str | None = None,
         base_url: str | None = None,
         model: str | None = None,
+        providers: list[str] | None = None,
     ) -> None:
-        if api_key:
+        if providers is not None:
+            # Explicit provider order for one task (e.g. Kimi-first for clip
+            # planning) without touching the shared LLM_PROVIDER default.
+            self.providers = _build_chain(providers)
+            if not self.providers:
+                raise LLMConfigError(
+                    f"None of the requested providers {providers} have a key+model in the .env."
+                )
+        elif api_key:
             model = model or os.environ.get("VIDEO_SLICER_MODEL") or os.environ.get("OPENAI_MODEL")
             if not model:
                 raise LLMConfigError("Missing model (set VIDEO_SLICER_MODEL).")

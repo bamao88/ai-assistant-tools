@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!-- 金句卡（竖版 4:5，适合 X 多图）。渲染尺寸固定，勿改。 -->
+<meta name="render-size" content="1080x1350">
+<style>
+  /* ===== 风格预设：默认极简深色。换风格 = 替换下面这一组 :root 值 =====
+     渐变亮:  --bg:#f5f3ff; --card:#ffffff; --ink:#2e1065; --muted:#7c6f9e; --accent:#8b5cf6; --line:#e9e2f8;
+     编辑浅:  --bg:#f4f1ea; --card:#fffdf8; --ink:#1a1a1a; --muted:#8a8378; --accent:#e8533f; --line:#e2dccf;
+  */
+  :root{ --bg:#0a0e14; --card:#141b26; --ink:#e7ecf3; --muted:#8b97a8; --accent:#38bdf8; --line:rgba(255,255,255,0.12); }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ width:1080px; height:1350px; }
+  body{ font-family:"PingFang SC","Helvetica Neue",sans-serif; background:var(--bg); color:var(--ink);
+    display:flex; flex-direction:column; justify-content:center; padding:110px 96px; position:relative; }
+  .mark{ font-size:200px; line-height:0.7; font-weight:800; color:var(--accent); opacity:0.9; height:120px; }
+  blockquote{ font-size:64px; line-height:1.4; font-weight:700; letter-spacing:-0.5px; margin-top:30px; }
+  blockquote .em{ color:var(--accent); }
+  .line{ width:90px; height:5px; background:var(--accent); border-radius:3px; margin:56px 0 30px; }
+  .src{ font-size:30px; color:var(--muted); line-height:1.5; }
+  .by{ position:absolute; bottom:80px; left:96px; font-size:28px; font-weight:700; color:var(--ink); }
+  .pg{ position:absolute; bottom:80px; right:96px; font-size:26px; color:var(--muted);
+    font-family:"SF Mono",ui-monospace,monospace; }
+</style>
+</head>
+<body>
+  <div class="mark">"</div>
+  <!-- EDIT: 金句正文。用 <span class="em">…</span> 高亮一个词组；控制在 1-3 句 -->
+  <blockquote>一个人做内容，最大的瓶颈不是创意，<span class="em">而是执行</span>。</blockquote>
+  <div class="line"></div>
+  <!-- EDIT: 出处/补充说明 -->
+  <div class="src">—— 当 AI 学会自己打工：多 Agent 内容运营系统</div>
+  <!-- EDIT: 署名 + 卡片序号（如 01/04，多图时用） -->
+  <div class="by">@assistant_zh</div>
+  <div class="pg">01 / 04</div>
+</body>
+</html>

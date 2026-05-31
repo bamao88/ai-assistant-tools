@@ -93,6 +93,10 @@ class ClipPlan:
                     "title": clip.title,
                     "start": format_timecode(clip.start),
                     "end": format_timecode(clip.end),
+                    "segments": [
+                        {"start": format_timecode(segment.start), "end": format_timecode(segment.end)}
+                        for segment in clip.segments
+                    ],
                     "reason": clip.reason,
                     "tags": clip.tags,
                     "subtitle": {"mode": clip.subtitle_mode} if clip.subtitle_mode else {},

@@ -154,15 +154,15 @@ def clip_plan_from_dict(data: dict[str, Any]) -> ClipPlan:
         subtitle_mode = None
         if isinstance(subtitle, dict) and subtitle.get("mode"):
             subtitle_mode = str(subtitle["mode"])
+        segments = _parse_segments(raw_clip, index)
         clips.append(
             Clip(
                 id=clip_id,
-                start=parse_timecode(str(raw_clip["start"])),
-                end=parse_timecode(str(raw_clip["end"])),
                 title=str(raw_clip.get("title") or clip_id),
                 reason=str(raw_clip.get("reason") or ""),
                 tags=[str(tag) for tag in raw_clip.get("tags", [])],
                 subtitle_mode=subtitle_mode,
+                segments=segments,
             )
         )
 

@@ -51,7 +51,7 @@ def validate_clip_plan(
                 raise ValueError(f"Clip {clip.id!r} padding pushes a segment start before 0.")
             if video_duration is not None and padded_end > video_duration + 0.2:
                 raise ValueError(
-                    f"Clip {clip.id!r} has a segment ending after video duration "
+                    f"Clip {clip.id!r} segment ends after video duration "
                     f"({padded_end:.2f}s > {video_duration:.2f}s)."
                 )
             if transcript_start is not None and segment.start < transcript_start - 0.2:

@@ -37,7 +37,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
 
 SHARE_RE = re.compile(r"https?://meeting\.tencent\.com/(?:crm|cw)/([A-Za-z0-9]+)")
 COMMON_INFO = "https://meeting.tencent.com/wemeet-tapi/v2/meetlog/public/detail/common-record-info"

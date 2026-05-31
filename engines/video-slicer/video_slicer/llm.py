@@ -61,22 +61,28 @@ def _provider_config(name: str) -> dict[str, Any] | None:
     return None
 
 
-def _provider_chain() -> list[dict[str, Any]]:
-    """Ordered [primary, fallback, openai] chain, keeping only providers that
-    have both a key and a model. Selection mirrors knowledge_ingest's .env:
-    LLM_PROVIDER (default minimax) then LLM_FALLBACK (default kimi)."""
-    primary = os.environ.get("LLM_PROVIDER", "minimax").strip().lower()
-    fallback = os.environ.get("LLM_FALLBACK", "kimi").strip().lower()
-    order: list[str] = []
-    for name in (primary, fallback, "openai"):
-        if name and name not in order:
-            order.append(name)
+def _build_chain(order: list[str]) -> list[dict[str, Any]]:
+    """Keep only the named providers that have both a key and a model, in order."""
     chain = []
+    seen: set[str] = set()
     for name in order:
+        name = name.strip().lower()
+        if not name or name in seen:
+            continue
+        seen.add(name)
         cfg = _provider_config(name)
         if cfg and cfg.get("api_key") and cfg.get("model"):
             chain.append(cfg)
     return chain
+
+
+def _provider_chain() -> list[dict[str, Any]]:
+    """Ordered [primary, fallback, openai] chain. Selection mirrors
+    knowledge_ingest's .env: LLM_PROVIDER (default minimax) then LLM_FALLBACK
+    (default kimi)."""
+    primary = os.environ.get("LLM_PROVIDER", "minimax")
+    fallback = os.environ.get("LLM_FALLBACK", "kimi")
+    return _build_chain([primary, fallback, "openai"])
 
 
 class OpenAICompatibleClient:

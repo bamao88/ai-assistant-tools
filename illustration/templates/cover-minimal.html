@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!-- 封面 · 极简科技(深色)。渲染尺寸固定，勿改。 -->
+<meta name="render-size" content="1600x900">
+<style>
+  /* ===== 调色板（一般不用动；想微调主色改这两行）===== */
+  :root{ --accent:#38bdf8; --accent2:#818cf8; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ width:1600px; height:900px; }
+  body{
+    font-family:"PingFang SC","Helvetica Neue",sans-serif;
+    background:#0a0e14;
+    background-image:
+      radial-gradient(circle at 78% 22%, rgba(56,189,248,0.18), transparent 42%),
+      radial-gradient(circle at 18% 88%, rgba(129,140,248,0.14), transparent 40%);
+    color:#e7ecf3;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:110px 120px; position:relative; overflow:hidden;
+  }
+  .grid{ position:absolute; inset:0;
+    background-image:linear-gradient(rgba(255,255,255,0.035) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,0.035) 1px,transparent 1px);
+    background-size:64px 64px;
+    mask-image:radial-gradient(circle at 50% 45%,#000 30%,transparent 78%); }
+  .kicker{ display:inline-flex; align-items:center; gap:12px; font-size:24px;
+    letter-spacing:6px; color:var(--accent); font-weight:600; margin-bottom:40px; position:relative; }
+  .dot{ width:11px; height:11px; border-radius:50%; background:var(--accent); box-shadow:0 0 18px var(--accent); }
+  h1{ font-size:108px; line-height:1.18; font-weight:800; letter-spacing:-1px; position:relative; max-width:1180px; }
+  h1 .hl{ background:linear-gradient(120deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub{ margin-top:46px; font-size:34px; color:#94a3b8; font-weight:400; letter-spacing:1px; position:relative; max-width:1000px; }
+  .foot{ position:absolute; bottom:70px; left:120px; right:120px; display:flex;
+    justify-content:space-between; align-items:center; font-size:24px; color:#64748b; letter-spacing:1px; }
+  .tags span{ color:#cbd5e1; } .tags span::before{ content:"#"; color:#475569; }
+  .by{ font-family:"SF Mono",ui-monospace,monospace; }
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <!-- EDIT: 小标签（领域/栏目，建议 8-14 字） -->
+  <div class="kicker"><span class="dot"></span>AI · 自动化 · 实验记录</div>
+  <!-- EDIT: 主标题。用 <span class="hl">…</span> 高亮 1 个关键词；<br> 控制换行，控制在 2-3 行 -->
+  <h1>当 AI 学会<span class="hl">自己打工</span><br>我搭了一套多 Agent<br>内容运营系统</h1>
+  <!-- EDIT: 副标题一句话（可删） -->
+  <div class="sub">写文章 / 配图 / 排版 / 发布，全部交给一群 AI 数字员工</div>
+  <div class="foot">
+    <!-- EDIT: 3 个标签 + 署名 -->
+    <div class="tags"><span>多Agent</span>　<span>ClaudeCode</span>　<span>内容自动化</span></div>
+    <div class="by">@assistant_zh</div>
+  </div>
+</body>
+</html>

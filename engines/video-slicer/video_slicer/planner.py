@@ -201,6 +201,16 @@ def _enforce_host_only(clips: list, cues: list[Cue], host: str | None) -> list:
     return kept
 
 
+# Above this many stitched segments, a "clip" is really a dialogue region the
+# model shouldn't have picked — the human baselines top out around 5 segments.
+MAX_SEGMENTS = 8
+
+
+def _reject_overstitched(clips: list) -> tuple[list, int]:
+    kept = [clip for clip in clips if len(clip.segments) <= MAX_SEGMENTS]
+    return kept, len(clips) - len(kept)
+
+
 def _host_only_windows(start: float, end: float, intruders: list) -> list[tuple[float, float]]:
     """Split [start,end] into the sub-windows NOT covered by any intruder span,
     in order. Returns [(start,end)] when there are no intruders; [] when intruders

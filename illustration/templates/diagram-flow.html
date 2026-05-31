@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!-- 概念/架构示意图（横版）。渲染尺寸固定，勿改。 -->
+<meta name="render-size" content="1600x1000">
+<style>
+  /* ===== 风格预设：默认极简深色。换风格 = 替换下面这一组 :root 值 =====
+     渐变亮:  --bg:#f5f3ff; --card:#ffffff; --ink:#2e1065; --muted:#7c6f9e; --accent:#8b5cf6; --line:#e9e2f8;
+     编辑浅:  --bg:#f4f1ea; --card:#fffdf8; --ink:#1a1a1a; --muted:#8a8378; --accent:#e8533f; --line:#e2dccf;
+  */
+  :root{ --bg:#0a0e14; --card:#141b26; --ink:#e7ecf3; --muted:#8b97a8; --accent:#38bdf8; --line:rgba(255,255,255,0.12); }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ width:1600px; height:1000px; }
+  body{ font-family:"PingFang SC","Helvetica Neue",sans-serif; background:var(--bg); color:var(--ink);
+    display:flex; flex-direction:column; padding:90px 100px; }
+  .head{ margin-bottom:70px; }
+  .head .cat{ font-size:24px; letter-spacing:5px; color:var(--accent); font-weight:600; }
+  .head h1{ font-size:62px; font-weight:800; letter-spacing:-1px; margin-top:14px; }
+  .flow{ flex:1; display:flex; align-items:center; justify-content:center; gap:0; }
+  .node{ background:var(--card); border:1.5px solid var(--line); border-radius:24px;
+    padding:40px 36px; width:320px; box-shadow:0 20px 50px rgba(0,0,0,0.18); }
+  .node .ic{ font-size:46px; }
+  .node .t{ font-size:34px; font-weight:700; margin-top:18px; }
+  .node .d{ font-size:24px; color:var(--muted); margin-top:12px; line-height:1.5; }
+  .node.hl{ border-color:var(--accent); box-shadow:0 0 0 2px var(--accent),0 20px 60px rgba(0,0,0,0.25); }
+  .arrow{ flex:1; min-width:60px; height:3px; background:var(--line); position:relative; margin:0 6px; }
+  .arrow::after{ content:""; position:absolute; right:-2px; top:-7px; border:9px solid transparent;
+    border-left-color:var(--line); }
+  .foot{ margin-top:60px; font-size:24px; color:var(--muted); display:flex; justify-content:space-between; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <!-- EDIT: 分类 + 图标题 -->
+    <div class="cat">ARCHITECTURE · 系统架构</div>
+    <h1>多 Agent 内容运营系统</h1>
+  </div>
+  <!-- EDIT: 流程节点。每个 .node 一个步骤/角色；要强调的加 class="node hl"。
+       用 .arrow 连接（横向流程 3-4 个节点最佳）。图标用 emoji。 -->
+  <div class="flow">
+    <div class="node"><div class="ic">✍️</div><div class="t">内容 Agent</div><div class="d">按平台创作文章与配图</div></div>
+    <div class="arrow"></div>
+    <div class="node hl"><div class="ic">🧭</div><div class="t">管理 Agent</div><div class="d">调度 / 维护 / 监控全局</div></div>
+    <div class="arrow"></div>
+    <div class="node"><div class="ic">🗂️</div><div class="t">共享层</div><div class="d">工具 / 知识库 / 配置</div></div>
+  </div>
+  <div class="foot">
+    <!-- EDIT: 说明 + 署名 -->
+    <span>每个 Agent = 一个有人设、记忆和发布渠道的"数字员工"</span>
+    <span>@assistant_zh</span>
+  </div>
+</body>
+</html>

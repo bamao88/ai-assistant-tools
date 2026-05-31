@@ -176,6 +176,25 @@ def clip_plan_from_dict(data: dict[str, Any]) -> ClipPlan:
     )
 
 
+def _parse_segments(raw_clip: dict[str, Any], index: int) -> list[Segment]:
+    """A clip may stitch several non-contiguous spans. Accept an explicit
+    `segments` list; fall back to a single (start,end) span for the simple case
+    and for older plans that predate stitching."""
+    raw_segments = raw_clip.get("segments")
+    if isinstance(raw_segments, list) and raw_segments:
+        segments = []
+        for raw in raw_segments:
+            if not isinstance(raw, dict) or "start" not in raw or "end" not in raw:
+                raise ValueError(f"Clip #{index} has a malformed segment: {raw!r}")
+            segments.append(
+                Segment(start=parse_timecode(str(raw["start"])), end=parse_timecode(str(raw["end"])))
+            )
+        return segments
+    if "start" in raw_clip and "end" in raw_clip:
+        return [Segment(start=parse_timecode(str(raw_clip["start"])), end=parse_timecode(str(raw_clip["end"])))]
+    raise ValueError(f"Clip #{index} must include either segments or start/end.")
+
+
 def build_manual_plan(
     video: str | None,
     transcript: str | None,

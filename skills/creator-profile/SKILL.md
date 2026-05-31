@@ -278,7 +278,7 @@ python cli.py --account 测试号 get-feed-detail \
 拆解完成后：
 1. 若发现平台规律/新打法 → 更新 `../shared/platform-experience/`
 2. 若发现赛道新趋势 → 写入 `../shared/topic-pool/` 作为新选题
-3. 若发现 fixture/checklist 与实际场景不匹配 → 写入 `/Volumes/ExtSSD2601/AI_Assistant_manage/tools/feedback/` 反馈给 skill 维护者
+3. 若发现 fixture/checklist 与实际场景不匹配 → 写入 `/Volumes/ExtSSD2601/AI_Assistant/tools/feedback/` 反馈给 skill 维护者
 
 > 注：把剖析报告再加工成资料包 / 轮播图脚本 / 社群引流物料**不属于本 skill**，由下游写作流程或后续 packaging skill 处理。本 skill 的产出止于结构化结论。
 

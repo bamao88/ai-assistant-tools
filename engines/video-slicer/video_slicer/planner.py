@@ -92,7 +92,7 @@ def generate_ai_clip_plan(
         raise ValueError("AI planning mode must be query or auto.")
     if mode == "query" and not query:
         raise ValueError("--query is required for query mode.")
-    client = client or OpenAICompatibleClient()
+    client = client or OpenAICompatibleClient(providers=_plan_providers())
     language = detect_language(cues, transcript)
     transcript_lines = cues_to_prompt_lines(cues, limit=1200)
     resolved_host = host or _dominant_speaker(cues)

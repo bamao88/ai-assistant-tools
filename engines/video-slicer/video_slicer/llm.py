@@ -128,7 +128,7 @@ class OpenAICompatibleClient:
                 last_error = RuntimeError(f"{provider['name']} unreachable: {error}")
         raise RuntimeError(f"All LLM providers failed. Last error: {last_error}")
 
-    def chat_json(self, messages: list[dict[str, str]], temperature: float = 0.2) -> dict[str, Any]:
+    def chat_json(self, messages: list[dict[str, str]], temperature: float = 0.2) -> dict[str, Any]:  # noqa: E301
         content = self.chat(messages, temperature=temperature, json_mode=True)
         return parse_json_response(content)
 

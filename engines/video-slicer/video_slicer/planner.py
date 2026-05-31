@@ -157,35 +157,49 @@ def _enforce_clip_lengths(clips: list) -> list:
 
 
 def _enforce_host_only(clips: list, cues: list[Cue], host: str | None) -> list:
-    """Guarantee each clip's [start,end] contains only the host. Trim every clip
-    to the longest contiguous window free of non-host speech; drop clips with no
-    host-only window long enough. This is the deterministic backstop behind the
-    prompt's privacy rule."""
+    """Guarantee every segment contains only the host. Each segment is split at
+    any non-host speech into its host-only sub-windows (this is itself stitching:
+    a segment that brushed a student interjection becomes two clean segments).
+    Sub-windows shorter than MIN_CLIP_SECONDS are dropped; a clip with no
+    surviving segment is dropped. Deterministic backstop behind the prompt's
+    privacy rule."""
     if not host:
         return clips
     intruders = [(c.start, c.end) for c in cues if c.speaker and c.speaker != host]
     kept = []
     for clip in clips:
-        window = _largest_host_window(clip.start, clip.end, intruders)
-        if window and (window[1] - window[0]) >= MIN_CLIP_SECONDS:
-            if (window[0], window[1]) != (clip.start, clip.end):
-                clip.reason = (clip.reason + " ｜ [自动校正] 已剔除区间内非主讲人发言").strip(" ｜")
-            clip.start, clip.end = window
-            kept.append(clip)
+        new_segments = []
+        trimmed = False
+        for segment in clip.segments:
+            windows = _host_only_windows(segment.start, segment.end, intruders)
+            if windows != [(segment.start, segment.end)]:
+                trimmed = True
+            new_segments.extend(
+                Segment(start, end) for start, end in windows if end - start >= MIN_CLIP_SECONDS
+            )
+        if not new_segments:
+            continue
+        if trimmed:
+            clip.reason = (clip.reason + " ｜ [自动校正] 已剔除区间内非主讲人发言").strip(" ｜")
+        clip.segments = new_segments
+        clip.start = new_segments[0].start
+        clip.end = new_segments[-1].end
+        kept.append(clip)
     return kept
 
 
-def _largest_host_window(start: float, end: float, intruders: list) -> tuple[float, float] | None:
-    """Within [start,end], return the longest sub-interval not covered by any
-    intruder span. Returns (start,end) unchanged when there are no intruders."""
+def _host_only_windows(start: float, end: float, intruders: list) -> list[tuple[float, float]]:
+    """Split [start,end] into the sub-windows NOT covered by any intruder span,
+    in order. Returns [(start,end)] when there are no intruders; [] when intruders
+    cover the whole span."""
     blocks = sorted((max(start, a), min(end, b)) for a, b in intruders if b > start and a < end)
-    best: tuple[float, float] | None = None
+    windows = []
     cursor = start
     for a, b in blocks:
-        if a > cursor and (best is None or (a - cursor) > best[1] - best[0]):
-            best = (cursor, a)
+        if a > cursor:
+            windows.append((cursor, a))
         cursor = max(cursor, b)
-    if end > cursor and (best is None or (end - cursor) > best[1] - best[0]):
-        best = (cursor, end)
-    return best
+    if end > cursor:
+        windows.append((cursor, end))
+    return windows
 

@@ -49,6 +49,53 @@ export function renderMarkdown(content: string): string {
   return md.render(preprocessed);
 }
 
+const NUMBER_FONT_STYLE = [
+  'font-family: "Avenir Next", "DIN Alternate", "Helvetica Neue", Arial, sans-serif !important',
+  'font-variant-numeric: lining-nums proportional-nums',
+  'font-weight: 500',
+  'letter-spacing: 0.01em',
+].join('; ');
+
+const NUMBER_RUN_RE = /[+\-−]?\d+(?:[.,:/-]\d+)*(?:%|％)?/g;
+
+function wrapNumberRuns(doc: Document): void {
+  const walker = doc.createTreeWalker(doc.body, doc.defaultView?.NodeFilter.SHOW_TEXT ?? 4);
+  const textNodes: Text[] = [];
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode as Text);
+  }
+
+  textNodes.forEach(node => {
+    const parent = node.parentElement;
+    const text = node.textContent || '';
+    if (!parent || !NUMBER_RUN_RE.test(text)) {
+      NUMBER_RUN_RE.lastIndex = 0;
+      return;
+    }
+    NUMBER_RUN_RE.lastIndex = 0;
+    if (parent.closest('pre, code, script, style, a, [data-number-font]')) return;
+
+    const fragment = doc.createDocumentFragment();
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = NUMBER_RUN_RE.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        fragment.appendChild(doc.createTextNode(text.slice(lastIndex, match.index)));
+      }
+      const span = doc.createElement('span');
+      span.setAttribute('data-number-font', 'true');
+      span.setAttribute('style', NUMBER_FONT_STYLE);
+      span.textContent = match[0];
+      fragment.appendChild(span);
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < text.length) {
+      fragment.appendChild(doc.createTextNode(text.slice(lastIndex)));
+    }
+    node.parentNode?.replaceChild(fragment, node);
+  });
+}
+
 export function applyTheme(html: string, themeId: string): string {
   const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
   const style = theme.styles;
@@ -321,6 +368,8 @@ export function applyTheme(html: string, themeId: string): string {
       });
     });
   });
+
+  wrapNumberRuns(doc);
 
   // Apply image styling: use theme img style, fallback to default decorated style
   const themeImgStyle = style.img || '';

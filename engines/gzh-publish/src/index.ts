@@ -88,6 +88,10 @@ interface Frontmatter {
   title?: string;
   theme?: string;
   cover?: string;
+  cover_crop_235_1?: string;
+  cover_crop_1_1?: string;
+  pic_crop_235_1?: string;
+  pic_crop_1_1?: string;
   author?: string;
   digest?: string;
   abstract?: string;
@@ -162,6 +166,104 @@ function resolveTitleAndBody(frontmatter: Frontmatter, content: string, fallback
   return {
     title,
     body: shouldStripLeadingTitle ? leadingTitle.body : content,
+  };
+}
+
+interface ImageSize {
+  width: number;
+  height: number;
+}
+
+interface CoverCrop {
+  picCrop235_1?: string;
+  picCrop1_1?: string;
+}
+
+function readPngSize(buffer: Buffer): ImageSize | null {
+  if (buffer.length < 24) return null;
+  const signature = buffer.subarray(0, 8).toString('hex');
+  if (signature !== '89504e470d0a1a0a') return null;
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+}
+
+function readGifSize(buffer: Buffer): ImageSize | null {
+  if (buffer.length < 10) return null;
+  const signature = buffer.subarray(0, 6).toString('ascii');
+  if (signature !== 'GIF87a' && signature !== 'GIF89a') return null;
+  return {
+    width: buffer.readUInt16LE(6),
+    height: buffer.readUInt16LE(8),
+  };
+}
+
+function readJpegSize(buffer: Buffer): ImageSize | null {
+  if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) return null;
+  let offset = 2;
+  const startOfFrameMarkers = new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]);
+
+  while (offset + 9 < buffer.length) {
+    if (buffer[offset] !== 0xff) {
+      offset++;
+      continue;
+    }
+    const marker = buffer[offset + 1];
+    const length = buffer.readUInt16BE(offset + 2);
+    if (startOfFrameMarkers.has(marker)) {
+      return {
+        height: buffer.readUInt16BE(offset + 5),
+        width: buffer.readUInt16BE(offset + 7),
+      };
+    }
+    if (length < 2) return null;
+    offset += 2 + length;
+  }
+  return null;
+}
+
+function readImageSize(imagePath: string): ImageSize | null {
+  try {
+    const buffer = fs.readFileSync(imagePath);
+    return readPngSize(buffer) || readGifSize(buffer) || readJpegSize(buffer);
+  } catch {
+    return null;
+  }
+}
+
+function formatCropCoord(value: number): string {
+  return value.toFixed(6).replace(/\.?0+$/, '');
+}
+
+function detectSideBySideCoverCrop(coverPath: string): CoverCrop | null {
+  const size = readImageSize(coverPath);
+  if (!size || size.width <= size.height || size.height <= 0) return null;
+
+  const splitX = size.width - size.height;
+  const compositeRatio = size.width / size.height;
+  const leftRatio = splitX / size.height;
+  const isTwoSceneComposite =
+    splitX > 0 &&
+    Math.abs(compositeRatio - 3.35) <= 0.08 &&
+    Math.abs(leftRatio - 2.35) <= 0.08;
+
+  if (!isTwoSceneComposite) return null;
+
+  const split = formatCropCoord(splitX / size.width);
+  return {
+    picCrop235_1: `0_0_${split}_1`,
+    picCrop1_1: `${split}_0_1_1`,
+  };
+}
+
+function resolveCoverCrop(frontmatter: Frontmatter, coverPath: string): CoverCrop {
+  const explicit235 = frontmatter.pic_crop_235_1 || frontmatter.cover_crop_235_1;
+  const explicit1 = frontmatter.pic_crop_1_1 || frontmatter.cover_crop_1_1;
+  const auto = detectSideBySideCoverCrop(coverPath);
+  return {
+    picCrop235_1: explicit235 || auto?.picCrop235_1,
+    picCrop1_1: explicit1 || auto?.picCrop1_1,
   };
 }
 
@@ -380,15 +482,20 @@ ${html}
 
   // Upload cover image
   let thumbMediaId = '';
+  let coverCrop: CoverCrop = {};
   if (frontmatter.cover) {
     const coverPath = path.isAbsolute(frontmatter.cover)
       ? frontmatter.cover
       : path.join(fileDir, frontmatter.cover);
 
     if (fs.existsSync(coverPath)) {
+      coverCrop = resolveCoverCrop(frontmatter, coverPath);
       console.log(`\n正在上传封面图：${frontmatter.cover}`);
       thumbMediaId = await uploadImage(coverPath, token);
       console.log(`✓ 封面图已上传，media_id: ${thumbMediaId}`);
+      if (coverCrop.picCrop235_1 || coverCrop.picCrop1_1) {
+        console.log(`✓ 封面裁剪：2.35:1=${coverCrop.picCrop235_1 || '默认'}，1:1=${coverCrop.picCrop1_1 || '默认'}`);
+      }
     } else {
       console.warn(`警告：封面图不存在：${coverPath}`);
     }
@@ -408,6 +515,8 @@ ${html}
     thumbMediaId,
     author: frontmatter.author,
     digest: frontmatter.digest,
+    picCrop235_1: coverCrop.picCrop235_1,
+    picCrop1_1: coverCrop.picCrop1_1,
   }, token);
   console.log(`✓ 草稿已创建，media_id: ${draftMediaId}`);
 

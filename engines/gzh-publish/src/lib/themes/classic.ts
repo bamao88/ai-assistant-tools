@@ -35,7 +35,7 @@ export const classicThemes: Theme[] = [
     name: 'Medium',
     description: '简约柔和的西式博客排版，适合生活志与随笔沉淀',
     styles: {
-      container: 'max-width: 100%; margin: 0 auto; padding: 24px 10px 48px 10px; font-family: "STSongti-SC", "Songti SC", "SimSun", "STSongti", serif; font-size: 16px; line-height: 1.7 !important; color: #242424 !important; background-color: #fcfcfc !important; word-wrap: break-word;',
+      container: 'max-width: 100%; margin: 0 auto; padding: 2px 20px; box-sizing: border-box; font-family: "STSongti-SC", "Songti SC", "SimSun", "STSongti", serif; font-size: 16px; line-height: 1.7 !important; color: #242424 !important; background-color: #fcfcfc !important; word-wrap: break-word;',
       h1: 'font-size: 32px; font-weight: 700; color: #111111 !important; line-height: 1.3 !important; margin: 36px 0 16px;',
       h2: 'font-size: 24px; font-weight: 700; color: #111111 !important; line-height: 1.35 !important; margin: 32px 0 16px;',
       h3: 'font-size: 21px; font-weight: 700; color: #242424 !important; line-height: 1.4 !important; margin: 28px 0 14px;',
@@ -65,7 +65,7 @@ export const classicThemes: Theme[] = [
     name: '极简',
     description: '零干扰的纯净白底排版，内容即一切的终极表达',
     styles: {
-      container: 'max-width: 100%; margin: 0 auto; padding: 24px 10px 48px 10px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.8 !important; color: #333333 !important; background-color: #ffffff !important; word-wrap: break-word;',
+      container: 'max-width: 100%; margin: 0 auto; padding: 2px 20px; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.8 !important; color: #333333 !important; background-color: #ffffff !important; word-wrap: break-word;',
       h1: 'font-size: 28px; font-weight: 700; color: #111111 !important; line-height: 1.3 !important; margin: 36px 0 14px;',
       h2: 'font-size: 22px; font-weight: 600; color: #111111 !important; line-height: 1.35 !important; margin: 30px 0 12px;',
       h3: 'font-size: 18px; font-weight: 600; color: #333333 !important; line-height: 1.4 !important; margin: 24px 0 10px;',

@@ -14,6 +14,8 @@
 
 两张底图均为 `1283 x 383` PNG，适配微信公众号横版封面场景。
 
+普通文章底图是左右拼接复合封面：左侧 `900 x 383` 供微信 `2.35:1` 场景裁剪，右侧 `383 x 383` 供微信 `1:1` 场景裁剪。`gzh-publish` 会在创建草稿时自动写入对应裁剪坐标，避免微信后台按整张长图居中裁剪。
+
 ## 使用约束
 
 - 公众号封面：使用本目录资产。
@@ -50,3 +52,10 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/skills/platform-publish/assets/go
 如果原始标题含冒号、破折号或竖线，优先按这些分隔符切标题。否则脚本会按长度和语义做保守切分。用户显式传 `--title-primary`、`--title-secondary`、`--keyword-top`、`--keyword-bottom` 时，以用户传入为准。
 
 日报封面只填日期。日期格式统一为 `M月D日`，例如 `5月26日`、`11月23日`；输入 `YYYY-MM-DD` 会自动转换。
+
+如遇特殊构图，可在文章 Markdown frontmatter 覆盖裁剪坐标：
+
+```yaml
+pic_crop_235_1: 0_0_0.701481_1
+pic_crop_1_1: 0.701481_0_1_1
+```

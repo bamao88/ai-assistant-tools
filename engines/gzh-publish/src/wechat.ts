@@ -180,6 +180,8 @@ export interface ArticleParams {
   author?: string;
   digest?: string;         // Article summary (max 120 chars)
   showCoverPic?: number;   // 1 = show cover, 0 = hide
+  picCrop235_1?: string;   // Cover crop for 2.35:1 scene: X1_Y1_X2_Y2
+  picCrop1_1?: string;     // Cover crop for 1:1 scene: X1_Y1_X2_Y2
 }
 
 /**
@@ -189,19 +191,25 @@ export interface ArticleParams {
 export async function createDraft(article: ArticleParams, token: string): Promise<string> {
   const url = `${BASE_URL}/cgi-bin/draft/add?access_token=${token}`;
 
+  const draftArticle: Record<string, string | number> = {
+    title: article.title,
+    content: article.content,
+    thumb_media_id: article.thumbMediaId,
+    author: article.author || '',
+    digest: article.digest || '',
+    show_cover_pic: article.showCoverPic ?? 1,
+    need_open_comment: 0,
+    only_fans_can_comment: 0,
+  };
+  if (article.picCrop235_1) {
+    draftArticle.pic_crop_235_1 = article.picCrop235_1;
+  }
+  if (article.picCrop1_1) {
+    draftArticle.pic_crop_1_1 = article.picCrop1_1;
+  }
+
   const body = {
-    articles: [
-      {
-        title: article.title,
-        content: article.content,
-        thumb_media_id: article.thumbMediaId,
-        author: article.author || '',
-        digest: article.digest || '',
-        show_cover_pic: article.showCoverPic ?? 1,
-        need_open_comment: 0,
-        only_fans_can_comment: 0,
-      }
-    ]
+    articles: [draftArticle]
   };
 
   const response = await fetch(url, {

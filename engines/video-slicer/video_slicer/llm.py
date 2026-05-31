@@ -22,12 +22,13 @@ def _strip_thinking(content: str) -> str:
 
 
 def _request_timeout() -> float:
-    """Per-request read timeout. Reasoning models (e.g. Kimi) over a long
-    transcript can run for minutes, so allow override via LLM_REQUEST_TIMEOUT."""
+    """Per-request read timeout (a ceiling, not a wait). Reasoning models like
+    Kimi over a long transcript routinely run several minutes, so default high;
+    override via LLM_REQUEST_TIMEOUT."""
     try:
-        return float(os.environ.get("LLM_REQUEST_TIMEOUT", "180"))
+        return float(os.environ.get("LLM_REQUEST_TIMEOUT", "600"))
     except ValueError:
-        return 180.0
+        return 600.0
 
 
 def _provider_config(name: str) -> dict[str, Any] | None:

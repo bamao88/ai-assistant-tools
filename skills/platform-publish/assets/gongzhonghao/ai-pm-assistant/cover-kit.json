@@ -55,10 +55,10 @@
           "width": 675,
           "height": 118,
           "padding": {
-            "left": 30,
-            "right": 30,
-            "top": 15,
-            "bottom": 15
+            "left": 10,
+            "right": 10,
+            "top": 10,
+            "bottom": 10
           },
           "font": "HYWenHei 85W",
           "font_alias": "汉仪文黑 85W; used as current fallback for 可画文黑-简",
@@ -87,10 +87,10 @@
           "width": 587,
           "height": 118,
           "padding": {
-            "left": 30,
-            "right": 30,
-            "top": 15,
-            "bottom": 15
+            "left": 10,
+            "right": 10,
+            "top": 10,
+            "bottom": 10
           },
           "font": "HYWenHei 85W",
           "font_alias": "汉仪文黑 85W; used as current fallback for 可画文黑-简",

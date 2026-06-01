@@ -221,7 +221,7 @@ def resolve_font(slot: Dict[str, Any]) -> Path:
         candidates.append(ASSET_DIR / fallback)
     candidates.extend(
         [
-            ASSET_DIR / "fonts/HYWenHei-85W.otf",
+            ASSET_DIR / "fonts/SourceHanSerifCN-Heavy.otf",
             ASSET_DIR / "fonts/AlibabaPuHuiTi-3-85-Bold.ttf",
             ASSET_DIR / "fonts/SourceHanSansSC-Heavy.otf",
         ]

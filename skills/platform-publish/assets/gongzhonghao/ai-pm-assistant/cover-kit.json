@@ -3,7 +3,8 @@
   "name": "AI PM 小助理公众号封面",
   "platform": "gongzhonghao",
   "account": "AI PM 小助理",
-  "version": 2,
+  "intended_use": "Only for the AI PM 小助理 WeChat Official Account.",
+  "version": 3,
   "canvas": {
     "width": 1283,
     "height": 383,
@@ -18,8 +19,20 @@
     "article": {
       "label": "普通文章封面",
       "base_image": "covers/article-cover-base.png",
-      "source_filename": "23.png",
+      "cover_type": "article",
+      "description": "AI PM 小助理普通文章封面。左侧长方形用于公众号推荐页，右侧正方形用于私聊/转发卡片。",
       "usage": "长方形区域用于公众号推荐页封面标题；正方形区域用于私聊/聊天场景封面关键词展示。",
+      "crop_presets": {
+        "pic_crop_235_1": "0_0_0.701481_1",
+        "pic_crop_1_1": "0.701481_0_1_1"
+      },
+      "fields": {
+        "title": "原始文章标题。脚本会拆成 title_primary/title_secondary，并从中提取 keyword_top/keyword_bottom。",
+        "title_primary": "左侧长方形上方标题段；通常由 title 自动拆分，目标不超过 10 个中文等效字符。",
+        "title_secondary": "左侧长方形下方标题段；通常由 title 自动拆分，目标不超过 10 个中文等效字符，可做轻度语义压缩。",
+        "keyword_top": "右侧正方形上方关键词；单个英文词，或不超过 3 个中文字符。",
+        "keyword_bottom": "右侧正方形下方关键词；单个英文词，或不超过 3 个中文字符。"
+      },
       "input_rules": {
         "title": {
           "required": true,
@@ -40,41 +53,34 @@
           ]
         }
       },
-      "base_slots_source": {
-        "figma_file": "mWgZQAyhovqshIcJdg6i1s",
-        "figma_node": "11:42",
-        "figma_frame_name": "AI PM 小助理 -常规文章封面"
-      },
       "text_slots": [
         {
           "id": "title_primary",
           "source": "title_primary",
           "label": "上方标题段",
-          "x": 70,
-          "y": 82,
-          "width": 675,
-          "height": 118,
+          "x": 72,
+          "y": 96,
+          "width": 760,
+          "height": 112,
           "padding": {
-            "left": 10,
-            "right": 10,
-            "top": 10,
-            "bottom": 10
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
           },
-          "font": "HYWenHei 85W",
-          "font_alias": "汉仪文黑 85W; used as current fallback for 可画文黑-简",
-          "font_status": "fallback_not_exact_canva_font",
-          "font_file": "fonts/HYWenHei-85W.otf",
+          "font": "Source Han Serif CN Heavy",
+          "font_alias": "思源宋体粗体",
+          "font_status": "bundled_from_local_cache",
+          "font_file": "fonts/SourceHanSerifCN-Heavy.otf",
           "font_fallback": "PingFang SC",
-          "font_weight": 700,
+          "font_weight": 900,
           "min_font_size": 42,
-          "max_font_size": 120,
+          "max_font_size": 112,
           "fill": {
-            "type": "linear-gradient",
-            "direction": "horizontal",
-            "from": "#ff67c0",
-            "to": "#9521b5"
+            "type": "solid",
+            "color": "#000000"
           },
-          "align": "left",
+          "align": "center",
           "vertical_align": "middle",
           "fit": "fill-box"
         },
@@ -82,31 +88,29 @@
           "id": "title_secondary",
           "source": "title_secondary",
           "label": "下方标题段",
-          "x": 255,
-          "y": 200,
-          "width": 587,
-          "height": 118,
+          "x": 105,
+          "y": 194,
+          "width": 720,
+          "height": 96,
           "padding": {
-            "left": 10,
-            "right": 10,
-            "top": 10,
-            "bottom": 10
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
           },
-          "font": "HYWenHei 85W",
-          "font_alias": "汉仪文黑 85W; used as current fallback for 可画文黑-简",
-          "font_status": "fallback_not_exact_canva_font",
-          "font_file": "fonts/HYWenHei-85W.otf",
+          "font": "Source Han Serif CN Heavy",
+          "font_alias": "思源宋体粗体",
+          "font_status": "bundled_from_local_cache",
+          "font_file": "fonts/SourceHanSerifCN-Heavy.otf",
           "font_fallback": "PingFang SC",
-          "font_weight": 700,
+          "font_weight": 900,
           "min_font_size": 42,
-          "max_font_size": 120,
+          "max_font_size": 78,
           "fill": {
-            "type": "linear-gradient",
-            "direction": "horizontal",
-            "from": "#ff67c0",
-            "to": "#9521b5"
+            "type": "solid",
+            "color": "#000000"
           },
-          "align": "right",
+          "align": "center",
           "vertical_align": "middle",
           "fit": "fill-box"
         },
@@ -114,30 +118,27 @@
           "id": "keyword_top",
           "source": "keyword_top",
           "label": "右上关键词",
-          "x": 929,
-          "y": 65.54638671875,
-          "width": 274,
-          "height": 126.01097106933594,
-          "rotation": -3.2526305997065728,
+          "x": 942,
+          "y": 92,
+          "width": 300,
+          "height": 92,
           "padding": {
-            "left": 20,
-            "right": 15,
-            "top": 15,
-            "bottom": 15
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
           },
-          "font": "HYWenHei 85W",
-          "font_alias": "汉仪文黑 85W; used as current fallback for 可画文黑-简",
-          "font_status": "fallback_not_exact_canva_font",
-          "font_file": "fonts/HYWenHei-85W.otf",
+          "font": "Source Han Serif CN Heavy",
+          "font_alias": "思源宋体粗体",
+          "font_status": "bundled_from_local_cache",
+          "font_file": "fonts/SourceHanSerifCN-Heavy.otf",
           "font_fallback": "PingFang SC",
-          "font_weight": 700,
+          "font_weight": 900,
           "min_font_size": 34,
-          "max_font_size": 140,
+          "max_font_size": 72,
           "fill": {
-            "type": "linear-gradient",
-            "direction": "vertical",
-            "from": "#ff67c0",
-            "to": "#9521b5"
+            "type": "solid",
+            "color": "#000000"
           },
           "align": "center",
           "vertical_align": "middle",
@@ -147,28 +148,27 @@
           "id": "keyword_bottom",
           "source": "keyword_bottom",
           "label": "右下关键词",
-          "x": 971.29248046875,
-          "y": 189.08033752441406,
-          "width": 260.2953186035156,
-          "height": 126.28001403808594,
-          "rotation": 2,
+          "x": 942,
+          "y": 190,
+          "width": 300,
+          "height": 112,
           "padding": {
-            "left": 16.295289993286133,
-            "right": 15,
-            "top": 15,
-            "bottom": 15
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
           },
-          "font": "HYWenHei 85W",
-          "font_alias": "汉仪文黑 85W; used as current fallback for 可画文黑-简",
-          "font_status": "fallback_not_exact_canva_font",
-          "font_file": "fonts/HYWenHei-85W.otf",
+          "font": "Source Han Serif CN Heavy",
+          "font_alias": "思源宋体粗体",
+          "font_status": "bundled_from_local_cache",
+          "font_file": "fonts/SourceHanSerifCN-Heavy.otf",
           "font_fallback": "PingFang SC",
-          "font_weight": 700,
+          "font_weight": 900,
           "min_font_size": 34,
-          "max_font_size": 140,
+          "max_font_size": 108,
           "fill": {
             "type": "solid",
-            "color": "#9521b5"
+            "color": "#000000"
           },
           "align": "center",
           "vertical_align": "middle",
@@ -179,8 +179,12 @@
     "daily": {
       "label": "AI PM 日报封面",
       "base_image": "covers/daily-cover-base.png",
-      "source_filename": "AI PM 日报.png",
-      "usage": "日报封面只填日期，左右两个紫色日期牌内容保持一致。",
+      "cover_type": "daily",
+      "description": "AI PM 小助理日报封面。只填日期，左右两个红色日期牌展示同一个日期。",
+      "usage": "日报封面只填日期，左右两个红色日期牌内容保持一致。",
+      "fields": {
+        "date": "日报日期。使用 M月D日，例如 5月26日；也可输入 YYYY-MM-DD，脚本会自动转换。"
+      },
       "input_rules": {
         "date": {
           "required": true,
@@ -195,11 +199,6 @@
             "不传 date 时使用当天日期。"
           ]
         }
-      },
-      "base_slots_source": {
-        "figma_file": "mWgZQAyhovqshIcJdg6i1s",
-        "figma_node": "11:43",
-        "figma_frame_name": "AI PM 小助理 -日报封面"
       },
       "text_slots": [
         {
@@ -267,25 +266,23 @@
   },
   "fonts": [
     {
-      "label": "可画文黑-简",
-      "family": "HYWenHei 85W",
-      "alias": "汉仪文黑 85W; current fallback for 可画文黑-简",
+      "label": "思源宋体粗体",
+      "family": "Source Han Serif CN Heavy",
+      "alias": "思源宋体 CN Heavy",
       "role": "regular article title and square keywords",
       "required": true,
-      "status": "fallback_not_exact_canva_font",
-      "bundled_file": "fonts/HYWenHei-85W.otf",
-      "source_page": "https://www.hanyi.com.cn/productdetail?id=986",
-      "source_url": "https://hellofonts.oss-cn-beijing.aliyuncs.com/%E6%B1%89%E4%BB%AA%E6%96%87%E9%BB%91/9.00.00/HYWenHei-85W.otf",
-      "license_note": "Hanyi product page describes this as正版字体下载（非商业）; use for personal/non-commercial covers only unless a commercial license is obtained. This file's internal font name is 汉仪文黑 85W, not 可画文黑-简.",
-      "fallback": "PingFang SC or Alibaba PuHuiTi 3 85 Bold if HYWenHei is unavailable",
+      "status": "bundled_from_local_cache",
+      "bundled_file": "fonts/SourceHanSerifCN-Heavy.otf",
+      "source_page": "local JianyingPro font cache",
+      "source_url": "/Volumes/ExtSSD2601/JianyingPro/User Data/Cache/AITextTemplate/Resource/9396968699109282531/SourceHanSerifCN-Heavy.otf",
+      "license_note": "Local Source Han Serif CN Heavy font used for personal cover generation.",
+      "fallback": "PingFang SC, Alibaba PuHuiTi 3 85 Bold, or Source Han Sans SC Heavy if Source Han Serif CN Heavy is unavailable",
       "preferred_files": [
-        "CanvaDaintyBlackSC.ttf",
-        "CanvaWenHei-Jian.ttf",
-        "KeHuaWenHei-Jian.ttf",
-        "可画文黑-简.ttf",
-        "HYWenHei-85W.otf"
+        "SourceHanSerifCN-Heavy.otf",
+        "SourceHanSerifSC-Heavy.otf",
+        "SourceHanSerifCN-Bold.otf"
       ],
-      "local_candidate_found": null
+      "local_candidate_found": "/Volumes/ExtSSD2601/JianyingPro/User Data/Cache/AITextTemplate/Resource/9396968699109282531/SourceHanSerifCN-Heavy.otf"
     },
     {
       "label": "思源黑体超粗体",
@@ -325,6 +322,6 @@
     "This cover kit is for WeChat Official Account horizontal covers only.",
     "Do not use this kit for Xiaohongshu card covers.",
     "Bundled font files must keep their source URL and license notes with this kit.",
-    "HYWenHei-85W is only the current fallback for 可画文黑-简; replace it when the exact font file is available."
+    "SourceHanSerifCN-Heavy.otf is bundled for the regular article cover text."
   ]
 }

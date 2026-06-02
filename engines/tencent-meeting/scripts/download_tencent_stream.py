@@ -200,7 +200,7 @@ def update_meta(slug_dir: Path, short_code: str, source_url: str,
         "speaker": "纯摄像头/人物，干净16:9，无屏幕无画中画——切口播片用这路",
         "screen": "纯共享屏幕，可能含敏感信息，发布前先核",
     }
-    for alias, _cn, dest in added:
+    for alias, _, dest in added:
         skey, akey = KEYMAP.get(alias, (alias, "video_" + alias))
         vm = video_meta(dest)
         streams[skey] = {"have": True, "file": f"video/{dest.name}",

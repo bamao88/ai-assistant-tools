@@ -28,9 +28,11 @@ async function main() {
   });
 
   const page = context.pages()[0] || (await context.newPage());
+  try { await page.bringToFront(); } catch {}
 
   console.log(`→ 打开: ${url}`);
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  try { await page.bringToFront(); } catch {}
   await page.waitForTimeout(2500);
 
   // 检测是否在登录页（出现“扫码登录”）

@@ -127,6 +127,38 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/c
   /abs/path/links.md
 ```
 
+## 分轨下载（切张和口播片专用）
+
+腾讯云录制常有分轨——网页下载菜单可选 **说话人(摄像头) / 共享屏幕 / 合成**。
+切口播片**必须用「说话人」轨**：合成轨在共享屏幕时人物缩成右上角小窗（画面忽人忽屏），
+且会把共享内容（飞书内部表、手机号、书签栏）录进去 = 发布即泄密。说话人轨纯摄像头满屏、
+零屏幕泄露，且与逐字稿时间轴一致，clip_plan 时间戳直接套用。
+
+专用脚本 `scripts/download_tencent_stream.py`（复用 `fetch_tencent_video_via_chrome.py` 助手）：
+
+```bash
+# A. 列流（看有哪几路、stream_type 实际编号；配额新鲜时用）
+python3 .../scripts/download_tencent_stream.py list-streams <url或code>
+
+# B. 直接下「说话人」轨进媒体库（借登录态 Chrome 取址；受下载频率/配额限制，
+#    短时反复取址会 code=4049）
+python3 .../scripts/download_tencent_stream.py download <url或code> \
+  --stream speaker --slug 20260429_4.5期开放答疑
+
+# C. 4049 被限流时的稳妥路径：先在网页下载菜单手动下三路到 ~/Downloads，
+#    再用 ingest 认领+改名+归档进媒体库并写 meta.json（不依赖 API，永远可用）
+python3 .../scripts/download_tencent_stream.py ingest \
+  --slug 20260429_4.5期开放答疑 --from ~/Downloads --match 开放答疑 \
+  --short-code <code> --source-url <分享链接>
+```
+
+- 多流结构：`download/record`(need_multi_stream=1) 返回 `payload.url`(合成) +
+  `payload.data.multi_stream_recordings[].{url,stream_type}`（type 1=共享屏幕、2=说话人）。
+- **判断有无分轨别信 `multi_stream_recording` 字段**（空也可能有）；`code=4049` = 取址被
+  频率/配额限流，不是"没有流"。直接看网页下载菜单或 `list-streams`。
+- 媒体库根 `/Volumes/ExtSSD2601/media/tencent/<slug>/`，约定见 `media/README.md`。
+  下载的大视频**不进 git**（`tools`/`assistant_zh` 都是带 auto-commit 的仓库）。
+
 ## 常见失败含义
 
 - `30017`：创建者关闭了转写查看和下载。

@@ -67,9 +67,17 @@ STREAM_ALIASES = {
     "screen": "screen", "共享屏幕": "screen",
     "all": "all",
 }
-# ingest 时按文件名关键词判定流类型
-NAME_HINTS = [("说话人", "speaker"), ("发言人", "speaker"),
-              ("共享屏幕", "screen"), ("屏幕", "screen")]
+# ingest 时按文件名关键词判定流类型 -> (alias, 中文名)
+NAME_HINTS = [("说话人", ("speaker", "说话人")), ("发言人", ("speaker", "说话人")),
+              ("共享屏幕", ("screen", "共享屏幕")), ("屏幕", ("screen", "共享屏幕"))]
+
+
+def classify_by_name(name: str) -> tuple[str, str]:
+    """按文件名关键词判定 (alias, 中文名)；都不匹配则视为合成/主视频。"""
+    for hint, kind in NAME_HINTS:
+        if hint in name:
+            return kind
+    return ("main", "合成")
 
 
 # --------------------------------------------------------------------------- #

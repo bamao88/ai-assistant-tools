@@ -51,7 +51,7 @@ from pathlib import Path
 
 # 复用 fetch_tencent_video_via_chrome.py 里验证过的助手，不重复造轮子。
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import fetch_tencent_video_via_chrome as fx  # noqa: E402
+import fetch_tencent_video_via_chrome as fx  # type: ignore[import-not-found]  # noqa: E402
 
 DEFAULT_MEDIA_ROOT = Path("/Volumes/ExtSSD2601/media/tencent")
 

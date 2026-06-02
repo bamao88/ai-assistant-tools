@@ -20,21 +20,22 @@ npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts 
 
 ## 可用主题
 
-**经典系列：** claude(Claude), medium(Medium), minimal(极简)
+**经典系列：** claude(Claude，直觉机器漫谈 / MiaoDX 固定风格), medium(Medium), minimal(极简)
 
-**更多风格：** openai(OpenAI), cards-claude(卡片 Claude), coral(珊瑚极简), monograph_all_both(黑白书页)
+**更多风格：** openai(OpenAI), cards-claude(卡片 Claude), coral(粉红/珊瑚系，AI PM 小助理固定风格), monograph_all_both(黑白书页)
 
 ## 账号样式映射（按账号匹配 profile + 主题 + 封面）
 
 每个公众号账号绑定一套固定的发布身份：发布用哪个 `--profile`、排版用哪个主题、封面用哪套 cover kit。做该账号的公众号发布时直接按这张表取，不要每次重新问。
 
-| 账号 | `--profile` | 固定主题 | 封面 cover kit |
-|---|---|---|---|
-| AI PM 小助理 | `wxp-ai` | `coral` | `assets/gongzhonghao/ai-pm-assistant/` |
+| 账号 | 作者 / 发布身份 | `--profile` | 固定主题 | 封面 cover kit |
+|---|---|---|---|---|
+| AI PM 小助理 | AI PM超级小助理 | `wxp-ai` | `coral`（粉红/珊瑚系） | `assets/gongzhonghao/ai-pm-assistant/` |
+| 直觉机器漫谈 | MiaoDX | `mdx` | `claude` | 使用文章 frontmatter 的 `cover`，不要套用 AI PM 封面 |
 
-封面和模板按账号专属化。AI PM 小助理这套封面只用于 `wxp-ai`，不要混用到别的公众号账号。
+封面和模板按账号专属化。`coral`（粉红/珊瑚系）是 AI PM 小助理 / `wxp-ai` 的固定主题；`claude` 是 直觉机器漫谈 / MiaoDX / `mdx` 的固定主题。AI PM 小助理这套封面只用于 `wxp-ai`，不要混用到直觉机器漫谈或其他公众号账号。
 
-config 里 `~/.gzh-publish/config.json` 现有 profile：`mdx`(default) / `wxp-ai` / `wxp-self`。其中 `wxp-ai` = AI PM 小助理号。
+config 里 `~/.gzh-publish/config.json` 现有 profile：`mdx`(default) / `wxp-ai` / `wxp-self`。其中 `mdx` = 直觉机器漫谈 / MiaoDX，`wxp-ai` = AI PM 小助理号。
 
 ## 公众号封面资产
 
@@ -98,11 +99,13 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/skills/platform-publish/assets/go
 
 ### 2. 确认主题（如未指定）
 
-询问用户想用哪种主题，或使用工具当前默认主题 `medium`。推荐主题：
+先按账号样式映射取固定主题，不要把账号专属主题当成通用推荐：
+- AI PM 小助理 / `wxp-ai` → 固定用 `coral`（粉红/珊瑚系）。
+- 直觉机器漫谈 / MiaoDX / `mdx` → 固定用 `claude`。
+
+如果用户明确要求非固定账号或实验主题，再询问主题。通用备选主题：
 - 技术/开发文章 → `openai`
-- 人文/生活内容 → `claude`、`medium`
 - 卡片感公众号长文 → `cards-claude`
-- 精致视觉长文 → `coral`
 - 黑白书页/专著感长文 → `monograph_all_both`
 - 零干扰极简排版 → `minimal`
 
@@ -112,6 +115,8 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/skills/platform-publish/assets/go
 - `title`：文章标题
 - `cover`：封面图路径（**必填**，否则无法上传）
 - `theme`（可选，frontmatter 中指定会覆盖 CLI 参数）
+
+如果已确定公众号账号，frontmatter 里的 `theme` 必须与账号固定主题一致；不一致时先改 frontmatter，再 dry-run。`wxp-ai` 固定 `coral`，`mdx` 固定 `claude`。
 
 ### 4. 预览（可选）
 
@@ -131,6 +136,13 @@ npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts 
 ```bash
 npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts <file.md> --profile mdx
 npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts <file.md> --profile wxp-ai
+```
+
+按账号固定主题发布示例：
+
+```bash
+npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts <file.md> --profile mdx --theme claude
+npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts <file.md> --profile wxp-ai --theme coral
 ```
 
 **创建草稿并直接发布：**

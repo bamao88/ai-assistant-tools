@@ -4,7 +4,7 @@ export const classicThemes: Theme[] = [
   {
     id: 'claude',
     name: 'Claude',
-    description: '温润的燕麦卡其色底，适合深度长文或文学哲思',
+    description: '直觉机器漫谈 / MiaoDX 固定风格：温润的燕麦卡其色底，适合深度长文或文学哲思',
     styles: {
       // 顶/底 padding 故意设小：首尾段落的 margin 18px 会叠加上来，2 + 18 = 20，跟左右 padding 视觉对齐
       container: 'max-width: 100%; margin: 0 auto; padding: 2px 20px; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.7 !important; color: #2b2b2b !important; background-color: #f8f6f0 !important; word-wrap: break-word; text-align: left !important; text-align-last: left !important; -webkit-text-align-last: left !important; text-justify: none !important;',

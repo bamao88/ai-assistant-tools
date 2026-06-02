@@ -188,7 +188,14 @@ export function applyTheme(html: string, themeId: string): string {
   });
 
   // Non-CSS keys used as flags, skip in querySelectorAll
-  const nonCssKeys = new Set(['codeDots', 'codeHighlight']);
+  const nonCssKeys = new Set([
+    'codeDots',
+    'codeHighlight',
+    'ulMarker',
+    'olMarker',
+    'videoLink',
+    'videoLinkText',
+  ]);
 
   // Apply theme styles to each element type
   Object.keys(style).forEach((selector) => {
@@ -203,10 +210,31 @@ export function applyTheme(html: string, themeId: string): string {
   });
 
   // WeChat forces indentation on <ul>/<ol> that CSS cannot override.
-  // Convert lists to plain <section> elements with manual bullet/number characters.
+  // Convert lists to plain rows with manual bullet/number characters.
   const liStyle = style.li || '';
   const ulStyle = style.ul || '';
   const olStyle = style.ol || '';
+  const ulMarkerStyle = style.ulMarker || '';
+  const olMarkerStyle = style.olMarker || '';
+
+  const appendListContent = (target: Element, li: Element): Element[] => {
+    const trailingBlocks: Element[] = [];
+    Array.from(li.childNodes).forEach(node => {
+      if (node.nodeType === 1) {
+        const el = node as Element;
+        if (['UL', 'OL', 'BLOCKQUOTE'].includes(el.tagName)) {
+          trailingBlocks.push(el.cloneNode(true) as Element);
+          return;
+        }
+        if (el.tagName === 'P') {
+          Array.from(el.childNodes).forEach(child => target.appendChild(child.cloneNode(true)));
+          return;
+        }
+      }
+      target.appendChild(node.cloneNode(true));
+    });
+    return trailingBlocks;
+  };
 
   // Process ordered lists first (before ul, since ol can contain nested ul)
   doc.querySelectorAll('ol').forEach(ol => {
@@ -214,16 +242,16 @@ export function applyTheme(html: string, themeId: string): string {
     wrapper.setAttribute('style', olStyle.replace(/list-style[^;]*(;|$)/g, '') + '; padding: 0 !important; margin-left: 0 !important;');
     const items = Array.from(ol.querySelectorAll(':scope > li'));
     items.forEach((li, idx) => {
-      const row = doc.createElement('section');
-      row.setAttribute('style', liStyle + '; display: flex; align-items: baseline;');
+      const row = doc.createElement('p');
+      row.setAttribute('style', `${liStyle}; margin: 8px 0 !important;`);
       const marker = doc.createElement('span');
-      marker.setAttribute('style', 'flex-shrink: 0; margin-right: 6px;');
+      marker.setAttribute('data-number-font', 'skip');
+      marker.setAttribute('style', `margin-right: 6px; ${olMarkerStyle}`);
       marker.textContent = `${idx + 1}.`;
-      const content = doc.createElement('span');
-      content.innerHTML = li.innerHTML;
       row.appendChild(marker);
-      row.appendChild(content);
+      const trailingBlocks = appendListContent(row, li);
       wrapper.appendChild(row);
+      trailingBlocks.forEach(block => wrapper.appendChild(block));
     });
     ol.replaceWith(wrapper);
   });
@@ -241,16 +269,15 @@ export function applyTheme(html: string, themeId: string): string {
     wrapper.setAttribute('style', ulStyle.replace(/list-style[^;]*(;|$)/g, '') + '; padding: 0 !important; margin-left: 0 !important;');
     const items = Array.from(ul.querySelectorAll(':scope > li'));
     items.forEach(li => {
-      const row = doc.createElement('section');
-      row.setAttribute('style', liStyle + '; display: flex; align-items: baseline;');
+      const row = doc.createElement('p');
+      row.setAttribute('style', `${liStyle}; margin: 8px 0 !important;`);
       const marker = doc.createElement('span');
-      marker.setAttribute('style', 'flex-shrink: 0; margin-right: 6px;');
+      marker.setAttribute('style', `margin-right: 6px; ${ulMarkerStyle}`);
       marker.textContent = bullet;
-      const content = doc.createElement('span');
-      content.innerHTML = li.innerHTML;
       row.appendChild(marker);
-      row.appendChild(content);
+      const trailingBlocks = appendListContent(row, li);
       wrapper.appendChild(row);
+      trailingBlocks.forEach(block => wrapper.appendChild(block));
     });
     ul.replaceWith(wrapper);
   });
@@ -260,6 +287,31 @@ export function applyTheme(html: string, themeId: string): string {
     const currentStyle = p.getAttribute('style') || '';
     p.setAttribute('style', `${currentStyle}; margin: 0 !important;`);
   });
+
+  // Video links are source references, not body text. Let themes make them quiet
+  // while keeping ordinary blockquotes available for editorial callouts.
+  const videoLinkStyle = style.videoLink || '';
+  const videoLinkTextStyle = style.videoLinkText || '';
+  if (videoLinkStyle || videoLinkTextStyle) {
+    doc.querySelectorAll('blockquote, p').forEach(node => {
+      if (node.tagName === 'P' && node.closest('blockquote')) return;
+      const text = (node.textContent || '').trim();
+      if (!/^(?:视频链接|链接)[：:]/.test(text)) return;
+      if (videoLinkStyle) {
+        const currentStyle = node.getAttribute('style') || '';
+        node.setAttribute('style', `${currentStyle}; ${videoLinkStyle}`);
+      }
+      if (videoLinkTextStyle) {
+        const textNodes = node.tagName === 'P'
+          ? [node, ...Array.from(node.querySelectorAll('span, a'))]
+          : Array.from(node.querySelectorAll('p, span, a'));
+        textNodes.forEach(child => {
+          const currentStyle = child.getAttribute('style') || '';
+          child.setAttribute('style', `${currentStyle}; ${videoLinkTextStyle}`);
+        });
+      }
+    });
+  }
 
   // Remove empty <li> elements (caused by blank lines in source markdown)
   doc.querySelectorAll('li').forEach(li => {
@@ -370,6 +422,11 @@ export function applyTheme(html: string, themeId: string): string {
   });
 
   wrapNumberRuns(doc);
+
+  doc.querySelectorAll('h1 [data-number-font], h2 [data-number-font], h3 [data-number-font], h4 [data-number-font], h5 [data-number-font], h6 [data-number-font]').forEach(node => {
+    const currentStyle = node.getAttribute('style') || '';
+    node.setAttribute('style', `${currentStyle}; color: inherit !important; font-size: inherit !important; font-weight: inherit !important; line-height: inherit !important;`);
+  });
 
   // Apply image styling: use theme img style, fallback to default decorated style
   const themeImgStyle = style.img || '';

@@ -279,12 +279,7 @@ def cmd_ingest(args) -> int:
                  "确认网页下载已完成（.crdownload 改名成真名）。")
     added = []
     for p in sorted(cands):
-        alias, cn = "main", "合成"
-        for hint, a in NAME_HINTS:
-            if hint in p.name:
-                alias = a
-                cn = {"speaker": "说话人", "screen": "共享屏幕"}[a]
-                break
+        alias, cn = classify_by_name(p.name)
         dest = organize(slug_dir, alias, cn, p)
         print(f"  归档 {alias}({cn}): {p.name}  {dest.stat().st_size/1048576:.1f}MB → {dest.name}")
         added.append((alias, cn, dest))

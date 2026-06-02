@@ -41,9 +41,9 @@ async function main() {
   try { needLogin = await loginMarker.isVisible({ timeout: 2000 }); } catch {}
 
   if (needLogin) {
-    console.log('⏳ 需要登录：请在弹出的窗口里用飞书 App 扫码。最多等待 180 秒…');
-    // 轮询直到登录页消失（最多 180s）
-    const deadline = Date.now() + 180000;
+    console.log('⏳ 需要登录：请在弹出的窗口里用飞书 App 扫码。最多等待 240 秒…');
+    // 轮询直到登录页消失（最多 240s）
+    const deadline = Date.now() + 240000;
     while (Date.now() < deadline) {
       await page.waitForTimeout(3000);
       let still = false;

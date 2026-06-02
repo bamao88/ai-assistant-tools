@@ -41,14 +41,20 @@ async function main() {
   try { needLogin = await loginMarker.isVisible({ timeout: 2000 }); } catch {}
 
   if (needLogin) {
-    console.log('⏳ 需要登录：请在弹出的窗口里用飞书 App 扫码。最多等待 240 秒…');
-    // 轮询直到登录页消失（最多 240s）
-    const deadline = Date.now() + 240000;
+    console.log('⏳ 需要登录：请在弹出的窗口里用飞书 App 扫码。最多等待 600 秒…');
+    // 轮询直到登录页消失（最多 600s）
+    const deadline = Date.now() + 600000;
+    let loggedIn = false;
     while (Date.now() < deadline) {
       await page.waitForTimeout(3000);
       let still = false;
       try { still = await page.locator('text=扫码登录').first().isVisible({ timeout: 1000 }); } catch {}
-      if (!still) { console.log('✓ 登录页已消失，等待文档加载…'); break; }
+      if (!still) { console.log('✓ 登录页已消失，等待文档加载…'); loggedIn = true; break; }
+    }
+    if (!loggedIn) {
+      console.error('✗ 等待超时：未检测到登录。');
+      await context.close();
+      process.exit(2);
     }
     // 登录后可能跳到首页，重新打开目标 URL
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });

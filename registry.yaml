@@ -28,9 +28,9 @@ skills:
     layer: L1
     source: skills/platform-publish
     install_kind: dir
-    purpose: 内容发布与多平台分发统一入口（小红书 / 公众号 / 视频号 / wechatsync 全平台）
+    purpose: 内容发布与多平台分发统一入口（小红书 / 公众号 / 视频号 / B站视频 / 抖音视频 / wechatsync 全平台）
     uses_engines: [xiaohongshu, gzh-publish, tencent-video-publish, markdown-to-cards, route-bypass]
-    uses_vendor: [wechatsync]
+    uses_vendor: [wechatsync, social-auto-upload]
 
   # --- L2 workflows ---
   - name: blogger-research

@@ -492,10 +492,15 @@ def _input_tags(page: Page, content_selector: str, tags: list[str]) -> None:
     page.click_element(content_selector)
     time.sleep(0.3)
 
-    # 移动光标到正文末尾（20次 ArrowDown）
-    for _ in range(20):
-        page.press_key("ArrowDown")
-        time.sleep(0.01)
+    # 把光标移动到正文“真正末尾”。
+    # 注意：不能只靠 ArrowDown —— ArrowDown 会保留水平列位置，在最后一行会停在
+    # 同列的中间，导致话题被插进句子中间（历史 bug）。用 Range collapse 到末尾。
+    if not page.move_caret_to_end(content_selector):
+        # 兜底：极端情况下没定位到可编辑元素，退回原来的逐行下移
+        for _ in range(20):
+            page.press_key("ArrowDown")
+            time.sleep(0.01)
+    time.sleep(0.2)
 
     # 按两次回车换行
     page.press_key("Enter")

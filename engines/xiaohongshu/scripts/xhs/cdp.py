@@ -514,6 +514,37 @@ class Page:
             """
         )
 
+    def move_caret_to_end(self, selector: str) -> bool:
+        """把 contenteditable 的光标移动到内容“真正末尾”。
+
+        不能用 ArrowDown 定位：ArrowDown 保留水平列位置，在最后一行会停在
+        同列的中间，导致后续插入（如话题标签）被插进句子中间。这里直接用
+        Range collapse 到末尾，与行宽/换行无关，确定性地落到末尾。
+
+        Returns:
+            True 表示成功定位；False 表示没找到可编辑元素（调用方可回退）。
+        """
+        result = self.evaluate(
+            f"""
+            (() => {{
+                const root = document.querySelector({json.dumps(selector)});
+                if (!root) return false;
+                const ed = (root.getAttribute && root.getAttribute('contenteditable') === 'true')
+                    ? root
+                    : (root.querySelector('[contenteditable="true"]') || root);
+                ed.focus();
+                const range = document.createRange();
+                range.selectNodeContents(ed);
+                range.collapse(false);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+                return true;
+            }})()
+            """
+        )
+        return bool(result)
+
     def screenshot_element(self, selector: str, padding: int = 0) -> bytes:
         """对指定 CSS 选择器的元素截图，返回 PNG 字节。
 

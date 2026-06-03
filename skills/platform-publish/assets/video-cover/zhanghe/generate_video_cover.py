@@ -117,7 +117,7 @@ def wrap_by_units(text: str, limit: int) -> List[str]:
 def line_width(font: ImageFont.FreeTypeFont, text: str) -> int:
     probe = ImageDraw.Draw(Image.new("L", (4, 4)))
     box = probe.textbbox((0, 0), text, font=font)
-    return box[2] - box[0]
+    return int(box[2] - box[0])
 
 
 def fit_font(font_path: Path, lines: List[str], box_w: int, min_size: int, max_size: int) -> Tuple[ImageFont.FreeTypeFont, int]:

@@ -70,8 +70,8 @@
   "rotation": {
     "strategy": "round-robin",
     "implemented": ["round-robin"],
-    "state_file": ".rotation_state.json (gitignored, 运行时状态)",
-    "_doc": "按 covers/ 文件名排序顺序轮换；手动 --base/--base-image 不推进游标；新增底图丢进 covers/ 自动纳入，无需改配置。"
+    "state_file": ".rotation_state.json",
+    "_doc": "state_file 是 gitignored 运行时状态。按 covers/ 文件名排序顺序轮换；手动 --base/--base-image 不推进游标；新增底图丢进 covers/ 自动纳入，无需改配置。"
   },
 
   "output": {

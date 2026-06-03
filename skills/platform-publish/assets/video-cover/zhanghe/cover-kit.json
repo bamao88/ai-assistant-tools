@@ -1,0 +1,55 @@
+{
+  "id": "zhanghe-video-cover",
+  "name": "张和视频封面",
+  "platform": ["shipinhao", "douyin", "xiaohongshu-video"],
+  "account": "张和（视频）",
+  "intended_use": "张和视频号 / 抖音 / 小红书视频封面。底图池轮换，叠黑块 + 黄字。不要用于公众号横版封面。",
+  "version": 1,
+  "source_aspect": "9:16",
+  "covers_dir": "covers",
+  "block": {
+    "comment": "黑色色块：底边固定在 bottom_frac×H，只能往上长（行多则往上扩）。",
+    "bottom_frac": 0.875,
+    "full_width": true,
+    "color": "#000000",
+    "opacity": 1.0
+  },
+  "text": {
+    "color": "#ffde59",
+    "font_file": "fonts/AlibabaPuHuiTi-3-85-Bold.ttf",
+    "font_alias": "阿里巴巴普惠体 85 Bold",
+    "font_fallback": "PingFang SC",
+    "align": "center",
+    "side_margin_frac": 0.075,
+    "top_pad_frac": 0.024,
+    "bottom_pad_frac": 0.024,
+    "line_spacing": 1.2,
+    "max_font_frac": 0.06,
+    "min_font_frac": 0.028
+  },
+  "rotation": {
+    "strategy": "round-robin",
+    "state_file": ".rotation_state.json"
+  },
+  "output": {
+    "full_9_16": true,
+    "crop_3_4": true,
+    "crop_anchor": "block-bottom"
+  },
+  "fonts": [
+    {
+      "label": "阿里巴巴普惠体 85 Bold",
+      "family": "Alibaba PuHuiTi 3.0 85 Bold",
+      "required": true,
+      "bundled_file": "fonts/AlibabaPuHuiTi-3-85-Bold.ttf",
+      "source_page": "https://www.alibabafonts.com/",
+      "license_note": "阿里巴巴普惠体官方免费商用；保留来源与许可说明。",
+      "shared_from": "../../gongzhonghao/ai-pm-assistant/fonts/AlibabaPuHuiTi-3-85-Bold.ttf"
+    }
+  ],
+  "notes": [
+    "黑块底边固定（bottom_frac），按行数向上扩展；这个底边经人工确认裁成 3:4 后标题仍完整。",
+    "文字字号按最长一行铺满 side_margin 内宽度反推，全行统一字号。",
+    "底图全部为 9:16；新增底图直接丢进 covers/ 即可，无需改配置。"
+  ]
+}

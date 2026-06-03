@@ -29,7 +29,7 @@ def load_kit() -> Dict[str, Any]:
         return json.load(f)
 
 
-def hex_to_rgb(value: str) -> Tuple[int, int, int]:
+def hex_to_rgb(value: str) -> Tuple[int, ...]:
     return ImageColor.getrgb(value)
 
 

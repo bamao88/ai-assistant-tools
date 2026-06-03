@@ -295,6 +295,10 @@ vendor:
   - id: wechat-article-exporter
     path: vendor/wechat-article-exporter
     purpose: gzh-scraper 依赖的公众号文章导出服务（外部代码）
+  - id: social-auto-upload
+    path: vendor/social-auto-upload
+    upstream: https://github.com/dreammis/social-auto-upload
+    purpose: 多平台视频发布（B站视频投稿封装 biliup / 抖音浏览器自动化）；经 platform-publish 的 references/bilibili-video.md 与 references/douyin.md 调用，仅用其 sau CLI，不暴露自带 skill。凭证落 var/state/social-auto-upload/cookies
 
 var:
   description: 运行时目录，全部 gitignore，永不放代码

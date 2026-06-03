@@ -16,8 +16,8 @@
   },
   "text": {
     "color": "#ffde59",
-    "font_file": "fonts/AlibabaPuHuiTi-3-85-Bold.ttf",
-    "font_alias": "阿里巴巴普惠体 85 Bold",
+    "font_file": "fonts/AlibabaPuHuiTi-Heavy.ttf",
+    "font_alias": "阿里巴巴普惠体 Heavy(105)",
     "font_fallback": "PingFang SC",
     "align": "center",
     "side_margin_frac": 0.075,

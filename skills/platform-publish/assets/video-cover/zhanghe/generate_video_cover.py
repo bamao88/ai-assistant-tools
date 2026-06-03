@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Generate 张和 video covers: black block + yellow title over a 9:16 base frame.
 
+SCOPE — 仅用于张和本人出镜的口播(talking-head)竖屏(9:16)视频封面。
+covers/ 是张和固定人像帧，与具体视频内容无关；非张和出镜 / 屏幕录制 /
+横屏内容都不适用（见 cover-kit.json -> usage.do_not_use_for）。
+
 Base image comes from the covers/ pool (round-robin) or an explicit --base-image.
 The black block's BOTTOM edge is fixed (block.bottom_frac * H); the block grows
 UPWARD with the number of title lines. One font size, sized so the widest line

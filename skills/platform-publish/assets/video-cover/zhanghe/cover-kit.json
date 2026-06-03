@@ -1,20 +1,59 @@
 {
   "id": "zhanghe-video-cover",
-  "name": "张和视频封面",
-  "platform": ["shipinhao", "douyin", "xiaohongshu-video"],
-  "account": "张和（视频）",
-  "intended_use": "张和视频号 / 抖音 / 小红书视频封面。底图池轮换，叠黑块 + 黄字。不要用于公众号横版封面。",
-  "version": 1,
+  "name": "张和口播视频封面",
+  "schema": "video-cover-kit/v1",
+  "version": 2,
+
+  "usage": {
+    "summary": "给张和本人出镜的口播竖屏(9:16)视频生成封面：固定人像底图轮换 + 底部黑块 + 黄色大字标题。",
+    "applies_to": [
+      "张和本人正脸出镜的口播(talking-head)视频",
+      "竖屏 9:16",
+      "目标平台：视频号 / 抖音 / 小红书视频"
+    ],
+    "do_not_use_for": [
+      "非张和出镜(嘉宾/学员/他人)的视频 —— 底图是张和人像，会与内容不符",
+      "屏幕录制 / 演示 / PPT / 无真人出镜画面 —— 人像底图与内容无关",
+      "横屏 16:9 内容 —— 本 kit 仅为 9:16 竖屏设计",
+      "公众号横版封面 —— 改用 assets/gongzhonghao/ai-pm-assistant kit",
+      "小红书图文卡片 —— 改用 markdown-to-cards skill"
+    ],
+    "decision_gate": "调用前先核两条：①张和本人口播出镜？②竖屏9:16？两条都 yes 才用本 kit；任一 no → 不要用，另选方案或人工处理。",
+    "why_constrained": "covers/ 是张和固定人像帧，按轮换选取，与具体视频内容无关。只有『张和口播=品牌人像+大字标题』这种形态，底图与内容脱节才不影响观感；换成非张和或屏幕画面，人像底图就会和视频对不上。"
+  },
+
+  "invoke": {
+    "engine": "generate_video_cover.py",
+    "command": "python3 generate_video_cover.py --title <标题> [--base NAME | --base-image PATH] [--wrap N] [--output PATH] [--no-crop]",
+    "inputs": {
+      "--title": "必填。标题文案。用 | 或换行或字面 \\n 分行；不分行且超过 --wrap 时按每行字数上限自动折行。",
+      "--base": "可选。从 covers/ 池按文件名(如 frame-03 或 frame-03.png)指定底图，不推进轮换游标。",
+      "--base-image": "可选。用外部绝对路径底图，覆盖轮换；该图必须仍是张和口播 9:16 帧。",
+      "--wrap": "可选整数。未手动分行时每行字数上限。",
+      "--output": "可选。输出 PNG 路径；省略则写到 generated/。",
+      "--no-crop": "可选。只出 9:16，不出 3:4 裁切。"
+    },
+    "default_base_selection": "省略 --base / --base-image 时，从 covers/ 池 round-robin 取下一张。",
+    "outputs": {
+      "9_16": "<output>.png —— 全幅 9:16；抖音直接用，视频号需烧进视频首帧",
+      "3_4": "<output>_3x4.png —— 居中裁切 3:4；小红书用。--no-crop 时不产出"
+    },
+    "downstream": "视频号发布把封面路径传给 tencent-video-publish 的 cli.py --thumbnail，见 references/shipinhao.md。"
+  },
+
   "source_aspect": "9:16",
   "covers_dir": "covers",
+
   "block": {
-    "comment": "黑色色块：底边固定在 bottom_frac×H，只能往上长（行多则往上扩）。",
+    "_doc": "黑色色块：底边固定在 bottom_frac×H，按标题行数只往上扩，不往下动。",
     "bottom_frac": 0.875,
     "full_width": true,
     "color": "#000000",
     "opacity": 1.0
   },
+
   "text": {
+    "_doc": "黄字阿里巴巴普惠体 Heavy；字号按最长一行铺满 side_margin 内宽度反推，全行统一字号。",
     "color": "#ffde59",
     "font_file": "fonts/AlibabaPuHuiTi-Heavy.ttf",
     "font_alias": "阿里巴巴普惠体 Heavy(105)",
@@ -27,29 +66,45 @@
     "max_font_frac": 0.06,
     "min_font_frac": 0.028
   },
+
   "rotation": {
     "strategy": "round-robin",
-    "state_file": ".rotation_state.json"
+    "implemented": ["round-robin"],
+    "state_file": ".rotation_state.json (gitignored, 运行时状态)",
+    "_doc": "按 covers/ 文件名排序顺序轮换；手动 --base/--base-image 不推进游标；新增底图丢进 covers/ 自动纳入，无需改配置。"
   },
+
   "output": {
     "full_9_16": true,
     "crop_3_4": true,
     "crop_anchor": "block-bottom"
   },
+
   "fonts": [
     {
+      "label": "阿里巴巴普惠体 Heavy",
+      "family": "Alibaba PuHuiTi",
+      "style": "Heavy",
+      "role": "active —— 当前标题字体，text.font_file 指向它",
+      "bundled_file": "fonts/AlibabaPuHuiTi-Heavy.ttf",
+      "source_page": "https://github.com/chinayin/fonts-alibaba-puhuiti-heavy",
+      "source_url": "https://raw.githubusercontent.com/chinayin/fonts-alibaba-puhuiti-heavy/master/Alibaba-PuHuiTi-Heavy.ttf",
+      "license_note": "阿里巴巴普惠体官方免费商用；保留来源与许可说明。"
+    },
+    {
       "label": "阿里巴巴普惠体 85 Bold",
-      "family": "Alibaba PuHuiTi 3.0 85 Bold",
-      "required": true,
+      "family": "Alibaba PuHuiTi 3.0",
+      "style": "85 Bold",
+      "role": "retained —— 备用较轻字重；要切回把 text.font_file 指向它即可",
       "bundled_file": "fonts/AlibabaPuHuiTi-3-85-Bold.ttf",
       "source_page": "https://www.alibabafonts.com/",
-      "license_note": "阿里巴巴普惠体官方免费商用；保留来源与许可说明。",
-      "shared_from": "../../gongzhonghao/ai-pm-assistant/fonts/AlibabaPuHuiTi-3-85-Bold.ttf"
+      "license_note": "阿里巴巴普惠体官方免费商用。"
     }
   ],
-  "notes": [
-    "黑块底边固定（bottom_frac），按行数向上扩展；这个底边经人工确认裁成 3:4 后标题仍完整。",
-    "文字字号按最长一行铺满 side_margin 内宽度反推，全行统一字号。",
-    "底图全部为 9:16；新增底图直接丢进 covers/ 即可，无需改配置。"
+
+  "geometry_notes": [
+    "全部几何用比例(frac of 帧宽/高)表达，9:16 底图任意像素尺寸渲染一致。",
+    "block.bottom_frac 是人工确认过的固定底边：裁成 3:4 后标题仍完整。",
+    "底图池均为张和口播 9:16 帧；非张和/非竖屏不在适用范围(见 usage.do_not_use_for)。"
   ]
 }

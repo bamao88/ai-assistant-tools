@@ -2,7 +2,14 @@
 
 适用：查询/下载本人有权限的腾讯会议录制、逐字稿、转写搜索和 AI 智能纪要。
 
-默认使用官方 `tencent-meeting-skill` / `tencent-meeting-mcp`，不要再把本地网页抓取脚本作为默认方案。官方包元数据：owner `WeMeeting`，latest `1.0.8`，endpoint `https://mcp.meeting.tencent.com/mcp/wemeet-open/v1`。
+**按交付物分两条路，别混用（2026-06-04 固化）：**
+
+| 你要的 | 用哪条 | 为什么 |
+|---|---|---|
+| 会议信息 / 录制列表 / 逐字稿 / 转写搜索 / AI 智能纪要 | 官方 MCP（默认） | 鉴权独立、稳定，下面「录制与转写流程」 |
+| 下载视频，尤其是**分轨**（说话人/共享屏幕/合成） | `download_tencent_stream.py download --stream speaker`（见文末「视频与分轨下载」） | **官方 MCP 的 `get_record_addresses` 只返回单个合成/观看 `view_address`，拿不到分轨**；切口播片必须用纯摄像头「说话人」轨（合成/屏幕轨会录进共享内容 = 泄密） |
+
+官方包元数据：owner `WeMeeting`，latest `1.0.8`，endpoint `https://mcp.meeting.tencent.com/mcp/wemeet-open/v1`。
 
 ## 前提
 
@@ -141,6 +148,29 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/m
 
 `engines/tencent-meeting/scripts/cli.py`、`fetch_tencent_meeting_transcripts_stable.py`、`download_tencent_meeting_videos_stable.py`、`download_tencent_stream.py` 保留为 legacy：
 
-- 只用于历史排障、回归对照，或用户明确要求旧的分享短链/分轨归档路径。
-- 默认不自动回退到 legacy，避免继续依赖非官方网页接口。
-- 分轨“说话人轨/共享屏幕轨”目前官方 MCP 未在 reference 中声明；用户明确要分轨素材时，可以说明限制后再考虑 legacy `download_tencent_stream.py`。
+- 普通 MCP 流程仍优先用官方 MCP。
+- 用户给“内部下载链接”或明确要 `speaker/screen/main` 分轨时，直接用 `download_tencent_stream.py`。
+- `download_tencent_stream.py download` 默认先走直连分享接口 + no-proxy + 并发分段下载，不依赖 Chrome；失败才回退旧 Chrome 路径。
+
+下载只有人物/说话人轨：
+
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/download_tencent_stream.py download \
+  "https://meeting.tencent.com/crm/<short_code>" \
+  --stream speaker \
+  --slug "<会议主题>"
+```
+
+列出三路轨道：
+
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/download_tencent_stream.py list-streams \
+  "https://meeting.tencent.com/crm/<short_code>"
+```
+
+可选轨道：
+
+- `--stream speaker`：只有人物/说话人
+- `--stream screen`：只有共享屏幕
+- `--stream main`：人 + 屏幕合成
+- `--stream all`：三路都下载

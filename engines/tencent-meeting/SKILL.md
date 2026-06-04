@@ -25,6 +25,15 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/m
 python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py download-addresses --input /abs/path/record_addresses.json --output-dir /abs/path/meetings/files
 ```
 
+内部分享链接分轨下载（不走 MCP，默认 no-proxy + 并发分段）：
+
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/download_tencent_stream.py download \
+  "https://meeting.tencent.com/crm/<short_code>" \
+  --stream speaker \
+  --slug "<会议主题>"
+```
+
 前提：访问 https://meeting.tencent.com/ai-skill 获取 Token，并设置：
 
 ```bash

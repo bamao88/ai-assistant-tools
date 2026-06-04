@@ -18,7 +18,8 @@
 
 三种用法
 --------
-1) download —— 直接走登录态 Chrome 同源 XHR 取分轨地址并下载（受腾讯下载频率/配额限制，
+1) download —— 默认先走直连分享接口 + no-proxy + 并发分段下载，不依赖 Chrome。
+   直连失败时才回退登录态 Chrome 同源 XHR（受腾讯下载频率/配额限制，
    短时间反复取址会返回 code=4049，此时改用 ingest）：
      python3 download_tencent_stream.py download <url或short_code> \
        --stream speaker --slug 20260429_4.5期开放答疑
@@ -33,27 +34,44 @@
    stream_type 实际编号：
      python3 download_tencent_stream.py list-streams <url或short_code>
 
-前提（同 fetch_tencent_video_via_chrome.py）：
+前提：
   ① curl https://meeting.tencent.com/ == 200（200 就别动网络/Tailscale）。
-  ② Chrome 开「显示→开发者→允许 Apple 事件中的 JavaScript」并冷重启。
-  ③ download / list-streams 模式下，前台 active tab 是已登录、已加载完成的该录制页
-     （或用 --open [--profile-directory ...] 让脚本自己打开）。ingest 模式无需 Chrome。
+  ② 默认 direct 模式不需要 Chrome；只有 --method chrome 或 direct 失败回退时，才需要 Chrome 开
+     「显示→开发者→允许 Apple 事件中的 JavaScript」并冷重启。
+  ③ 所有 direct 下载默认禁用代理环境变量，并用并发 Range 拉取，避免单连接卡一下午。
 
 媒体库约定见 /Volumes/ExtSSD2601/media/README.md。
 """
 from __future__ import annotations
 
 import argparse
+import os
 import json
+import re
 import shutil
+import subprocess
 import sys
+import threading
+import time
+import urllib.error
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 # 复用 fetch_tencent_video_via_chrome.py 里验证过的助手，不重复造轮子。
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fetch_tencent_video_via_chrome as fx  # type: ignore[import-not-found]  # noqa: E402
+import download_tencent_meeting_videos_stable as stable  # type: ignore[import-not-found]  # noqa: E402
 
 DEFAULT_MEDIA_ROOT = Path("/Volumes/ExtSSD2601/media/tencent")
+DEFAULT_WORKERS = 8
+CHUNK_SIZE = 1024 * 1024
+UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/135.0.0.0 Safari/537.36"
+)
+REFERER = "https://meeting.tencent.com/"
 
 # stream_type 编号 -> (英文别名, 中文文件名后缀)。沿用 stable 脚本的 VIDEO_TYPE_LABELS。
 STREAM_TYPE_MAP = {
@@ -83,6 +101,62 @@ def classify_by_name(name: str) -> tuple[str, str]:
 # --------------------------------------------------------------------------- #
 # download / list-streams：借登录态 Chrome 取多流地址
 # --------------------------------------------------------------------------- #
+def no_proxy_opener() -> urllib.request.OpenerDirector:
+    for key in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+        os.environ.pop(key, None)
+    os.environ["NO_PROXY"] = "*"
+    os.environ["no_proxy"] = "*"
+    return urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def direct_record_context(source: str, timeout: int) -> tuple[str, dict, list[stable.RecordingTarget]]:
+    code = fx.short_code(source)
+    session = stable.build_session()
+    session.trust_env = False
+    entry = stable.Entry(
+        index=1,
+        source="argv",
+        batch="",
+        date_text="",
+        title=code,
+        url=f"https://meeting.tencent.com/crm/{code}",
+        short_code=code,
+    )
+    data, targets = stable.resolve_entry(session, entry, timeout=timeout)
+    return code, data, targets
+
+
+def normalize_download_payload(payload: dict) -> dict:
+    data = payload.get("data") or {}
+    streams = []
+    for stream in data.get("multi_stream_recordings") or []:
+        stream_type = str(stream.get("stream_type") or "")
+        streams.append(
+            {
+                "stream_type": stream_type,
+                "url": stream.get("url") or "",
+                "alias": STREAM_TYPE_MAP.get(stream_type, ("unknown", "stream" + stream_type))[0],
+            }
+        )
+    main_url = payload.get("url") or ""
+    if not main_url and data.get("urls"):
+        main_url = (data["urls"][0] or {}).get("url") or ""
+    return {
+        "code": payload.get("code"),
+        "msg": payload.get("message") or payload.get("msg"),
+        "main_url": main_url,
+        "audio_url": payload.get("audio_url") or "",
+        "streams": streams,
+    }
+
+
+def get_download_payload_direct(target: stable.RecordingTarget, timeout: int) -> dict:
+    session = stable.build_session()
+    session.trust_env = False
+    payload = stable.resolve_video_payload(session, target, timeout=timeout)
+    return normalize_download_payload(payload)
+
+
 def get_download_payload(rec_sharing_id: str, page_id: str) -> dict:
     """调 download/record（need_multi_stream=1），返回该录制的全部可下载流。
 
@@ -148,6 +222,13 @@ def resolve_targets(payload: dict, want: str) -> list[tuple[str, str, str]]:
 # --------------------------------------------------------------------------- #
 # 媒体库归档
 # --------------------------------------------------------------------------- #
+def stream_destination(slug_dir: Path, alias: str, cn: str) -> Path:
+    video_dir = slug_dir / "video"
+    video_dir.mkdir(parents=True, exist_ok=True)
+    suffix = "" if alias == "main" else f"-{cn}"
+    return video_dir / f"{slug_dir.name}{suffix}.mp4"
+
+
 def video_meta(path: Path) -> dict:
     """ffprobe 出时长/分辨率/大小，写进 meta。"""
     info = fx.ffprobe_ok(path)  # "duration=... codec_type=video codec_name=h264 ..."
@@ -167,10 +248,7 @@ def video_meta(path: Path) -> dict:
 
 def organize(slug_dir: Path, alias: str, cn: str, src: Path) -> Path:
     """把一路视频放进 <slug>/video/<slug>-<中文名>.mp4（合成不加后缀）。"""
-    video_dir = slug_dir / "video"
-    video_dir.mkdir(parents=True, exist_ok=True)
-    suffix = "" if alias == "main" else f"-{cn}"
-    dest = video_dir / f"{slug_dir.name}{suffix}.mp4"
+    dest = stream_destination(slug_dir, alias, cn)
     if src.resolve() != dest.resolve():
         shutil.copy2(src, dest)
     return dest
@@ -216,8 +294,163 @@ def update_meta(slug_dir: Path, short_code: str, source_url: str,
 # --------------------------------------------------------------------------- #
 # 子命令
 # --------------------------------------------------------------------------- #
+def content_length(url: str, timeout: int) -> int:
+    opener = no_proxy_opener()
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": UA, "Referer": REFERER, "Range": "bytes=0-0"},
+    )
+    with opener.open(req, timeout=timeout) as response:
+        content_range = response.headers.get("Content-Range", "")
+        match = re.search(r"/([0-9]+)$", content_range)
+        if match:
+            return int(match.group(1))
+        length = response.headers.get("Content-Length")
+        if length:
+            return int(length)
+    raise RuntimeError("无法确定远端文件大小")
+
+
+def download_part(
+    url: str,
+    part: Path,
+    start: int,
+    end: int,
+    *,
+    timeout: int,
+    progress: dict[int, int],
+    index: int,
+    lock: threading.Lock,
+) -> int:
+    opener = no_proxy_opener()
+    expected = end - start + 1
+    existing = part.stat().st_size if part.exists() else 0
+    if existing == expected:
+        with lock:
+            progress[index] = existing
+        return existing
+    if existing > expected:
+        part.unlink()
+        existing = 0
+    request_start = start + existing
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": UA,
+            "Referer": REFERER,
+            "Range": f"bytes={request_start}-{end}",
+        },
+    )
+    mode = "ab" if existing else "wb"
+    with opener.open(req, timeout=timeout) as response, part.open(mode) as handle:
+        done = existing
+        while True:
+            chunk = response.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            handle.write(chunk)
+            done += len(chunk)
+            with lock:
+                progress[index] = done
+    got = part.stat().st_size
+    if got != expected:
+        raise RuntimeError(f"分段 {index} 大小不匹配: got={got} expected={expected}")
+    return got
+
+
+def parallel_download(url: str, dest: Path, *, workers: int, timeout: int) -> int:
+    total = content_length(url, timeout)
+    if dest.exists() and dest.stat().st_size == total:
+        return total
+    if dest.exists() and dest.stat().st_size != total:
+        dest.unlink()
+
+    parts_dir = dest.with_suffix(dest.suffix + ".parts")
+    tmp = dest.with_suffix(dest.suffix + ".tmp")
+    parts_dir.mkdir(parents=True, exist_ok=True)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    workers = max(1, min(workers, 16))
+    part_size = (total + workers - 1) // workers
+    ranges = []
+    for index in range(workers):
+        start = index * part_size
+        if start >= total:
+            break
+        end = min(total - 1, start + part_size - 1)
+        ranges.append((index, start, end, parts_dir / f"part-{index:03d}"))
+
+    progress: dict[int, int] = {}
+    lock = threading.Lock()
+    stop = threading.Event()
+
+    def report() -> None:
+        started = time.time()
+        while not stop.wait(10):
+            with lock:
+                got = sum(progress.values())
+            elapsed = max(time.time() - started, 1)
+            rate = got / elapsed / 1048576
+            print(f"  progress {got/1048576:.1f}/{total/1048576:.1f}MB  {rate:.2f}MB/s", flush=True)
+
+    reporter = threading.Thread(target=report, daemon=True)
+    reporter.start()
+    try:
+        with ThreadPoolExecutor(max_workers=len(ranges)) as pool:
+            futures = [
+                pool.submit(
+                    download_part,
+                    url,
+                    part,
+                    start,
+                    end,
+                    timeout=timeout,
+                    progress=progress,
+                    index=index,
+                    lock=lock,
+                )
+                for index, start, end, part in ranges
+            ]
+            for future in as_completed(futures):
+                future.result()
+    finally:
+        stop.set()
+        reporter.join(timeout=1)
+
+    with tmp.open("wb") as output:
+        for _, _, _, part in ranges:
+            output.write(part.read_bytes())
+    if tmp.stat().st_size != total:
+        raise RuntimeError(f"合并后大小不匹配: got={tmp.stat().st_size} expected={total}")
+    tmp.replace(dest)
+    shutil.rmtree(parts_dir, ignore_errors=True)
+    return total
+
+
+def list_streams_from_payload(payload: dict) -> None:
+    if payload.get("main_url"):
+        print("    - main(合成)  ✓")
+    for s in payload.get("streams", []):
+        print(f"    - stream_type={s['stream_type']} ({s['alias']})  "
+              f"{'✓' if s.get('url') else '✗无地址'}")
+
+
 def cmd_list_streams(args) -> int:
     code = fx.short_code(args.source)
+    if args.method in ("auto", "direct"):
+        try:
+            _, _, targets = direct_record_context(args.source, args.timeout)
+            print(f"会议 {code}: {len(targets)} 段录制（direct/no-proxy）")
+            for i, target in enumerate(targets, 1):
+                payload = get_download_payload_direct(target, args.timeout)
+                print(f"  录制[{i}] {target.record_name}:")
+                list_streams_from_payload(payload)
+            return 0
+        except Exception as exc:  # noqa: BLE001
+            if args.method == "direct":
+                raise
+            print(f"direct 取流失败，回退 Chrome: {exc}", file=sys.stderr)
+
     fx.ensure_front_meeting_page(code, args.want_open, args.profile_directory, args.wait)
     info = fx.get_record_info(code)
     recs = info.get("recs") or []
@@ -227,11 +460,7 @@ def cmd_list_streams(args) -> int:
     for i, r in enumerate(recs, 1):
         payload = get_download_payload(r["sharing_id"], info["page_id"])
         print(f"  录制[{i}] {r.get('name')}:")
-        if payload.get("main_url"):
-            print("    - main(合成)  ✓")
-        for s in payload.get("streams", []):
-            print(f"    - stream_type={s['stream_type']} ({s['alias']})  "
-                  f"{'✓' if s.get('url') else '✗无地址'}")
+        list_streams_from_payload(payload)
     return 0
 
 
@@ -240,6 +469,32 @@ def cmd_download(args) -> int:
     want = STREAM_ALIASES.get(args.stream)
     if not want:
         sys.exit(f"--stream 取值非法: {args.stream}（main/speaker/screen/all）")
+    if args.method in ("auto", "direct"):
+        try:
+            _, _, recs = direct_record_context(args.source, args.timeout)
+            if not recs:
+                sys.exit("没有录制（recordings=[]）。")
+            target = recs[0]
+            slug = args.slug or fx.safe_name(target.meeting_subject or target.record_name or code, code)
+            slug_dir = args.media_root / slug
+            payload = get_download_payload_direct(target, args.timeout)
+            targets = resolve_targets(payload, want)
+            added = []
+            for alias, cn, url in targets:
+                dest = stream_destination(slug_dir, alias, cn)
+                print(f"下载 {alias}({cn}) direct/no-proxy/parallel → {dest.name}")
+                got = parallel_download(url, dest, workers=args.workers, timeout=args.timeout)
+                probe = fx.ffprobe_ok(dest)
+                print(f"  ✓ {dest}  {got/1048576:.1f}MB  {probe}")
+                added.append((alias, cn, dest))
+            update_meta(slug_dir, code, f"https://meeting.tencent.com/crm/{code}", added)
+            print(f"完成：{len(added)} 路 → {slug_dir}")
+            return 0
+        except Exception as exc:  # noqa: BLE001
+            if args.method == "direct":
+                raise
+            print(f"direct 下载失败，回退 Chrome: {exc}", file=sys.stderr)
+
     fx.ensure_front_meeting_page(code, args.want_open, args.profile_directory, args.wait)
     info = fx.get_record_info(code)
     recs = info.get("recs") or []
@@ -302,12 +557,17 @@ def main() -> int:
         p.add_argument("--profile-directory", default="",
                        help='Chrome profile 目录名，如 "Default" / "Profile 2"')
         p.add_argument("--wait", type=int, default=30, help="等页面加载秒数")
+        p.add_argument("--method", choices=("auto", "direct", "chrome"), default="auto",
+                       help="auto 默认先走直连分享接口+no-proxy，失败再回退 Chrome")
+        p.add_argument("--timeout", type=int, default=90, help="HTTP 超时秒数")
 
-    pd = sub.add_parser("download", help="借登录态 Chrome 下指定分轨")
+    pd = sub.add_parser("download", help="下载指定分轨（默认 direct/no-proxy/parallel）")
     pd.add_argument("source", help="腾讯会议分享链接或 short_code")
     pd.add_argument("--stream", default="speaker",
                     help="main/speaker/screen/all（默认 speaker 说话人）")
     pd.add_argument("--slug", default="", help="媒体库子目录名，默认取录制标题")
+    pd.add_argument("--workers", type=int, default=DEFAULT_WORKERS,
+                    help=f"直连下载并发分段数（默认 {DEFAULT_WORKERS}）")
     add_chrome_opts(pd)
     pd.set_defaults(func=cmd_download)
 

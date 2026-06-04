@@ -61,7 +61,7 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/m
 3. 从 `get_records_list` 结果里区分：
    - `meeting_record_id`：传给 `get_record_addresses`，拿视频/音频下载地址。
    - `record_file_id`：传给 `get_transcripts_paragraphs` / `get_transcripts_details` / `get_smart_minutes`。
-4. 下载视频时先拿 `get_record_addresses`，再用 `download-addresses` / `download-url` 下载到用户指定目录；下载大文件前确认磁盘空间。
+4. 下载视频时先拿 `get_record_addresses`，再用 `download-addresses` / `download-url` 下载到用户指定目录；下载大文件前确认磁盘空间。⚠️ **`get_record_addresses` 只给单个合成/观看轨，拿不到分轨**——要说话人/共享屏幕分轨，走文末「视频与分轨下载」的 `download_tencent_stream.py`。
 5. 每次工具返回的 `X-Tc-Trace` 或 `rpcUuid` 都要展示给用户，便于后续排障。
 
 ## 常用 MCP 桥接命令

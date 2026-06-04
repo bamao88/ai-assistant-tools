@@ -130,22 +130,23 @@ CLI 路径（每次完整使用，不要省略）：
 
 输出含：用户基本信息、粉丝/关注数、笔记列表（`feeds`，每项 `id` + `xsecToken` + `noteCard.displayTitle`）。
 
-### 发布后抓自己号笔记永久链接（不问用户要链接）
+### 发布后抓运营号笔记永久链接（不问用户要链接；**只用测试号**）
 
-发布完成后回填 `note_url` 用这个——抓发布账号自己主页的 `feeds`，取刚发那条拼永久链接：
+发布完成后回填 `note_url`、以及后续 D+1/D+3/D+7 拉数，**一律用测试号抓运营号的公开主页**，绝不登录/操作运营号——这条链路要反复跑，用运营号自己抓有封号风险，用测试号当普通访客读公开内容没有。运营号已发布笔记是公开的，测试号能直接读。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
   /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py \
-  --account <发布账号> user-profile --user-id <本号user_id> --xsec-token ""
+  --account 测试号 user-profile --user-id <运营号public_user_id> --xsec-token ""
 ```
 
-- **本号 `user_id` 稳定不变**，首次取一次后复用。取法：登录态下访问 explore，取第一个 `/user/profile/<id>` 且 href **不带** `xsec_token` 的链接（= 导航栏「我」；feed 里作者链接都带 token）。已验证：测试号 `GG` = `577cb1836a6a693421551711`。
-- 自己主页用**空** `xsec_token` 即可读 `feeds`（已验证）。
+- `--account 测试号` **固定不变**（符合本 skill「一切抓取锁测试号」）；`--user-id` 填**运营号的公开 user_id**，不是用运营号登录。
+- 用**空** `xsec_token` 即可读对方公开主页 `feeds`（已验证：测试号读他人公开主页，空 token 返回完整 feeds + 每条 note 的 xsecToken）。
+- **运营号 public user_id 稳定不变**，取一次复用；取法也走测试号/公开链接、不登录运营号：测试号 `search-feeds` 找该号笔记看作者 uid，或从该号任一公开分享链接里的 `/user/profile/<uid>` 取。（测试号自身 uid=`577cb1836a6a693421551711`，仅自测。）
 - 取 `feeds[0]`（最新一条；**有置顶**会顶到最前，按 `displayTitle` 核对刚发那条），拼：
   `https://www.xiaohongshu.com/explore/{id}?xsec_token={xsecToken}&xsec_source=pc_feed`
 - 坑：`xsecToken` 返回空 = 会话 tab 陈旧，重跑一次（或先访问 explore 暖一下）即可。
-- 本 skill 默认锁 `--account 测试号`；**回填自己号链接是例外**，必须 `--account <真实发布账号>` 抓该号自己的主页。
+- 兜底：profile 抓不到时，测试号 `search-feeds --keyword "<笔记标题>"` 按标题+作者匹配刚发那条拿链接。
 
 ## 失败处理
 

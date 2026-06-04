@@ -13,7 +13,7 @@ SAU="$ENGINE/.venv/bin/sau"
 
 - 账号 cookie 存在 `tools/var/state/social-auto-upload/cookies/douyin_<account>.json`（已软链，凭证只放 var/）。
 - 浏览器用 patchright Chromium（安装时已 `patchright install chromium`）。
-- 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.douyin`（**当前为空，需用户提供抖音账号名**）。**先与用户确认账号**再发。
+- 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.douyin`（当前：`张和`）。账号标识约定：`张和` = 本项目（assistant_zh，负责张和全部自媒体）名下的抖音号，cookie 落 `douyin_张和.json`。**只发这个账号**，发别的先与用户确认。
 
 ## 命令
 

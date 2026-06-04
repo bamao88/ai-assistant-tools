@@ -14,6 +14,7 @@ SAU="$ENGINE/.venv/bin/sau"      # CLI 入口；等价于 .venv/bin/python -m sa
 - 账号凭证存在 `tools/var/state/social-auto-upload/cookies/bilibili_<account>.json`（已软链，凭证只放 var/）。
 - 首次执行会自动从 GitHub Release 下载 `biliup` 二进制到 `~/.social-auto-upload/tools/biliup/`（需联网 + 能访问 github）。
 - 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.bilibili`（当前：`张和`）。**只发这个账号**，发别的先与用户确认。
+- 账号标识约定：`张和` = 本项目（assistant_zh，负责张和全部自媒体）名下的 B站 号，cookie 落 `bilibili_张和.json`。其 B站 真实昵称 **和哥专业讲AI**（UID `36184382`）。注意：不要与小红书里的 `缪东旭_个人`(MiaoDX) 混淆——那是另一个人，旧白名单曾误填 `MiaoDX`，已纠正。
 
 ## 命令
 

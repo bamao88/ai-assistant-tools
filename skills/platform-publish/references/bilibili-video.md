@@ -37,7 +37,11 @@ osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2
 for h in member.bilibili.com api.bilibili.com passport.bilibili.com; do ip=$(dig +short $h | grep -E '^[0-9]' | head -1); echo -n "$h: "; route -n get "$ip" | awk '/interface:/{print $2}'; done
 ```
 
-⚠️ **上传腿的局限**：实际视频上传走 `upos-*.bilivideo.com` 动态 CDN，host 路由穷举不到，分流脚本只能保证 login/preupload/submit（账号风控腿）走本地。要让**整条投稿都走本地**，最稳的是投稿时段直接关掉海外 exit node：`tailscale set --exit-node=`（投完再按需恢复）。如分流或验证失败，**停止投稿并报告**，不要带着海外出口投。
+**够用即可**：B站 账号风控只绑定在 `passport`(登录) + `member.bilibili.com`(预上传 token + 投稿提交) 这些腿上，route-bypass 已把它们钉到本地，账号安全无虞。剩下走 exit node 的只是视频字节传 `upos-*.bilivideo.com`（动态 CDN，host 路由穷举不到），不影响风控，无需处理。
+
+⚠️ **绝不要用 `tailscale set --exit-node=` 关全局出口** —— 用户本地 Claude Code / Codex 靠该 exit node 访问 LLM API，关掉会断开发任务。若以后确需连上传字节也本地，只能走 route 方案（biliup `--line` 钉死线路 → 把对应 upos 主机加进 `domains.txt`），不动 exit node。
+
+如分流 apply 或出口验证失败，**停止投稿并报告**，不要带着海外出口投（登录/提交腿必须本地）。
 
 ## 命令
 

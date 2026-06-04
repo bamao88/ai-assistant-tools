@@ -133,6 +133,10 @@ def _start_exporter_process() -> subprocess.Popen[bytes]:
     env = os.environ.copy()
     env.setdefault("BROWSER", "none")
     env.setdefault("HOST", "127.0.0.1")
+    # 默认用 fs KV，让登录态(auth-key→token 映射)落盘，exporter 重启后不丢；
+    # 否则默认 memory 模式重启即丢 token，check-auth 会假性"未登录"。
+    env.setdefault("NITRO_KV_DRIVER", "fs")
+    env.setdefault("NITRO_KV_BASE", os.path.join(EXPORTER_DIR, ".runtime-kv"))
 
     with open(LOG_FILE, "ab", buffering=0) as log:
         log.write(f"\n[{time.ctime()}] Starting exporter\n".encode("utf-8"))

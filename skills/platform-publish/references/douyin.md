@@ -30,7 +30,11 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true; /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply" with administrator privileges'
 ```
 
-⚠️ **上传腿的局限**：抖音视频上传走 `*.douyinvod.com` 等动态 CDN，host 路由穷举不到，分流脚本只能保证 creator 中心/登录/风控腿走本地。要让**整条发布都走本地**，最稳的是发布时段关掉海外 exit node：`tailscale set --exit-node=`（发完再按需恢复）。如分流或验证失败，**停止发布并报告**，不要带着海外出口发。
+**够用即可**：抖音账号风控只绑定在 `creator.douyin.com`(登录/创作中心) + 风控腿，route-bypass 已把它们钉到本地，账号安全无虞。剩下走 exit node 的只是视频字节传 `*.douyinvod.com`（动态 CDN，穷举不到），不影响风控，无需处理。
+
+⚠️ **绝不要用 `tailscale set --exit-node=` 关全局出口** —— 用户本地 Claude Code / Codex 靠该 exit node 访问 LLM API，关掉会断开发任务。若以后确需连上传字节也本地，只能走 route 方案（加 `*.douyinvod.com` 解析到的 CDN 网段进 route-bypass），不动 exit node。
+
+如分流 apply 或出口验证失败，**停止发布并报告**，不要带着海外出口发（登录腿必须本地）。
 
 ## 命令
 

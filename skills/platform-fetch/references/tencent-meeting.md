@@ -144,15 +144,11 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/m
 - 用户明确给时区时，`convert_timestamp` 传 `timezone`；返回的 `parsed_time_unix` 已经是正确 UTC 时间戳，不要二次换算。
 - 若只用桥接 CLI 且用户已经给了明确时间，优先传 ISO 8601，例如 `2026-06-04T15:00:00+08:00`。
 
-## 旧脚本状态
+## 视频与分轨下载（现役正路，不是 legacy）
 
-`engines/tencent-meeting/scripts/cli.py`、`fetch_tencent_meeting_transcripts_stable.py`、`download_tencent_meeting_videos_stable.py`、`download_tencent_stream.py` 保留为 legacy：
+`engines/tencent-meeting/scripts/download_tencent_stream.py` 是下载视频/分轨的**现役默认入口**（2026-06-04 实测跑通完整 8313s 说话人轨）。它默认走**直连分享接口 + no-proxy + 并发分段 Range 下载**，不依赖 Chrome、不碰被限流的取址通道；direct 失败才回退登录态 Chrome 同源 XHR。
 
-- 普通 MCP 流程仍优先用官方 MCP。
-- 用户给“内部下载链接”或明确要 `speaker/screen/main` 分轨时，直接用 `download_tencent_stream.py`。
-- `download_tencent_stream.py download` 默认先走直连分享接口 + no-proxy + 并发分段下载，不依赖 Chrome；失败才回退旧 Chrome 路径。
-
-下载只有人物/说话人轨：
+下载只有人物/说话人轨（切口播片用这条）：
 
 ```bash
 python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/download_tencent_stream.py download \
@@ -161,7 +157,7 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/d
   --slug "<会议主题>"
 ```
 
-列出三路轨道：
+列出三路轨道（不下载，只看有哪几路）：
 
 ```bash
 python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/download_tencent_stream.py list-streams \
@@ -170,7 +166,18 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/d
 
 可选轨道：
 
-- `--stream speaker`：只有人物/说话人
+- `--stream speaker`：只有人物/说话人（**首选**，纯摄像头满屏、零屏幕泄露、与逐字稿时间轴一致）
 - `--stream screen`：只有共享屏幕
-- `--stream main`：人 + 屏幕合成
+- `--stream main`：人 + 屏幕合成（会录进共享内容，发布前自查泄密）
 - `--stream all`：三路都下载
+
+**避坑（都已实测）：**
+- **别用网页下载按钮 / Chrome AppleScript / 官方 MCP 取分轨**：前者把 `download/record` 取址打到 `code=4049` 限流（server 端，越重试越久，别轮询硬刚）；MCP 根本不返回分轨。
+- **单流 curl 会在 ~75% 处被 cos 轮换 IP 的 SNI reset 截断**；本脚本的并发分段天然抗截断（每段独立 Range，断了只重 该段）。所以下完务必 `ffprobe ... packet=pts_time | tail -1` 核末帧 pts ≈ 总时长，别只看文件存在。
+- **输出落点**：脚本归档到 `media/tencent/<slug>/video/<slug>-<轨名>.mp4`（如 `...-说话人.mp4`），**不是** `video/files/<short_code>_speaker.mp4`。下游脚本若硬编码读 `files/...`，下完要先 `cp` 覆盖到位。
+- 4049 真被限流且急需时，用 `download_tencent_stream.py ingest`（认领网页下载菜单已下好的分轨文件归档），不依赖 API、永远可用。
+- 直连前先 `curl -sI --noproxy '*' https://meeting.tencent.com/` 探活，**返回 200 就别动网络/Tailscale**；只有 `000`/RST 才按「网络/代理绕过」分流。
+
+## 旧脚本状态（legacy，别再当默认）
+
+`engines/tencent-meeting/scripts/cli.py`、`fetch_tencent_meeting_transcripts_stable.py`、`download_tencent_meeting_videos_stable.py` 保留为 legacy：查询/逐字稿/纪要走官方 MCP，视频/分轨走上面的 `download_tencent_stream.py`，这三个一般不用直接调。

@@ -86,6 +86,11 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-scraper/scripts/cli.p
 
 **爆款分析：** `list-articles --size 50` 拿大量数据 → 分析 JSON 里的阅读量、点赞 → 找高数据文章的共同特征（标题模式、发布时间）
 
+**发布后回填自己号 note_url（不问用户要链接）：** `check-auth` →
+`list-articles --fakeid <自己号fakeid> --size 15` → 按标题匹配刚发那篇，取 `link`（永久链接）回填到内容真源；`create_time` 顺带校验发布日期。
+已接管自己号：**AI PM 小助理**（副号）fakeid = `Mzk3NTI5MzM5NQ==`。
+> 微信官方 `freepublish/batchget` 对该号返回 48001 无权限，读已群发列表只能走这里的 `list-articles`。
+
 ## 输出
 
 所有命令输出 JSON（`ensure_ascii=False`）：

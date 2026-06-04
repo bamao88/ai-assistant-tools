@@ -24,3 +24,20 @@ finderpre.video.qq.com
 finder.video.qq.com
 wxapp.tc.qq.com
 aladin.wxqcloud.qq.com
+
+# Bilibili video 投稿 (biliup). Account-bound legs: login / preupload / submit.
+# 必须本地出口，否则海外 IP 投稿触发异地风控。
+# 注意：实际视频上传走 upos-*.bilivideo.com 动态 CDN 主机，无法在此穷举，
+# 故"上传那一段"的本地保证靠"投稿时段不开海外 exit node"兜底（见 reference）。
+passport.bilibili.com
+api.bilibili.com
+member.bilibili.com
+app.bilibili.com
+www.bilibili.com
+
+# Douyin 创作者中心发布（patchright 浏览器）。账号/登录/风控腿必须本地出口。
+# 注意：视频上传走 *.douyinvod.com / *-vod-* 动态 CDN，无法穷举，同样靠"投稿不开海外出口"兜底。
+creator.douyin.com
+www.douyin.com
+sso.douyin.com
+mcs.zijieapi.com

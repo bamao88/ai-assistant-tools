@@ -16,6 +16,29 @@ SAU="$ENGINE/.venv/bin/sau"      # CLI 入口；等价于 .venv/bin/python -m sa
 - 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.bilibili`（当前：`张和`）。**只发这个账号**，发别的先与用户确认。
 - 账号标识约定：`张和` = 本项目（assistant_zh，负责张和全部自媒体）名下的 B站 号，cookie 落 `bilibili_张和.json`。其 B站 真实昵称 **和哥专业讲AI**（UID `36184382`）。注意：不要与小红书里的 `缪东旭_个人`(MiaoDX) 混淆——那是另一个人，旧白名单曾误填 `MiaoDX`，已纠正。
 
+## 网络分流前置步骤（强制）
+
+为避免 Tailscale exit node 或系统代理导致 B站 投稿走海外/代理出口（**异地 IP 投稿会触发 B站 风控**），任何 `bilibili` 子命令（check / login / upload-video）执行前，必须先刷新本地分流路由：
+
+```bash
+tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
+```
+
+无 TTY 遇到 `sudo: a password is required` 时，改用管理员授权窗口执行同一脚本：
+
+```bash
+osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true; /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply" with administrator privileges'
+```
+
+验证 B站 核心域名已回到本地出口（出口网卡应是物理网卡如 `en0`，不是 `utun*`）：
+
+```bash
+for h in member.bilibili.com api.bilibili.com passport.bilibili.com; do ip=$(dig +short $h | grep -E '^[0-9]' | head -1); echo -n "$h: "; route -n get "$ip" | awk '/interface:/{print $2}'; done
+```
+
+⚠️ **上传腿的局限**：实际视频上传走 `upos-*.bilivideo.com` 动态 CDN，host 路由穷举不到，分流脚本只能保证 login/preupload/submit（账号风控腿）走本地。要让**整条投稿都走本地**，最稳的是投稿时段直接关掉海外 exit node：`tailscale set --exit-node=`（投完再按需恢复）。如分流或验证失败，**停止投稿并报告**，不要带着海外出口投。
+
 ## 命令
 
 **登录（必须在真实交互终端里跑——agent 不能代扫码）：**

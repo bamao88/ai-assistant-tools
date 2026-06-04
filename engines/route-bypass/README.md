@@ -44,6 +44,7 @@ Default domains live in:
 The default list currently includes:
 
 - Xiaohongshu creator/publish hosts.
+- Tencent Meeting web/MCP hosts and recording CDN hosts.
 - WeChat Channels publish/login hosts and the Tencent Cloud media host observed
   during video publish flows.
 

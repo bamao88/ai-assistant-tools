@@ -1,7 +1,7 @@
 ---
 name: platform-fetch
 description: |
-  指定平台的内容抓取统一入口。覆盖 WebFetch / mcp-fetch 拿不到的封闭平台：小红书、微信公众号、腾讯会议、以及视频站点（YouTube/B站/抖音/小红书视频等 1000+ 站点）的字幕/封面/关键帧。
+  指定平台的内容抓取统一入口。覆盖 WebFetch / mcp-fetch 拿不到的封闭平台：小红书、微信公众号、腾讯会议（官方 MCP）、以及视频站点（YouTube/B站/抖音/小红书视频等 1000+ 站点）的字幕/封面/关键帧。
   当用户给出这些平台的链接、要求获取这些平台上的内容（搜笔记、搜公众号、拉文章、看博主、下载会议逐字稿、扒视频字幕、抽关键帧、抓元数据等），或在做自媒体/竞品调研、爆款分析、选题、素材整理时，**优先使用本 skill**，不要先尝试 WebFetch 或 mcp-fetch —— 那些会失败或拿到空壳页面。
   本 skill 不处理：通用网页/API 抓取（用 mcp-fetch）、视频内容处理和素材整理（用 video-content）、飞书会议/妙记（用 lark-vc / lark-minutes）、NotebookLM 问答（用 notebooklm）、多源结构化研报（用 deep-research）、内容发布与多平台分发（用 platform-publish）、互动（用 xhs-interact）。
 ---
@@ -14,7 +14,7 @@ description: |
 |------|------|------------------|
 | 小红书 | xiaohongshu.com / xhslink.com URL；"小红书""xhs""搜笔记""博主主页"等 | `references/xiaohongshu.md` |
 | 微信公众号 | mp.weixin.qq.com URL；"公众号""微信文章""gzh""扒一下 XXX 最近文章" | `references/gongzhonghao.md` |
-| 腾讯会议 | meeting.tencent.com URL；"逐字稿""会议录制""腾讯会议" | `references/tencent-meeting.md` |
+| 腾讯会议 | meeting.tencent.com URL；"逐字稿""会议录制""智能纪要""腾讯会议" | `references/tencent-meeting.md` |
 | 视频字幕/封面/关键帧 | YouTube/B站/抖音/Twitter/视频号/Vimeo 等 URL；"拉字幕""视频转写""抽关键帧""视频元数据" | `references/video.md` |
 
 ## 工作流程

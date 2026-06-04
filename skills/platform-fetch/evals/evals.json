@@ -16,8 +16,8 @@
     {
       "id": 3,
       "name": "tencent-meeting-batch",
-      "prompt": "我有一个 markdown 文件 /tmp/links.md，里面有 5 个腾讯会议分享链接，把逐字稿和录屏都下载到 ~/Downloads/meetings/ 目录。",
-      "expected_behavior": "应使用 platform-fetch，读 references/tencent-meeting.md，构造 cli.py both --output-dir ~/Downloads/meetings/ /tmp/links.md 命令。"
+      "prompt": "我有会议号 904854736，帮我把腾讯会议逐字稿和录屏下载到 ~/Downloads/meetings/ 目录。",
+      "expected_behavior": "应使用 platform-fetch，读 references/tencent-meeting.md，优先调用官方腾讯会议 MCP：get_records_list 查录制，get_transcripts_details/get_smart_minutes 取转写或纪要，get_record_addresses 取下载地址，再用 mcp_cli.py download-addresses 绕过代理下载；不要构造旧 cli.py both 命令。"
     },
     {
       "id": 4,

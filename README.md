@@ -34,7 +34,7 @@ tools/
 
 | 技能 | 层级 | 作用 |
 |---|---|---|
-| `platform-fetch` | L1 | 封闭平台内容抓取统一入口（小红书 / 公众号 / 腾讯会议 / 视频字幕封面关键帧） |
+| `platform-fetch` | L1 | 封闭平台内容抓取统一入口（小红书 / 公众号 / 腾讯会议官方 MCP / 视频字幕封面关键帧） |
 | `platform-publish` | L1 | 发布与多平台分发统一入口（小红书 / 公众号 / 知乎掘金 CSDN 等全平台） |
 | `blogger-research` | L2 | 博主调研：批量抓取博主公开内容 + 出结构化分析报告 |
 | `xhs-ops` | L2 | 小红书复合运营工作流（搜+看+发+互动） |
@@ -57,7 +57,7 @@ tools/
 | `markdown-to-cards` | Node — `cli.js` |
 | `video-research` | Python `.venv` — `scripts/cli.py` |
 | `video-slicer` | Python 包（暂无独立技能） |
-| `tencent-meeting` | Python — `agents/` |
+| `tencent-meeting` | Python — 官方 MCP 桥接 `scripts/mcp_cli.py`（legacy 下载脚本保留） |
 | `screenshot` | Node — `screenshot.js` |
 | `route-bypass` | Zsh — 小红书发布网络分流 |
 | `calendar-task` | Shell — Apple 日历提醒 |

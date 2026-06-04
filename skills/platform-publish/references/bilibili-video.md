@@ -13,25 +13,25 @@ SAU="$ENGINE/.venv/bin/sau"      # CLI 入口；等价于 .venv/bin/python -m sa
 
 - 账号凭证存在 `tools/var/state/social-auto-upload/cookies/bilibili_<account>.json`（已软链，凭证只放 var/）。
 - 首次执行会自动从 GitHub Release 下载 `biliup` 二进制到 `~/.social-auto-upload/tools/biliup/`（需联网 + 能访问 github）。
-- 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.bilibili`（当前：`MiaoDX`）。**只发这个账号**，发别的先与用户确认。
+- 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.bilibili`（当前：`张和`）。**只发这个账号**，发别的先与用户确认。
 
 ## 命令
 
 **登录（必须在真实交互终端里跑——agent 不能代扫码）：**
 ```bash
-"$SAU" bilibili login --account MiaoDX
+"$SAU" bilibili login --account 张和
 ```
 - biliup 会在终端显示二维码；若终端显示不全，打开当前目录的 `qrcode.png` 扫码。
 - 非交互环境（agent 自动跑）会直接返回提示让用户自己在本地终端执行。**遇到未登录时，让用户手动跑这一行**，不要尝试自动化扫码。
 
 **检查登录态（只读）：**
 ```bash
-"$SAU" bilibili check --account MiaoDX     # 底层 biliup renew；返回有效/失效
+"$SAU" bilibili check --account 张和     # 底层 biliup renew；返回有效/失效
 ```
 
 **投稿视频：**
 ```bash
-"$SAU" bilibili upload-video --account MiaoDX \
+"$SAU" bilibili upload-video --account 张和 \
   --file /abs/path/video.mp4 \
   --title "标题" \
   --desc "简介" \

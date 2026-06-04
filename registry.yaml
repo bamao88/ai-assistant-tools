@@ -1,6 +1,6 @@
 schema_version: 2
 root: /Volumes/ExtSSD2601/AI_Assistant/tools
-updated: 2026-05-27
+updated: 2026-06-04
 
 # Single source of truth for the shared tools directory.
 # Four-tier layout:
@@ -22,7 +22,7 @@ skills:
     layer: L1
     source: skills/platform-fetch
     install_kind: dir
-    purpose: 封闭平台内容抓取统一入口（小红书 / 公众号 / 腾讯会议 / 视频字幕封面关键帧）
+    purpose: 封闭平台内容抓取统一入口（小红书 / 公众号 / 腾讯会议官方 MCP / 视频字幕封面关键帧）
     uses_engines: [xiaohongshu, gzh-scraper, tencent-meeting, video-research]
   - name: platform-publish
     layer: L1
@@ -260,8 +260,8 @@ engines:
     purpose: 视频切片/裁剪（无独立触发 skill；按需被调用）
   - id: tencent-meeting
     path: engines/tencent-meeting
-    runtime: "python — agents/"
-    purpose: 腾讯会议逐字稿与录制下载（由 platform-fetch 调用）
+    runtime: "python — scripts/mcp_cli.py（官方 MCP 桥接；legacy 下载脚本保留）"
+    purpose: 腾讯会议官方 MCP 录制/转写/智能纪要查询（由 platform-fetch 调用）
   - id: screenshot
     path: engines/screenshot
     runtime: "node — screenshot.js (+ export_cookies.py)"

@@ -1,115 +1,146 @@
-# 腾讯会议（tencent-meeting）
+# 腾讯会议（官方 MCP）
 
-适用：批量下载腾讯会议分享链接里的逐字稿和录制视频。
+适用：查询/下载本人有权限的腾讯会议录制、逐字稿、转写搜索和 AI 智能纪要。
 
-## 入口
-
-统一入口：
-
-```bash
-python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/cli.py transcripts ...
-python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/cli.py videos ...
-python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/cli.py both ...
-```
-
-底层稳定脚本（一般不直接调）：
-
-- `scripts/fetch_tencent_meeting_transcripts_stable.py`
-- `scripts/download_tencent_meeting_videos_stable.py`
-
-## 输入
-
-- 直接传一个或多个腾讯会议分享链接
-- 或传一个本地文件路径；脚本会从 Markdown/文本里提取 `https://meeting.tencent.com/crm/...` 和 `https://meeting.tencent.com/cw/...`
-- 只想跑部分短链：`--codes <短码1> <短码2>`
-
-## 工作流
-
-1. 逐字稿默认 `transcripts --strategy auto`
-2. `auto` 会先调公开 transcript API；失败后回退到已登录的可见 `Google Chrome` 会话
-3. 视频下载 `videos`，走稳定下载接口，不依赖页面按钮点击
-4. 批量视频前先确认目标磁盘空间，大批量优先写到外置盘
-5. 每次运行后检查输出目录里的 `summary.json` / `manifest.json` / `manifest.csv` / `failures.json` / `diagnostics/`
-6. `summary.json` 的 `entry_summaries` 按短链聚合 `status` 和 `summary`，不再只给模糊的 partial failure
-7. `failures.json` 每条失败附 `reason`、`error_code`、`failure_type`，区分"链接不支持""创建者关闭转写""无访问权限"
-8. 下载文件默认命名 `YYYYMMDD_会议主题`。同一链接下多段录制 / 多种视频流时，才加最小后缀（如 `录制2`、`主视频`、`共享屏幕`、`发言人视角`）
+默认使用官方 `tencent-meeting-skill` / `tencent-meeting-mcp`，不要再把本地网页抓取脚本作为默认方案。官方包元数据：owner `WeMeeting`，latest `1.0.8`，endpoint `https://mcp.meeting.tencent.com/mcp/wemeet-open/v1`。
 
 ## 前提
 
-- 逐字稿回退模式依赖 macOS 上可见的 `Google Chrome`，且 Chrome 已登录有权限的腾讯会议账号
-- 视频下载不依赖 Chrome 登录态，但分享页本身必须能暴露下载链路
-- 默认 `python3` 和 `requests`
-
-## 输出目录
-
-`--output-dir` 优先级：
-
-1. 用户明确指定的路径
-2. 用户没指定 → 从当前对话上下文推断项目目录，在其下新建 `tencent_output/`
-3. 视频等大文件，推断出外置盘可用时优先写外置盘
-
-## 常用命令
-
-下载逐字稿：
+1. 访问 https://meeting.tencent.com/ai-skill 获取 Token。
+2. 设置环境变量：
 
 ```bash
-python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/cli.py transcripts \
-  --output-dir <输出目录> \
-  /abs/path/links.md
+export TENCENT_MEETING_TOKEN="<你的 token>"
 ```
 
-下载视频（默认只下主视频）：
+3. 若当前 Agent 环境已暴露官方腾讯会议 MCP tools，直接调用工具；若没有 MCP tool，可以使用本仓库的轻量桥接 CLI：
 
 ```bash
-python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/cli.py videos \
-  --output-dir <输出目录> \
-  /abs/path/links.md
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py tools-list
 ```
 
-显式指定视频流：
+## 网络 / 代理绕过
+
+本机常开系统代理或代理环境变量时，腾讯会议 MCP 与录制下载必须绕过代理走本地网络：
+
+- `mcp_cli.py` 默认忽略 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` 等环境变量；只有显式加 `--use-proxy` 才会使用代理。
+- 录制文件下载默认使用 `curl --noproxy '*'`，并清理子进程代理环境变量，同时沿用旧方案验证过的 `Referer: https://meeting.tencent.com/` 和 Chrome UA。
+- 如果 Tailscale exit node / 全局路由仍把直连流量带到境外，先应用 host route，让腾讯会议域名走本地网关：
 
 ```bash
-# 主视频
---video-type video_main
-
-# 多条流
---video-type video_stream_1 --video-type video_stream_2
-
-# 全部流
---video-type all
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply \
+  meeting.tencent.com mcp.meeting.tencent.com ylz.cos.meeting.tencent.com
 ```
 
-逐字稿 + 视频一起跑：
+只查看当前路由，不改系统：
 
 ```bash
-python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/cli.py both \
-  --output-dir <输出目录> \
-  /abs/path/links.md
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh status \
+  meeting.tencent.com mcp.meeting.tencent.com ylz.cos.meeting.tencent.com
 ```
 
-只跑部分短链：
+## 标识符规则
+
+- 有 `meeting_id`：直接用于 `get_records_list`、`get_meeting` 等工具。
+- 有 9 位 `meeting_code`：先用 `get_meeting_by_code` 转换，或直接传给 `get_records_list --meeting-code`。
+- 只有 `https://meeting.tencent.com/crm/...` / `cw/...` 分享短链：官方 MCP 不以分享短码为主键。不要硬套旧短链脚本；请让用户补会议号、会议时间范围，或用时间范围查询录制列表后按标题/时间匹配。
+
+## 录制与转写流程
+
+1. 需要“会议内容/总结”时优先 `get_smart_minutes`，再查 `get_transcripts_details`，最后才取录制下载地址。
+2. 获取录制列表：
+   - `meeting_id` / `meeting_code` 已知：按会议查。
+   - 只知道大致时间：按 `start_time` + `end_time` 查，范围不超过 31 天，起始不早于 1 年前。
+3. 从 `get_records_list` 结果里区分：
+   - `meeting_record_id`：传给 `get_record_addresses`，拿视频/音频下载地址。
+   - `record_file_id`：传给 `get_transcripts_paragraphs` / `get_transcripts_details` / `get_smart_minutes`。
+4. 下载视频时先拿 `get_record_addresses`，再用 `download-addresses` / `download-url` 下载到用户指定目录；下载大文件前确认磁盘空间。
+5. 每次工具返回的 `X-Tc-Trace` 或 `rpcUuid` 都要展示给用户，便于后续排障。
+
+## 常用 MCP 桥接命令
+
+列工具：
 
 ```bash
-python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/cli.py transcripts \
-  --output-dir <输出目录> \
-  --codes N1EWObL37a 2kOB18GP56 \
-  /abs/path/links.md
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py tools-list
 ```
 
-视频附带音频：
+按会议号查录制：
 
 ```bash
---include-audio
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py records \
+  --meeting-code 904854736 \
+  --output /abs/path/tencent_records.json
 ```
 
-## 常见失败码
+按时间范围查录制：
 
-| 码 | 含义 |
-|-----|------|
-| `30017` | 创建者关闭了转写查看和下载 |
-| `91001` | 录制转写导出失败 |
-| `30002` | 公开链路拿不到逐字稿 |
-| `40339` | 共享未开启纪要 / 纪要不可见 |
-| `暂无访问权限` | 当前登录态没有页面访问权限 |
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py records \
+  --start-time "2026-06-01T00:00:00+08:00" \
+  --end-time "2026-06-04T23:59:59+08:00" \
+  --page-size 20 \
+  --output /abs/path/tencent_records.json
+```
 
-遇到失败别只看终端，先打开本次输出目录里的 `diagnostics/*.json` 和 `failures.json`。
+获取录制下载地址：
+
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py record-addresses \
+  --meeting-record-id <meeting_record_id> \
+  --output /abs/path/record_addresses.json
+```
+
+从 `record_addresses.json` 里提取录制 URL 并绕过代理下载：
+
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py download-addresses \
+  --input /abs/path/record_addresses.json \
+  --output-dir /abs/path/meetings/files
+```
+
+如果已经拿到单个下载 URL：
+
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py download-url \
+  "https://..." \
+  --dest /abs/path/meetings/files/recording.mp4
+```
+
+获取转写全文：
+
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py transcript \
+  --record-file-id <record_file_id> \
+  --pid 0 \
+  --output /abs/path/transcript.json
+```
+
+获取智能纪要：
+
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py smart-minutes \
+  --record-file-id <record_file_id> \
+  --output /abs/path/minutes.json
+```
+
+任意工具调用：
+
+```bash
+python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/mcp_cli.py call get_records_list \
+  --args '{"meeting_code":"904854736"}'
+```
+
+## 时间处理
+
+- 用户用“今天、昨天、下周一”等相对时间时，先调用官方 `convert_timestamp`，不要模型心算。
+- 用户明确给时区时，`convert_timestamp` 传 `timezone`；返回的 `parsed_time_unix` 已经是正确 UTC 时间戳，不要二次换算。
+- 若只用桥接 CLI 且用户已经给了明确时间，优先传 ISO 8601，例如 `2026-06-04T15:00:00+08:00`。
+
+## 旧脚本状态
+
+`engines/tencent-meeting/scripts/cli.py`、`fetch_tencent_meeting_transcripts_stable.py`、`download_tencent_meeting_videos_stable.py`、`download_tencent_stream.py` 保留为 legacy：
+
+- 只用于历史排障、回归对照，或用户明确要求旧的分享短链/分轨归档路径。
+- 默认不自动回退到 legacy，避免继续依赖非官方网页接口。
+- 分轨“说话人轨/共享屏幕轨”目前官方 MCP 未在 reference 中声明；用户明确要分轨素材时，可以说明限制后再考虑 legacy `download_tencent_stream.py`。

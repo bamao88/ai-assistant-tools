@@ -11,6 +11,7 @@ edith.xiaohongshu.com
 # Both must be bypassed: the API needs CN source IP to issue CN-bound download tokens,
 # the CDN host filters this SNI on its overseas POPs.
 meeting.tencent.com
+mcp.meeting.tencent.com
 ylz.cos.meeting.tencent.com
 
 # WeChat Channels publishing.

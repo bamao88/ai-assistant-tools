@@ -15,6 +15,23 @@ SAU="$ENGINE/.venv/bin/sau"
 - 浏览器用 patchright Chromium（安装时已 `patchright install chromium`）。
 - 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.douyin`（当前：`张和`）。账号标识约定：`张和` = 本项目（assistant_zh，负责张和全部自媒体）名下的抖音号，cookie 落 `douyin_张和.json`。**只发这个账号**，发别的先与用户确认。
 
+## 网络分流前置步骤（强制）
+
+为避免 Tailscale exit node 或系统代理导致抖音发布走海外/代理出口（**异地 IP 登录/发布会触发抖音风控**），任何 `douyin` 子命令（check / login / upload-video / upload-note）执行前，必须先刷新本地分流路由：
+
+```bash
+tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
+```
+
+无 TTY 遇到 `sudo: a password is required` 时，改用管理员授权窗口执行同一脚本：
+
+```bash
+osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true; /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply" with administrator privileges'
+```
+
+⚠️ **上传腿的局限**：抖音视频上传走 `*.douyinvod.com` 等动态 CDN，host 路由穷举不到，分流脚本只能保证 creator 中心/登录/风控腿走本地。要让**整条发布都走本地**，最稳的是发布时段关掉海外 exit node：`tailscale set --exit-node=`（发完再按需恢复）。如分流或验证失败，**停止发布并报告**，不要带着海外出口发。
+
 ## 命令
 
 **登录（建议在本地真实终端跑，可加 `--headed` 看页面）：**

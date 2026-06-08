@@ -173,6 +173,7 @@ def _fill_publish_video_form(
     tags: list[str],
     schedule_time: str | None,
     visibility: str,
+    is_original: bool = False,
 ) -> None:
     """填写视频表单（不点击发布）。"""
     # 标题
@@ -190,6 +191,14 @@ def _fill_publish_video_form(
     if tags:
         _input_tags(page, content_selector, tags)
     time.sleep(1)
+
+    # 原创声明
+    if is_original:
+        try:
+            _set_original(page)
+            logger.info("已声明原创")
+        except Exception as e:  # noqa: BLE001
+            logger.warning("设置原创声明失败: %s", e)
 
     # 定时发布
     if schedule_time:

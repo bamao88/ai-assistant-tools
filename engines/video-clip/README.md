@@ -7,16 +7,19 @@
 - 原子约定：`atoms/<name>.py IN OUT [--params]`，**幂等、不改原片、可单跑可串联**。
 - 产物/测试：一律写 `tools/var/video-clip/`，不进 git、不进业务真源。
 
-## 已实现原子（status=ready）
+## 原子（全部 ready，详见 catalog.json）
 
 ```bash
-python3 atoms/concat.py       OUT.mp4 --inputs a.mp4 b.mp4 ...
-python3 atoms/progress_bar.py IN.mp4 OUT.mp4 --chapters 4 --index 2 [--label 第二幕]
-python3 atoms/endcard.py      IN.mp4 OUT.mp4 --card /abs/card.(png|jpg|html) [--seconds 3]
+python3 atoms/concat.py          OUT.mp4 --inputs a.mp4 b.mp4 ...
+python3 atoms/progress_bar.py    IN.mp4 OUT.mp4 --chapters 4 --index 2 [--label 第二幕]
+python3 atoms/endcard.py         IN.mp4 OUT.mp4 --card /abs/card.(png|jpg|html) [--seconds 3]
+python3 atoms/speed_adapt.py     IN.mp4 OUT.mp4 --srt x.srt [--target_cps 8]
+python3 atoms/subtitle_burn.py   IN.mp4 OUT.mp4 --srt x.srt [--fs 36] [--y h-130]
+python3 atoms/subtitle_ai_fix.py IN.srt OUT.srt [--hint ...]      # 走 LLM,需 .env
+python3 atoms/face_locate.py     IN.mp4 [--target 720x744]        # 只读,出 JSON
+python3 atoms/name_mask.py       IN.mp4 OUT.mp4 --region WxH+X+Y [--mask circle.png] [--trim 0]
+python3 atoms/cover_frame.py     IN.mp4 cover.png [--at 2] [--overlay title.png]
 ```
-
-`planned` 原子（speed-adapt / subtitle-burn / subtitle-ai-fix / face-locate / name-mask / cover-frame）
-已在 `catalog.json` 标注 `copy_from` 源路径，待从业务项目移植统一进本引擎。
 
 ## 边界
 

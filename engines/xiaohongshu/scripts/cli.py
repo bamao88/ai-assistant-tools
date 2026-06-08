@@ -1221,6 +1221,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("--tags", nargs="*", help="标签")
     sub.add_argument("--schedule-at", help="定时发布 (ISO8601)")
     sub.add_argument("--visibility", help="可见范围")
+    sub.add_argument("--original", action="store_true", help="声明原创")
     sub.set_defaults(func=cmd_fill_publish_video)
 
     # click-publish（点击发布按钮）

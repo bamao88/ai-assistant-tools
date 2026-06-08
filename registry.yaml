@@ -51,6 +51,12 @@ skills:
     install_kind: dir
     purpose: 视频内容处理（本地/URL 逐字稿、字幕、关键帧、素材研究、标题备选）
     uses_engines: [video-research]
+  - name: video-clip
+    layer: L2
+    source: skills/video-clip
+    install_kind: dir
+    purpose: 视频剪辑/合成（直接拼接 / 章节进度条成长片 / 片尾钩子卡 / 变速 / 字幕 / 遮名）；复杂框架页切片路由回业务项目
+    uses_engines: [video-clip, video-slicer]
   - name: creator-profile
     layer: L2
     source: skills/creator-profile

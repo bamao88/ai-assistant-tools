@@ -851,6 +851,7 @@ def cmd_fill_publish_video(args: argparse.Namespace) -> None:
                 video_path=args.video,
                 schedule_time=args.schedule_at,
                 visibility=args.visibility or "",
+                is_original=getattr(args, "original", False),
             ),
         )
         _output(

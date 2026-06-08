@@ -37,6 +37,20 @@ npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts 
 
 config 里 `~/.gzh-publish/config.json` 现有 profile：`mdx`(default) / `wxp-ai` / `wxp-self`。其中 `mdx` = 直觉机器漫谈 / MiaoDX，`wxp-ai` = AI PM 小助理号。
 
+## 公众号封面选择逻辑（先判断用哪种封面）
+
+AI PM 小助理号的文章按类型选封面，不要默认套同一套：
+
+| 文章类型 | 封面形式 | 怎么做 |
+|---|---|---|
+| 普通原创文章（概念拆解 / 知识笔记 / 解读） | 文章封面 kit | `generate_cover.py article --title ...`，title 拆左标题 + 右关键词 |
+| AI 日报 | 日报封面 kit | `generate_cover.py daily --date ...` |
+| **视频 / 外部源转写类**（YouTube / 播客 / 访谈转写成文章） | **直接用数据源封面图** | 不套 kit、不跑 `generate_cover.py`；直接拿数据源自带的封面当公众号封面（如 YouTube 视频封面 `https://i.ytimg.com/vi/<id>/maxresdefault.jpg`），存进 item assets 后写进 frontmatter `cover` |
+
+为什么转写类单独走数据源封面：这类文章的「主角」是那条视频 / 那场访谈本身，原封面（人物、品牌、节目画面）比自制标题卡更有辨识度和点击欲；现有两套 kit（标题卡、日报卡）都不适配这种「指向一个外部内容」的形态。数据源封面常是 16:9，`gzh-publish` 会按默认裁剪写 `pic_crop_235_1` / `pic_crop_1_1`，需要时在 frontmatter 显式覆盖裁剪坐标。
+
+首例：Legora YC 访谈转写（ZHC20260608_201637_001，副号），封面 = 该 YouTube 视频封面。
+
 ## 公众号封面资产
 
 公众号横版封面与小红书竖版卡片封面分开管理。不要把小红书 `markdown-to-cards` 封面直接当公众号封面使用。

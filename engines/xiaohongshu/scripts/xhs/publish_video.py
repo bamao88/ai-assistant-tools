@@ -75,6 +75,7 @@ def fill_publish_video_form(page: Page, content: PublishVideoContent) -> None:
         content.tags,
         content.schedule_time,
         content.visibility,
+        content.is_original,
     )
 
 

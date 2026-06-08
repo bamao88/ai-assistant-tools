@@ -67,7 +67,7 @@ def main():
     if not (1 <= a.index <= a.chapters):
         raise SystemExit(f"--index 必须在 1..{a.chapters}")
 
-    w, h, dur, has_audio = probe(a.input)
+    w, h, _dur, has_audio = probe(a.input)
     if w == 0:
         raise SystemExit(f"读不到视频尺寸: {a.input}")
 

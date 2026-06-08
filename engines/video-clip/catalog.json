@@ -1,0 +1,66 @@
+{
+  "_doc": "video-clip 原子能力目录(真源)。status: ready=已实现可用 | planned=已设计待从copy_from移植。scope: generic=通用 | project-side=留业务项目不拷。sig=CLI签名。命名规则:功能英文词,字幕类带 subtitle 前缀、AI加工的带 -ai-。",
+  "atoms_dir": "atoms/",
+  "atoms": {
+    "concat": {
+      "status": "ready", "scope": "generic", "file": "atoms/concat.py",
+      "sig": "concat.py OUT --inputs a.mp4 b.mp4 ... [--target WxH] [--fps 25] [--reencode]",
+      "purpose": "直接拼接多段为一条;同规格零重编,异规格统一重编",
+      "used_by": ["simple_concat", "chaptered_growth"]
+    },
+    "progress-bar": {
+      "status": "ready", "scope": "generic", "file": "atoms/progress_bar.py",
+      "sig": "progress_bar.py IN OUT --chapters N --index k [--label 文字] [--h 12] [--margin 44] [--color FF6B5C]",
+      "purpose": "底部章节分段进度条叠加(复刻 chen_growth 成长片样式);样式默认值待优化",
+      "ref_assets": "/Volumes/ExtSSD2601/media/tencent/_camp4_chen_growth/assets/bar_act*.png",
+      "used_by": ["chaptered_growth"]
+    },
+    "endcard": {
+      "status": "ready", "scope": "generic", "file": "atoms/endcard.py",
+      "sig": "endcard.py IN OUT --card PATH(.png/.jpg/.html) [--seconds 3] [--fade 0.5] [--pos center]",
+      "purpose": "片尾钩子卡末N秒淡入叠加;卡片内容由调用方给,不内置账号专属卡",
+      "note": "源自 assistant_zh/workflow/video_framework_slicer/overlay_endcard.py;张和试听课卡=项目数据留项目侧",
+      "used_by": ["framework_slice", "simple_concat", "chaptered_growth"]
+    },
+    "speed-adapt": {
+      "status": "planned", "scope": "generic",
+      "copy_from": "assistant_zh/workflow/video_framework_slicer/slicer.py::accelerate (+ tmp/diagram_pip_sample/accel.py)",
+      "sig": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0] [--gap_speed 2.0]",
+      "purpose": "按逐字稿语速自适应变速,atempo 保音调;cps 默认偏中文"
+    },
+    "subtitle-burn": {
+      "status": "planned", "scope": "generic",
+      "copy_from": "assistant_zh/workflow/video_framework_slicer/slicer.py::make_subtitles",
+      "sig": "subtitle_burn.py IN OUT --srt x.srt [--style pill] [--y 1150] [--fs 36]",
+      "purpose": "SRT→ASS 圆角药丸字幕烧录;几何默认720x1280作参数"
+    },
+    "subtitle-ai-fix": {
+      "status": "planned", "scope": "generic",
+      "copy_from": "assistant_zh/workflow/video_framework_slicer/srt_fix.py (+ fixes.json)",
+      "sig": "subtitle_ai_fix.py IN.srt OUT.srt [--hint ...]",
+      "purpose": "用AI加工字幕:ASR纠错+术语映射+口语清理,时间轴1:1;走 LLM(Kimi/MiniMax)"
+    },
+    "face-locate": {
+      "status": "planned", "scope": "generic",
+      "copy_from": "slicer.py::locate_face_cx + video_vertical/reframe_locate.py (两处合一)",
+      "sig": "face_locate.py IN [--samples 40] -> face_cx(0..1)/crop 参数",
+      "purpose": "Haar 人脸中心定位;竖屏裁切与圆形PIP都用"
+    },
+    "name-mask": {
+      "status": "planned", "scope": "generic(拷时参数化)",
+      "copy_from": "assistant_zh/workflow/video_framework_slicer/make_publish.py",
+      "sig": "name_mask.py IN OUT [--region WxH+X+Y] [--fill face.png] [--trim 0]",
+      "purpose": "黑帧检测+遮罩遮学员名;原版几何写死slicer,拷时提成 --region"
+    },
+    "cover-frame": {
+      "status": "planned", "scope": "generic",
+      "sig": "cover_frame.py IN OUT [--at 0] [--overlay title.png]",
+      "purpose": "首帧/指定帧出封面;现状手工,优先级低"
+    },
+    "framework-pip-pages": {
+      "status": "project-side-only", "scope": "project-side",
+      "where": "assistant_zh/workflow/video_framework_slicer/slicer.py (compose/render_pages)",
+      "purpose": "圆形人像PIP+手写框架页翻页,强耦合张和锁定版式;不拷,归为recipe framework_slice,skill路由回项目"
+    }
+  }
+}

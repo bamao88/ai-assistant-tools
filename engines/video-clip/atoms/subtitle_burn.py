@@ -99,7 +99,7 @@ def main():
     if not Path(a.srt).exists():
         raise SystemExit(f"SRT 不存在: {a.srt}")
     out = ensure_parent(a.output)
-    w, h, dur, has_audio = probe(a.input)
+    w, h, _dur, has_audio = probe(a.input)
     if w == 0:
         raise SystemExit(f"读不到视频尺寸: {a.input}")
     cy = a.y if a.y is not None else h - 130

@@ -257,7 +257,11 @@ engines:
   - id: video-slicer
     path: engines/video-slicer
     runtime: "python — video_slicer 包"
-    purpose: 视频切片/裁剪（无独立触发 skill；按需被调用）
+    purpose: 视频切片/裁剪 AI 选段规划（无独立触发 skill；按需被调用）
+  - id: video-clip
+    path: engines/video-clip
+    runtime: "python — atoms/*.py（ffmpeg + pillow；endcard 渲 html 卡需 node/puppeteer）"
+    purpose: 视频剪辑/合成原子库 + 编辑类型配方（拼接/进度条/片尾/变速/字幕/遮名）；真源 catalog.json + recipes.json
   - id: tencent-meeting
     path: engines/tencent-meeting
     runtime: "python — scripts/mcp_cli.py（官方 MCP 桥接；legacy 下载脚本保留）"

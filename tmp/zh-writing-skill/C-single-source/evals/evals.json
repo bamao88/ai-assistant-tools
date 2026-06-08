@@ -1,0 +1,23 @@
+{
+  "skill_name": "overseas-insight-writer",
+  "evals": [
+    {
+      "id": 1,
+      "name": "google-agent-skills",
+      "prompt": "帮我写篇文章：https://developers.googleblog.com/closing-the-knowledge-gap-with-agent-skills/",
+      "expected_output": "完整中文文章，第一人称，深思圈风格，4000-6000字，纯散文无列表"
+    },
+    {
+      "id": 2,
+      "name": "langchain-deep-agents",
+      "prompt": "帮我写篇文章：https://www.langchain.com/blog/runtime-behind-production-deep-agents",
+      "expected_output": "完整中文文章，第一人称，深思圈风格，4000-6000字，纯散文无列表"
+    },
+    {
+      "id": 3,
+      "name": "lenny-agency",
+      "prompt": "帮我写篇文章：https://www.lennysnewsletter.com/p/why-cultivating-agency-matters-more",
+      "expected_output": "完整中文文章，第一人称，深思圈风格，4000-6000字，纯散文无列表"
+    }
+  ]
+}

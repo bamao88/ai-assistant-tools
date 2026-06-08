@@ -29,7 +29,7 @@ skills:
     source: skills/platform-publish
     install_kind: dir
     purpose: 内容发布与多平台分发统一入口（小红书 / 公众号 / 视频号 / B站视频 / 抖音视频 / wechatsync 全平台）
-    uses_engines: [xiaohongshu, gzh-publish, tencent-video-publish, markdown-to-cards, route-bypass]
+    uses_engines: [xiaohongshu, gzh-publish, tencent-video-publish, markdown-to-cards, route-bypass, platform-draft-direct]
     uses_vendor: [wechatsync, social-auto-upload]
 
   # --- L2 workflows ---
@@ -270,6 +270,10 @@ engines:
     path: engines/route-bypass
     runtime: "zsh — scripts/xhs-route-bypass.zsh"
     purpose: 小红书/视频号发布网络分流（被 platform-publish 调用）
+  - id: platform-draft-direct
+    path: engines/platform-draft-direct
+    runtime: "node — src/cli.js"
+    purpose: 知乎/掘金/CSDN 无 Chrome 插件草稿直传；凭证落 var/credentials/platform-draft-direct
   - id: calendar-task
     path: engines/calendar-task
     runtime: "sh — calendar-task.sh"

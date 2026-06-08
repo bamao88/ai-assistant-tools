@@ -1,0 +1,135 @@
+{
+  "skill_name": "zh-writing-skill",
+  "eval_type": "routing",
+  "purpose": "测试顶层 SKILL.md 的观点定位、预检与路由准确性 — 给定用户 prompt，agent 应先输出 Zhang Viewpoint Dossier 和 Article Brief，再在 Decision=WRITE 时正确选择 A/B/C 路由文件或兜底，且不直接开写正文。",
+  "evals": [
+    {
+      "id": 1,
+      "name": "clear-A-业内复盘",
+      "prompt": "我刚发现字节做出了我两年前在小米推的方向，想写一篇复盘",
+      "expected_route": "A-firsthand / 业内复盘子模板",
+      "rationale": "强亲历信号（小米经历），路由 A 第一条命中",
+      "assertions": [
+        "Agent 先输出 Zhang Viewpoint Dossier，再输出 Article Brief",
+        "Article Brief 包含 Publishability Estimate",
+        "Decision 为 WRITE",
+        "Agent 选择 A-firsthand.md",
+        "Agent 没有读取 B/C 任一路由文件",
+        "Agent 没有立即开写"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "clear-B-PM教材",
+      "prompt": "我想把 Anthropic 评估博客、Hamel 的评估文章、Eugene Yan 的评估指南串成一篇 PM 视角的评估教材",
+      "expected_route": "B-knowledge-system",
+      "rationale": "明确技术概念（评估）+ ≥3 海外信源 + PM 教材形态",
+      "assertions": [
+        "Agent 先输出 Zhang Viewpoint Dossier，再输出 Article Brief",
+        "Article Brief 包含 Publishability Estimate",
+        "Decision 为 WRITE",
+        "Agent 选择 B-knowledge-system.md",
+        "Agent 没有读取 A/C 任一路由文件"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "clear-C-单源解读",
+      "prompt": "我看完 Karpathy 这篇博客觉得很有意思，帮我用张和的口吻写一篇：https://karpathy.bearblog.dev/some-post/",
+      "expected_route": "C-single-source / 高在场度档",
+      "rationale": "单源海外内容 + 解读语境，C 命中",
+      "assertions": [
+        "Agent 先输出 Zhang Viewpoint Dossier，再输出 Article Brief",
+        "Article Brief 包含 Publishability Estimate",
+        "Decision 为 WRITE",
+        "Agent 选择 C-single-source.md",
+        "Agent 没有读取 A/B 任一路由文件"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "boundary-A-overrides-B",
+      "prompt": "想结合张和在小米推 AI 训练数据的经历，配合 Anthropic 和 Karpathy 的几篇文章，写一篇关于 RLHF 数据闭环的反思",
+      "expected_route": "A-firsthand",
+      "rationale": "亲历是论证主体，海外信源做验证 → 边界判断走 A 不走 B",
+      "assertions": [
+        "Agent 先输出 Zhang Viewpoint Dossier，再输出 Article Brief",
+        "Article Brief 包含 Publishability Estimate",
+        "Decision 为 WRITE",
+        "Agent 选择 A-firsthand 而非 B-knowledge-system",
+        "Agent 在路由解释中提到'亲历是论证主体'或类似边界判断"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "long-term-product-into-A",
+      "prompt": "我用了 ColaOS 三周，想把体验完整地写下来",
+      "expected_route": "A-firsthand",
+      "rationale": "长期实测产品已并入 A（D 已归档），不应出现 D 路径",
+      "assertions": [
+        "Agent 先输出 Zhang Viewpoint Dossier，再输出 Article Brief",
+        "Article Brief 包含 Publishability Estimate",
+        "Decision 为 WRITE",
+        "Agent 选择 A-firsthand",
+        "Agent 没有引用 D-product-feel 或 references/_archived/ 任何文件"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "boundary-C-not-B",
+      "prompt": "我看了 Anthropic 这篇关于 Agent 设计的博客，张和有几条产品视角的评论可以织进去，帮我写一篇",
+      "expected_route": "C-single-source / 高在场度档",
+      "rationale": "单篇外源 + 张和单点评论 → C 高在场度，不是 B（B 需 ≥3 信源）",
+      "assertions": [
+        "Agent 先输出 Zhang Viewpoint Dossier，再输出 Article Brief",
+        "Article Brief 包含 Publishability Estimate",
+        "Decision 为 WRITE",
+        "Agent 选择 C-single-source",
+        "Agent 没有走 B（不应为'整合多个信源'误路由）"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "fallback-to-A-反主流",
+      "prompt": "想写一篇关于 Agent 评估的文章，目前没具体亲历也没攒齐多个信源，但我有个判断：大家都在追指标但其实没人真的看错样本",
+      "expected_route": "预检兜底 → 补素材或 A-firsthand / 反主流单点子模板",
+      "rationale": "3 主路径都不强匹配，但有反主流断言；新闭环应先判断证据是否足够，足够才兜底走 A 反主流",
+      "assertions": [
+        "Agent 先输出 Zhang Viewpoint Dossier，再输出 Article Brief",
+        "Article Brief 包含 Publishability Estimate",
+        "Agent 明确这是兜底路径，不是主路径",
+        "如果 Decision=WRITE，Agent 选择 A-firsthand 反主流单点子模板",
+        "如果 Decision=SUPPLEMENT，Agent 说明缺少哪些证据且不直接写正文"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "refuse-no-material",
+      "prompt": "OpenAI 刚发布了新模型，帮我写一篇",
+      "expected_route": "拒绝 / 建议补素材",
+      "rationale": "纯转述新闻，立不出反主流断言 → 不该硬写",
+      "assertions": [
+        "Agent 先输出 Zhang Viewpoint Dossier，再输出 Article Brief",
+        "Article Brief 包含 Publishability Estimate",
+        "Decision 为 SUPPLEMENT 或 KILL",
+        "Agent 没有立即开写",
+        "Agent 给出补原始来源 / 找张和判断 / 降级 / 放弃之一",
+        "Agent 引用素材稀薄时不硬写的规则"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "clear-A-踩坑指南",
+      "prompt": "我刚踩了 Claude Code 封号的坑，想写一篇指南",
+      "expected_route": "A-firsthand / 踩坑指南子模板",
+      "rationale": "亲历踩坑强信号",
+      "assertions": [
+        "Agent 先输出 Zhang Viewpoint Dossier，再输出 Article Brief",
+        "Article Brief 包含 Publishability Estimate",
+        "Decision 为 WRITE",
+        "Agent 选择 A-firsthand",
+        "Agent 在路由解释中提到踩坑指南子模板"
+      ]
+    }
+  ]
+}

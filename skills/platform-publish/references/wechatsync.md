@@ -2,6 +2,8 @@
 
 使用全局 `wechatsync` CLI 把 Markdown/HTML 文章同步到多个内容平台。这个 skill 是本地 AI_Assistant 的发布操作层，只包装 Wechatsync CLI 的安全工作流；不要修改 Wechatsync 的 CLI、MCP Server、Chrome 扩展或平台适配器源码。
 
+**优先级更新**：知乎、掘金、CSDN 草稿发布优先使用无插件直传引擎 `/Volumes/ExtSSD2601/AI_Assistant/tools/engines/platform-draft-direct/src/cli.js`。只有该引擎缺 Cookie、账号校验失败、平台接口失败，且用户接受 Chrome 扩展 fallback 时，才回到本 Wechatsync 流程。
+
 ## 边界
 
 - 默认使用全局 `wechatsync` 命令，不要调用本仓库 `packages/cli/dist/index.js`。
@@ -65,6 +67,31 @@ weixin, xiaohongshu
 ```
 
 用户用中文平台名时，转换为对应 ID。例如：知乎 `zhihu`，掘金 `juejin`，头条 `toutiao`。如果用户要求发布到公众号或小红书，停止 Wechatsync 流程并路由到对应专用 skill。
+
+## 无插件直传：知乎 / 掘金 / CSDN
+
+目标平台只包含 `zhihu`、`juejin`、`csdn` 时，优先走：
+
+```bash
+cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/platform-draft-direct
+node src/cli.js auth --platform zhihu,juejin,csdn
+node src/cli.js sync /absolute/path/article.md --platform zhihu,juejin,csdn --title "标题" --dry-run
+node src/cli.js sync /absolute/path/article.md --platform zhihu,juejin,csdn --title "标题"
+```
+
+首次或 Cookie 过期时导入浏览器导出的 Cookie JSON：
+
+```bash
+node src/cli.js import-cookies --platform zhihu --file /absolute/path/cookies.json
+```
+
+直传引擎约束：
+
+- 只写草稿箱，不正式发布。
+- Cookie 存在 `var/credentials/platform-draft-direct/<platform>.json`，不打印 Cookie。
+- `auth` 会读取 `vendor/wechatsync/config/project-platforms.json` 校验 `assistant_zh` 期望账号。
+- `--dry-run` 不访问平台 API；只展示文件、标题、平台和图片数量。
+- 今日头条不在直传首批，继续用 Wechatsync 或后续独立 spike。
 
 ## 项目账号规则
 

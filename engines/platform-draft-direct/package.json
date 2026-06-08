@@ -1,0 +1,16 @@
+{
+  "name": "platform-draft-direct",
+  "version": "0.1.0",
+  "description": "Direct draft uploader for Zhihu, Juejin, and CSDN without Chrome extension bridge.",
+  "type": "module",
+  "bin": {
+    "draft-direct": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "UNLICENSED"
+}

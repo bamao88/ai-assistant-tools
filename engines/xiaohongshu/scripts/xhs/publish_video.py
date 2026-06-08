@@ -98,9 +98,42 @@ def _upload_video(page: Page, video_path: str) -> None:
     selector = UPLOAD_INPUT if page.has_element(UPLOAD_INPUT) else FILE_INPUT
     page.set_file_input(selector, [video_path])
 
-    # 等待发布按钮可点击（视频处理完成）
-    _wait_for_publish_button_clickable(page)
+    # 等待视频处理完成（出现 video 预览且无上传进度）。
+    # 注意：不能在这里等"发布按钮可点击"——发布按钮要等标题等内容填好后才会变红可点，
+    # 而填写发生在本步之后，先等按钮会造成死锁（历史 bug）。
+    _wait_for_video_processed(page)
     logger.info("视频上传/处理完成")
+
+
+def _wait_for_video_processed(page: Page) -> None:
+    """等待视频上传 + 处理完成。
+
+    判定信号：页面出现 <video> 预览（带 blob/http 源），且不再显示上传/处理进度。
+    """
+    max_wait = 1800.0  # 30 分钟
+    start = time.monotonic()
+
+    logger.info("开始等待视频处理完成")
+
+    while time.monotonic() - start < max_wait:
+        done = page.evaluate(
+            """
+            (() => {
+                const v = document.querySelector('video');
+                if (!v) return false;
+                const src = v.currentSrc || v.src || '';
+                if (!src) return false;
+                const t = document.body.innerText || '';
+                if (/上传中|视频上传中|处理中|上传失败/.test(t)) return false;
+                return true;
+            })()
+            """
+        )
+        if done:
+            return
+        time.sleep(1)
+
+    raise UploadTimeoutError("等待视频处理完成超时(30分钟)")
 
 
 def _wait_for_publish_button_clickable(page: Page) -> None:

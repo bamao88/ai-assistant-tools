@@ -55,6 +55,7 @@ tools/
 | `gzh-publish` | Node/tsx — `src/index.ts`（公众号排版发布） |
 | `gzh-scraper` | Python — `scripts/cli.py` + wechat-article-exporter 服务 |
 | `markdown-to-cards` | Node — `cli.js` |
+| `platform-draft-direct` | Node — `src/cli.js`（知乎 / 掘金 / CSDN 无插件草稿直传） |
 | `video-research` | Python `.venv` — `scripts/cli.py` |
 | `video-slicer` | Python 包（暂无独立技能） |
 | `tencent-meeting` | Python — 官方 MCP 桥接 `scripts/mcp_cli.py`（legacy 下载脚本保留） |

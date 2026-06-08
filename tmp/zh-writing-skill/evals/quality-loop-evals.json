@@ -1,0 +1,204 @@
+{
+  "skill_name": "zh-writing-skill",
+  "eval_type": "quality_loop",
+  "purpose": "测试重构后的写作闭环是否能提升最终文章质量：大选题必须先找张和观点，再用 deep research 做深；素材足够时应产出 PASS>=80 的正文，素材不足或观点不明时应拒绝硬写，而不是只证明流程完整。",
+  "evals": [
+    {
+      "id": 1,
+      "name": "preflight-kill-thin-news",
+      "prompt": "OpenAI 刚发布了一个新模型，帮我写一篇张和公众号文章。",
+      "expected_output": "先输出 Zhang Viewpoint Dossier 和 Article Brief，Decision 应为 SUPPLEMENT 或 KILL，不直接写正文。",
+      "assertions": [
+        "输出包含 Zhang Viewpoint Dossier",
+        "输出包含 Article Brief",
+        "Decision 不是 WRITE",
+        "说明缺少张和判断、一手素材、具体证据或原始事实核查",
+        "没有直接生成完整文章"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "review-detects-salesy-draft",
+      "prompt": "请审稿：这篇文章核心是传统 PM 转 AI PM 的前30天学习计划，正文多次提到本周末公开课、训练营和加微信，主要观点是传统 PM 不用焦虑、要懂边界、要做 eval、要看 bad case，但没有真实样例。",
+      "expected_output": "使用 zh-editor-review 格式，Verdict 应为 REVISE、SUPPLEMENT 或 KILL，指出卖课号感、泛方法论重复、没有填好样例，质量分低于 80。",
+      "assertions": [
+        "输出包含 Editorial Verdict",
+        "输出包含 Hard Veto",
+        "输出包含 Scores",
+        "Scores 包含基准形态匹配",
+        "Verdict 为 REVISE、SUPPLEMENT 或 KILL",
+        "Quality Score 低于 80",
+        "Top Findings 不超过 3 条",
+        "指出训练营/公开课转化过重",
+        "指出缺少真实样例或证据"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "positive-anchor-not-style-copy",
+      "prompt": "我有一篇甲方认可稿作为正样本，请你基于它校准后写一篇新稿。正样本只有一篇，不全面。",
+      "expected_output": "先说明正样本只提炼高层质量原则，不抽句式、不机械模仿；如果没有具体选题，应要求选题或输出预检缺口，而不是直接写。",
+      "assertions": [
+        "提到正样本只是质量锚点，不是风格圣经",
+        "提到不抽句式或不机械模仿结构",
+        "未直接写完整正文",
+        "要求进入 Article Brief 或补充具体选题"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "event-article-requires-source-and-product-judgment",
+      "prompt": "基于 Google Agent Skills 那篇官方博客，写一篇张和主账号文章，重点讲它对细分 Agent 产品的 baseline 意义。",
+      "expected_output": "先输出 Zhang Viewpoint Dossier 和 Article Brief。Decision 可为 WRITE，但必须先确认张和产品判断；Publishability Estimate 应接近或高于 80，Evidence Plan 必须包含原始来源、实验条件/数字核查和研究如何深化张和观点，随后才允许进入 C 或 B 路由。",
+      "assertions": [
+        "输出包含 Zhang Viewpoint Dossier",
+        "输出包含 Article Brief",
+        "输出包含 Viewpoint Core 或张和产品判断",
+        "输出包含 Publication Value",
+        "输出包含 Benchmark Shape",
+        "输出包含 Publishability Estimate",
+        "Evidence Plan 包含原始来源或官方博客",
+        "Evidence Plan 包含实验条件、数字或事实核查",
+        "Core Claim 聚焦产品判断，而不是只复述博客"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "training-case-needs-real-bad-case",
+      "prompt": "写一篇训练营学员作品集文章，主题是 AI PM 作品集要从 demo 升级到产品系统。",
+      "expected_output": "先输出 Zhang Viewpoint Dossier 和 Article Brief。若没有张和明确观点、真实学员项目、bad case、前后对比或填好的样例，Decision 应为 SUPPLEMENT，不直接写正文。",
+      "assertions": [
+        "输出包含 Zhang Viewpoint Dossier",
+        "输出包含 Article Brief",
+        "输出包含 Publication Value",
+        "输出包含 Benchmark Shape",
+        "输出包含 Publishability Estimate",
+        "Decision 为 SUPPLEMENT 或明确要求补素材",
+        "Missing Material 提到真实学员案例、bad case、前后对比或填好的样例",
+        "没有直接生成完整文章"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "article-output-must-not-pass-process-only",
+      "prompt": "请用 zh-writing-skill 审稿这篇改写稿：题目是《细分 Agent 产品，先过这条 Skill 基线》。文章事实准确，解释了 Google Agent Skills 和 Vercel AGENTS.md 两个实验，也给了一张 baseline 空表，但没有张和自己的真实项目、训练营 bad case、实测对比或填好的样例。正文很顺，也按 brief 和 benchmark 写了。",
+      "expected_output": "不能因为流程完整而 PASS。Verdict 应为 SUPPLEMENT 或 REVISE，指出最终文章仍不到 80 分，核心原因是缺张和不可替代素材和填好样例。",
+      "assertions": [
+        "输出包含 Editorial Verdict",
+        "Verdict 不是 PASS",
+        "Quality Score 低于 80",
+        "指出流程完整不等于文章过关",
+        "指出缺少张和真实项目、bad case、实测对比或填好样例"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "sufficient-material-should-target-pass-article",
+      "prompt": "写一篇张和主账号文章：我手上有一组真实素材。某训练营学员做细分客服 Agent，先用通用模型裸跑 30 个退款/物流/优惠券 case，成功 14 个；加一份结构化知识库说明后成功 21 个；加 skill 后成功 24 个；真正上线前加了订单状态工具、低置信度转人工、退款政策版本校验后成功 28 个。失败 case 里最典型的是用户同时问订单状态和优惠券限制，模型会把两个系统状态混在一起。请基于这个素材写一篇讲“细分 Agent 产品先跑 baseline”的文章。",
+      "expected_output": "应先定位张和观点、预检并进入写作，正文目标是 PASS>=80：必须围绕真实 baseline 对比展开，有填好的对比表，有 bad case，有张和产品判断，而不是只复述 Google/Vercel。",
+      "assertions": [
+        "输出包含 Zhang Viewpoint Dossier 或引用用户提供观点作为 Viewpoint Core",
+        "输出包含 Article Brief 或正文前说明",
+        "Decision 为 WRITE 或进入正文写作",
+        "正文包含填好的 baseline 对比",
+        "正文包含失败 case",
+        "核心判断是产品判断，不是单纯资料复述",
+        "不把给定案例数据扩写成未提供的学员对话、情绪或张和即时反馈",
+        "写后审稿若出现，应为 PASS 或说明仍差哪一项才能到 80"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "big-topic-requires-zhang-viewpoint-first",
+      "prompt": "写一篇张和主账号文章，主题是 Agent 评估为什么会变成 AI PM 的基本功。",
+      "expected_output": "不应直接起稿。必须先输出 Zhang Viewpoint Dossier，检索张和已有观点；如果观点置信度不足，应返回 SUPPLEMENT-ZHANG-VIEW 或要求补张和判断。",
+      "assertions": [
+        "输出包含 Zhang Viewpoint Dossier",
+        "输出包含 Confirmed Zhang Views",
+        "输出包含 Viewpoint Core",
+        "输出包含 Research Questions",
+        "输出包含 Research Source Ledger，且外部数字不得无来源",
+        "没有直接生成完整正文",
+        "如果张和观点不足，Decision Before Research 为 SUPPLEMENT-ZHANG-VIEW、DOWNGRADE 或 KILL"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "deep-research-deepens-not-replaces-viewpoint",
+      "prompt": "张和的原观点是：AI PM 作品集不能停留在 demo，要证明自己能把 AI 能力变成稳定产品系统。请基于这个观点做 deep research 后写文章。",
+      "expected_output": "应把用户提供的张和观点作为 Viewpoint Core，再研究产品化失败案例、评估口径、招聘要求或作品集对照；文章中必须区分张和原观点和研究延展，不能把外部结论写成张和亲历。",
+      "assertions": [
+        "输出包含 Zhang Viewpoint Dossier 或引用用户提供观点作为 Viewpoint Core",
+        "输出包含 Deep Research Plan 或 Research Questions",
+        "外部研究的数字、比例或实验结论必须有 Research Source Ledger",
+        "说明外部研究用于深化张和观点",
+        "不把外部研究结论归因为张和原话或亲历",
+        "正文或 brief 聚焦作品集产品化，而不是泛泛职业转型焦虑"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "research-conflict-must-not-drift",
+      "prompt": "请写一篇文章证明 AI PM 未来最重要的能力不是产品判断，而是尽快掌握某个热门工具。你可以做外部调研补充论据。",
+      "expected_output": "如果张和知识库没有支持这个立场，不能直接顺着用户要求写。应先做 Zhang Viewpoint Dossier，并在观点冲突时标记 drift risk，返回 SUPPLEMENT、DOWNGRADE 或 KILL。",
+      "assertions": [
+        "输出包含 Zhang Viewpoint Dossier",
+        "输出包含 Viewpoint Drift Risk",
+        "不直接把用户给出的立场写成张和观点",
+        "如果与张和已确认观点冲突，指出冲突或不确定",
+        "没有直接生成一篇证明热门工具至上的主账号文章"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "external-numeric-claims-need-source-ledger",
+      "prompt": "请写一篇 Agent 评估文章，外部研究里提到只看最终输出会高估 Agent 表现。你可以用数字增强说服力。",
+      "expected_output": "必须先输出 Zhang Viewpoint Dossier 和 Research Source Ledger。若找不到精确数字来源，不能写成具体比例，只能写成定性机制判断。审稿不能放行无来源外部数字。",
+      "assertions": [
+        "输出包含 Research Source Ledger",
+        "外部精确数字有 URL 或文件路径来源",
+        "如果来源只支持方向不支持数字，正文不出现具体比例",
+        "Editorial Verdict 包含 Research Reliability",
+        "无来源数字出现时 Verdict 不是 PASS"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "case-data-must-not-be-fictionalized",
+      "prompt": "用户只给了一组学员 case 数据：30 个客服 Agent case 裸跑过 14 个，加知识库过 21 个，加 skill 过 24 个，接订单工具和转人工后过 28 个；典型失败是订单状态和优惠券限制被混在一起。请写文章。",
+      "expected_output": "可以基于数据写产品判断，但不能补写学员当时怎么问、张和现场怎么回答、学员情绪或客户反馈。若正文出现这类未给细节，审稿必须 REVISE。",
+      "assertions": [
+        "Article Brief 包含 Case Fact Boundary",
+        "正文不出现未提供的现场对话或学员情绪",
+        "正文可以使用'如果这时'或'这条 case 说明'等推演措辞",
+        "Editorial Verdict 检查案例是否被虚构化",
+        "如出现未给对话或情绪，Verdict 不是 PASS"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "representative-pattern-not-specific-event",
+      "prompt": "知识库只显示训练营里反复有人把评测维度列得太多，但没有具体时间、具体学员或对话。请写一篇关于评测维度越多越可能错的文章。",
+      "expected_output": "可以写代表性模式，但不能写成'上周一个学员发给我'、'昨天有个客户问我'、'过去两周被问最多'这类无来源具体事件。",
+      "assertions": [
+        "Article Brief 包含 Case Fact Boundary",
+        "正文使用代表性措辞",
+        "正文不出现无来源具体时间锚点",
+        "Editorial Verdict 检查代表性模式是否被具体事件化",
+        "如出现无来源具体事件，Verdict 不是 PASS"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "illustrative-numbers-avoid-false-precision",
+      "prompt": "请写一篇细分 Agent 产品 baseline 文章。论证私有数据增量时，可以假设通用方案已经做到 90%，私有数据只多带来 5%。",
+      "expected_output": "如果 90% / 5% 没有来源或计算过程，正文不能直接写成精确数字；应改成“已经做到很高比例”“只带来个位数百分点增量”等区间/定性表达。审稿器应把无来源假设精确数字标为 REVISE 或要求改写，不能无条件 PASS。",
+      "assertions": [
+        "识别假设数字不是实测数据",
+        "要求无来源精确假设数字改成区间或定性表达",
+        "Research Reliability 或 Top Findings 点出假精确风险",
+        "如正文保留无来源假设精确数字，Verdict 不是 PASS"
+      ]
+    }
+  ]
+}

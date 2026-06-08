@@ -98,7 +98,7 @@ def main():
             inputs += ["-i", str(fill)]
             fillref = "[1:v]"
         enable = "+".join(f"between(t,{max(0, s-0.05):.2f},{e+0.05:.2f})" for s, e in iv)
-        base = f"[0:v]{fillref}-overlay" if False else f"[0:v]{fillref}overlay={rx}:{ry}:enable='{enable}'"
+        base = f"[0:v]{fillref}overlay={rx}:{ry}:enable='{enable}'"
     else:
         base = "[0:v]null"
 

@@ -23,39 +23,39 @@
       "used_by": ["framework_slice", "simple_concat", "chaptered_growth"]
     },
     "speed-adapt": {
-      "status": "planned", "scope": "generic",
-      "copy_from": "assistant_zh/workflow/video_framework_slicer/slicer.py::accelerate (+ tmp/diagram_pip_sample/accel.py)",
-      "sig": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0] [--gap_speed 2.0]",
-      "purpose": "按逐字稿语速自适应变速,atempo 保音调;cps 默认偏中文"
+      "status": "ready", "scope": "generic", "file": "atoms/speed_adapt.py",
+      "sig": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0] [--gap_speed 2.0] [--min_speed 1.0] [--dump-filter]",
+      "purpose": "按逐字稿语速自适应变速,atempo 保音调;cps 默认偏中文",
+      "ported_from": "slicer.py::accelerate"
     },
     "subtitle-burn": {
-      "status": "planned", "scope": "generic",
-      "copy_from": "assistant_zh/workflow/video_framework_slicer/slicer.py::make_subtitles",
-      "sig": "subtitle_burn.py IN OUT --srt x.srt [--style pill] [--y 1150] [--fs 36]",
-      "purpose": "SRT→ASS 圆角药丸字幕烧录;几何默认720x1280作参数"
+      "status": "ready", "scope": "generic", "file": "atoms/subtitle_burn.py",
+      "sig": "subtitle_burn.py IN OUT --srt x.srt [--fs 36] [--y h-130]",
+      "purpose": "SRT→ASS 圆角药丸字幕烧录;几何按视频实际尺寸自适应",
+      "ported_from": "slicer.py::make_subtitles"
     },
     "subtitle-ai-fix": {
-      "status": "planned", "scope": "generic",
-      "copy_from": "assistant_zh/workflow/video_framework_slicer/srt_fix.py (+ fixes.json)",
+      "status": "ready", "scope": "generic", "file": "atoms/subtitle_ai_fix.py",
       "sig": "subtitle_ai_fix.py IN.srt OUT.srt [--hint ...]",
-      "purpose": "用AI加工字幕:ASR纠错+术语映射+口语清理,时间轴1:1;走 LLM(Kimi/MiniMax)"
+      "purpose": "用AI加工字幕:ASR纠错+术语映射+口语清理,时间轴1:1;走 video-slicer 引擎 LLM(Kimi/MiniMax),需 .env",
+      "ported_from": "srt_fix.py"
     },
     "face-locate": {
-      "status": "planned", "scope": "generic",
-      "copy_from": "slicer.py::locate_face_cx + video_vertical/reframe_locate.py (两处合一)",
-      "sig": "face_locate.py IN [--samples 40] -> face_cx(0..1)/crop 参数",
-      "purpose": "Haar 人脸中心定位;竖屏裁切与圆形PIP都用"
+      "status": "ready", "scope": "generic", "file": "atoms/face_locate.py",
+      "sig": "face_locate.py IN [--target WxH] [--samples 40] [--face-y 0.42] -> JSON(face_cx/crop)",
+      "purpose": "Haar 人脸中心定位;竖屏裁切与圆形PIP都用;需 opencv-python",
+      "ported_from": "slicer.py::locate_face_cx + reframe_locate.py"
     },
     "name-mask": {
-      "status": "planned", "scope": "generic(拷时参数化)",
-      "copy_from": "assistant_zh/workflow/video_framework_slicer/make_publish.py",
-      "sig": "name_mask.py IN OUT [--region WxH+X+Y] [--fill face.png] [--trim 0]",
-      "purpose": "黑帧检测+遮罩遮学员名;原版几何写死slicer,拷时提成 --region"
+      "status": "ready", "scope": "generic", "file": "atoms/name_mask.py",
+      "sig": "name_mask.py IN OUT --region WxH+X+Y [--fill img] [--mask alpha.png] [--trim 0]",
+      "purpose": "区域黑帧检测+定格覆盖遮学员名;几何提成 --region;可选圆形 alpha 与片头裁剪",
+      "ported_from": "make_publish.py"
     },
     "cover-frame": {
-      "status": "planned", "scope": "generic",
-      "sig": "cover_frame.py IN OUT [--at 0] [--overlay title.png]",
-      "purpose": "首帧/指定帧出封面;现状手工,优先级低"
+      "status": "ready", "scope": "generic", "file": "atoms/cover_frame.py",
+      "sig": "cover_frame.py IN OUT.png [--at 0] [--overlay title.png]",
+      "purpose": "抽帧出封面图;可叠标题PNG"
     },
     "framework-pip-pages": {
       "status": "project-side-only", "scope": "project-side",

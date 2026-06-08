@@ -24,6 +24,25 @@ INACTIVE = (255, 255, 255, 64)   # 未到达：白色低透明
 LABEL_FS = 34
 
 
+# macOS 上能渲染中文的字体候选（按序尝试，TTC 指定 index=0）
+_CJK_FONTS = [
+    "/System/Library/Fonts/Hiragino Sans GB.ttc",
+    "/System/Library/Fonts/STHeiti Medium.ttc",
+    "/System/Library/Fonts/Supplemental/Songti.ttc",
+    "/Library/Fonts/Arial Unicode.ttf",
+]
+
+
+def _load_cjk_font(size):
+    for p in _CJK_FONTS:
+        if Path(p).exists():
+            try:
+                return ImageFont.truetype(p, size, index=0)
+            except Exception:
+                continue
+    return ImageFont.load_default()
+
+
 def hexrgb(s):
     s = s.lstrip("#")
     return tuple(int(s[i:i + 2], 16) for i in (0, 2, 4))

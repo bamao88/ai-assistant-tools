@@ -13,6 +13,7 @@ from .publish import (
     _find_content_element,
     _input_tags,
     _navigate_to_publish_page,
+    _set_original,
     _set_schedule_publish,
     _set_visibility,
 )

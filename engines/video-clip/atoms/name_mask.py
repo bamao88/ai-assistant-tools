@@ -64,7 +64,7 @@ def main():
     if not src.exists():
         raise SystemExit(f"输入不存在: {src}")
     out = ensure_parent(a.output)
-    w, h, dur, has_audio = probe(src)
+    _w, _h, dur, has_audio = probe(src)
     rw, rh, rx, ry = parse_region(a.region)
 
     intervals = detect_black(src, (rw, rh, rx, ry), a.pic_th, a.pix_th)

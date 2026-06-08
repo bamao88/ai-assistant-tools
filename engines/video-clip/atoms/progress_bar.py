@@ -41,10 +41,7 @@ def make_bar(w, h, bar_h, margin, chapters, index, color, label):
         fill = active if i < index else INACTIVE
         d.rounded_rectangle([x0, y, x0 + seg_w, y + bar_h], radius=bar_h / 2, fill=fill)
     if label:
-        try:
-            font = ImageFont.truetype("/System/Library/Fonts/PingFang.ttc", LABEL_FS)
-        except Exception:
-            font = ImageFont.load_default()
+        font = _load_cjk_font(LABEL_FS)
         tw = d.textlength(label, font=font)
         d.text(((w - tw) / 2, y - LABEL_FS - 14), label, font=font, fill=active)
     return img

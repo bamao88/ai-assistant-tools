@@ -26,20 +26,20 @@ description: |
 2. 该类型需要哪些**原子**（见 recipes.json 的 chain），按序跑。
 3. 产物一律写 `tools/var/video-clip/<任务名>/`，不写业务真源、不写原片目录。
 
-## invoke（已实现原子，status=ready）
+## invoke（9 个原子全部 ready；真源 catalog.json）
 
 ```bash
 ENG=/Volumes/ExtSSD2601/AI_Assistant/tools/engines/video-clip
-# 直接拼接
-python3 $ENG/atoms/concat.py OUT.mp4 --inputs a.mp4 b.mp4 c.mp4
-# 底部章节进度条(第k/共N幕)
-python3 $ENG/atoms/progress_bar.py IN.mp4 OUT.mp4 --chapters 4 --index 2 --label "第二幕·被批评"
-# 片尾钩子卡(末N秒淡入；卡片内容由调用方给)
-python3 $ENG/atoms/endcard.py IN.mp4 OUT.mp4 --card /abs/card.png --seconds 3 --fade 0.5
+python3 $ENG/atoms/concat.py          OUT.mp4 --inputs a.mp4 b.mp4 c.mp4   # 直接拼接
+python3 $ENG/atoms/progress_bar.py    IN.mp4 OUT.mp4 --chapters 4 --index 2 --label "第二幕·被批评"
+python3 $ENG/atoms/endcard.py         IN.mp4 OUT.mp4 --card /abs/card.png --seconds 3 --fade 0.5
+python3 $ENG/atoms/speed_adapt.py     IN.mp4 OUT.mp4 --srt x.srt --target_cps 8   # 按语速变速
+python3 $ENG/atoms/subtitle_burn.py   IN.mp4 OUT.mp4 --srt x.srt                  # 烧药丸字幕
+python3 $ENG/atoms/subtitle_ai_fix.py IN.srt OUT.srt --hint "..."                 # AI加工字幕(需.env)
+python3 $ENG/atoms/face_locate.py     IN.mp4 --target 720x744                     # 测脸/裁切(出JSON)
+python3 $ENG/atoms/name_mask.py       IN.mp4 OUT.mp4 --region 250x250+435+850 --trim 0
+python3 $ENG/atoms/cover_frame.py     IN.mp4 cover.png --at 2 [--overlay title.png]
 ```
-
-`planned` 原子（speed-adapt / subtitle-burn / subtitle-ai-fix / face-locate / name-mask / cover-frame）
-尚未移植：需要时先按 catalog.json 里的 `copy_from` 从业务项目移植进引擎，再调用。**不要假装它们已可用**。
 
 ## 路由：framework_slice（复杂型，不在此渲染）
 

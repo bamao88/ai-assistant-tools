@@ -52,6 +52,16 @@ python3 run_pipeline.py selections/<x>.json     # 出 accel.mp4
 # 之后可选用本引擎原子做遮名/片尾，或用项目 make_publish.py
 ```
 
+## 产物落点约定（默认 + 可传参）
+
+剪辑能力**默认落通用位置，调用方可传参直写目标位置**：
+
+- **不传目标路径** → 产物落默认 scratch `tools/var/video-clip/<任务名>/`（git-ignored，本 skill 的通用默认）。
+- **调用方传目标路径** → 原子直接写到该位置（9 个原子都接受显式输出路径 `OUT.mp4`/`--output`，无需改代码）。
+- **框架页切片**走项目流程时，用 `run_pipeline.py --out-root <目标根>` 覆盖默认 `out/`（项目调用即传 media/ 与 content item 目标位置；不传走默认，向后兼容）。
+
+谁负责把产物归位到业务真源：**调用方/项目侧**，不是本通用 skill。assistant_zh 的归位规则（成片→`media/tencent/<场次>/clips/...`，配文→`content/personas/<persona>/items/<content_id>/`，状态→`content_index`）见该项目 `claude_md_design/slice_content_pipeline_refactor.md`。本 skill 只保证「能落到你传的位置」，不内置任何具体项目路径。
+
 ## 硬边界
 
 - 不改原片：所有原子输出到新路径，幂等可重跑。

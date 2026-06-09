@@ -30,15 +30,16 @@ description: |
 
 ```bash
 ENG=/Volumes/ExtSSD2601/AI_Assistant/tools/engines/video-clip
-python3 $ENG/atoms/concat.py          OUT.mp4 --inputs a.mp4 b.mp4 c.mp4   # 直接拼接
-python3 $ENG/atoms/progress_bar.py    IN.mp4 OUT.mp4 --chapters 4 --index 2 --label "第二幕·被批评"
-python3 $ENG/atoms/endcard.py         IN.mp4 OUT.mp4 --card /abs/card.png --seconds 3 --fade 0.5
-python3 $ENG/atoms/speed_adapt.py     IN.mp4 OUT.mp4 --srt x.srt --target_cps 8   # 按语速变速
-python3 $ENG/atoms/subtitle_burn.py   IN.mp4 OUT.mp4 --srt x.srt                  # 烧药丸字幕
-python3 $ENG/atoms/subtitle_ai_fix.py IN.srt OUT.srt --hint "..."                 # AI加工字幕(需.env)
-python3 $ENG/atoms/face_locate.py     IN.mp4 --target 720x744                     # 测脸/裁切(出JSON)
-python3 $ENG/atoms/name_mask.py       IN.mp4 OUT.mp4 --region 250x250+435+850 --trim 0
-python3 $ENG/atoms/cover_frame.py     IN.mp4 cover.png --at 2 [--overlay title.png]
+PY=$ENG/.venv/bin/python    # 引擎 venv(含 pillow+opencv);首次:python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+$PY $ENG/atoms/concat.py          OUT.mp4 --inputs a.mp4 b.mp4 c.mp4   # 直接拼接
+$PY $ENG/atoms/progress_bar.py    IN.mp4 OUT.mp4 --chapters 4 --index 2 --label "第二幕·被批评"
+$PY $ENG/atoms/endcard.py         IN.mp4 OUT.mp4 --card /abs/card.png --seconds 3 --fade 0.5
+$PY $ENG/atoms/speed_adapt.py     IN.mp4 OUT.mp4 --srt x.srt --target_cps 8   # 按语速变速
+$PY $ENG/atoms/subtitle_burn.py   IN.mp4 OUT.mp4 --srt x.srt                  # 烧药丸字幕
+$PY $ENG/atoms/subtitle_ai_fix.py IN.srt OUT.srt --hint "..."                 # AI加工字幕(需.env)
+$PY $ENG/atoms/face_locate.py     IN.mp4 --target 720x744                     # 测脸/裁切(出JSON)
+$PY $ENG/atoms/name_mask.py       IN.mp4 OUT.mp4 --region 250x250+435+850 --trim 0
+$PY $ENG/atoms/cover_frame.py     IN.mp4 cover.png --at 2 [--overlay title.png]
 ```
 
 ## 路由：framework_slice（复杂型，不在此渲染）

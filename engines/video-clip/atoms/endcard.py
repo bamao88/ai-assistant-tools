@@ -28,8 +28,10 @@ def ensure_png(card: Path, work: Path) -> Path:
     if card.suffix.lower() == ".html":
         if not RENDER_HTML.exists():
             raise SystemExit(f"渲染 html 需要 {RENDER_HTML}")
-        out = work.with_suffix(".card.png")
-        r = run(["node", str(RENDER_HTML), str(card), str(out)])
+        # 必须传绝对路径：render_transparent.js 把相对路径按它自己的 __dirname 解析，
+        # 相对路径会被写到引擎 assets/ 而非这里，导致找不到产物。
+        out = work.with_suffix(".card.png").resolve()
+        r = run(["node", str(RENDER_HTML), str(card.resolve()), str(out)])
         if r.returncode != 0 or not out.exists():
             raise SystemExit(f"渲染 html 失败：{r.stderr[-400:]}")
         return out

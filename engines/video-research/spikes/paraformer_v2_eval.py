@@ -31,6 +31,7 @@ import os
 import sys
 import time
 import urllib.request
+from collections.abc import Callable
 from http import HTTPStatus
 from pathlib import Path
 

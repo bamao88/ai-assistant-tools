@@ -271,7 +271,7 @@ def main() -> None:
     print(f"\n已保存：{json_path}\n已保存：{srt_path}")
 
     # 5) 评估
-    assess(full_text, words)
+    assess(words)
 
 
 if __name__ == "__main__":

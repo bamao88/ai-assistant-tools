@@ -57,7 +57,7 @@ export WECHATSYNC_TOKEN="用户自己设置的 token"
 
 ```text
 zhihu, juejin, bilibili, baijiahao, csdn, sohu, cnblogs,
-douyin, jianshu, toutiao
+51cto, segmentfault, oschina, douyin, jianshu, toutiao
 ```
 
 明确禁止通过这个 skill 发布的平台：
@@ -68,21 +68,28 @@ weixin, xiaohongshu
 
 用户用中文平台名时，转换为对应 ID。例如：知乎 `zhihu`，掘金 `juejin`，头条 `toutiao`。如果用户要求发布到公众号或小红书，停止 Wechatsync 流程并路由到对应专用 skill。
 
-## 无插件直传：知乎 / 掘金 / CSDN
+## 无插件直传
 
-目标平台只包含 `zhihu`、`juejin`、`csdn` 时，优先走：
+目标平台只包含以下平台时，优先走 `platform-draft-direct`：
+
+```text
+zhihu, juejin, csdn, baijiahao, 51cto, cnblogs, segmentfault, oschina, bilibili, sohu
+```
 
 ```bash
 cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/platform-draft-direct
-node src/cli.js auth --platform zhihu,juejin,csdn
-node src/cli.js sync /absolute/path/article.md --platform zhihu,juejin,csdn --title "标题" --dry-run
-node src/cli.js sync /absolute/path/article.md --platform zhihu,juejin,csdn --title "标题"
+PLATFORMS=zhihu,juejin,csdn,baijiahao,51cto,cnblogs,segmentfault,oschina,bilibili,sohu
+node src/cli.js auth --platform "$PLATFORMS"
+node src/cli.js sync /absolute/path/article.md --platform "$PLATFORMS" --title "标题" --dry-run
+node src/cli.js sync /absolute/path/article.md --platform "$PLATFORMS" --title "标题"
 ```
 
-首次或 Cookie 过期时导入浏览器导出的 Cookie JSON：
+首次或 Cookie 过期时导入浏览器导出的 Cookie JSON；也支持原始 Cookie header 文本文件：
 
 ```bash
 node src/cli.js import-cookies --platform zhihu --file /absolute/path/cookies.json
+node src/cli.js import-cookies --platform baijiahao --file /absolute/path/baijiahao-cookie.txt
+node src/cli.js import-cookies --platform baijiahao --file - < /absolute/path/baijiahao-cookie.txt
 ```
 
 直传引擎约束：
@@ -90,6 +97,7 @@ node src/cli.js import-cookies --platform zhihu --file /absolute/path/cookies.js
 - 只写草稿箱，不正式发布。
 - Cookie 存在 `var/credentials/platform-draft-direct/<platform>.json`，不打印 Cookie。
 - `auth` 会读取 `vendor/wechatsync/config/project-platforms.json` 校验 `assistant_zh` 期望账号。
+- 期望账号可配置为字符串，或 `{ "username": "...", "userId": "..." }`；配置 `userId` 后优先按稳定账号 ID 校验。
 - `--dry-run` 不访问平台 API；只展示文件、标题、平台和图片数量。
 - 今日头条不在直传首批，继续用 Wechatsync 或后续独立 spike。
 

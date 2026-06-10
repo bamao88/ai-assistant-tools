@@ -45,6 +45,48 @@ export function extractCookiesFromJson(json) {
   return source.map(normalizeCookie)
 }
 
+export function extractCookiesFromText(text, domain) {
+  const normalizedDomain = normalizeDomain(domain)
+  if (!normalizedDomain) throw new Error('原始 Cookie 文本导入必须指定 domain')
+
+  const cookieHeader = String(text || '')
+    .trim()
+    .replace(/^Cookie:\s*/i, '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join('; ')
+
+  if (!cookieHeader) return []
+
+  return cookieHeader
+    .split(/;\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const eq = part.indexOf('=')
+      if (eq <= 0) throw new Error(`Cookie 文本格式异常: ${part.slice(0, 24)}`)
+      return normalizeCookie({
+        name: part.slice(0, eq).trim(),
+        value: part.slice(eq + 1),
+        domain: normalizedDomain,
+        path: '/',
+        secure: true,
+      })
+    })
+}
+
+export function extractCookiesFromInput(text, options = {}) {
+  try {
+    return extractCookiesFromJson(JSON.parse(text))
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return extractCookiesFromText(text, options.defaultDomain)
+    }
+    throw error
+  }
+}
+
 function domainMatches(hostname, cookieDomain) {
   const host = hostname.toLowerCase()
   const domain = normalizeDomain(cookieDomain).replace(/^\./, '')

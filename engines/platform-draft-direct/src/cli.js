@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from 'node:path'
-import { CookieJar, extractCookiesFromJson } from './cookies.js'
+import fs from 'node:fs/promises'
+import { CookieJar, extractCookiesFromInput } from './cookies.js'
 import { NodeRuntime } from './runtime.js'
 import { parseArticleFile } from './content.js'
 import { createAdapter } from './platforms/index.js'
@@ -9,20 +10,37 @@ import {
   accountMatches,
   assertSupportedPlatform,
   ensureDir,
+  formatAuthAccount,
+  formatExpectedAccount,
   parseArgs,
   readJsonFile,
   splitPlatforms,
   SUPPORTED_PLATFORMS,
 } from './util.js'
 
+const RAW_COOKIE_DEFAULT_DOMAINS = {
+  zhihu: '.zhihu.com',
+  juejin: '.juejin.cn',
+  csdn: '.csdn.net',
+  baijiahao: '.baijiahao.baidu.com',
+  '51cto': '.51cto.com',
+  cnblogs: '.cnblogs.com',
+  segmentfault: '.segmentfault.com',
+  oschina: '.oschina.net',
+  bilibili: '.bilibili.com',
+  sohu: '.sohu.com',
+}
+
 function printUsage() {
   console.log(`draft-direct - 无 Chrome 插件草稿直传
 
 用法:
   draft-direct import-cookies --platform zhihu --file /path/cookies.json
-  draft-direct auth --platform zhihu,juejin,csdn
-  draft-direct sync /path/article.md --platform zhihu,juejin,csdn --title "标题" --dry-run
-  draft-direct sync /path/article.md --platform zhihu,juejin,csdn --title "标题"
+  draft-direct import-cookies --platform baijiahao --file /path/cookie-header.txt
+  draft-direct import-cookies --platform baijiahao --file - < cookie-header.txt
+  draft-direct auth --platform zhihu,juejin,csdn,baijiahao,51cto,cnblogs,segmentfault,oschina,bilibili,sohu
+  draft-direct sync /path/article.md --platform zhihu,juejin,csdn,baijiahao,51cto,cnblogs,segmentfault,oschina,bilibili,sohu --title "标题" --dry-run
+  draft-direct sync /path/article.md --platform zhihu,juejin,csdn,baijiahao,51cto,cnblogs,segmentfault,oschina,bilibili,sohu --title "标题"
 
 知乎设置:
   --cover /path/cover.png
@@ -62,12 +80,18 @@ async function loadRuntime(platform) {
   })
 }
 
+async function readStdin() {
+  const chunks = []
+  for await (const chunk of process.stdin) chunks.push(chunk)
+  return Buffer.concat(chunks.map((chunk) => Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))).toString('utf8')
+}
+
 async function checkPlatformAuth(platform, expectedAccounts) {
   const runtime = await loadRuntime(platform)
   const adapter = createAdapter(platform, runtime)
   const auth = await adapter.checkAuth()
   const expected = expectedAccounts[platform]
-  const match = auth.isAuthenticated && accountMatches(auth.username, expected)
+  const match = auth.isAuthenticated && accountMatches(auth, expected)
   return {
     platform,
     expected,
@@ -82,9 +106,11 @@ async function importCookies(flags) {
   assertSupportedPlatform(platform)
   if (!flags.file) throw new Error('必须指定 --file')
 
-  const file = path.resolve(flags.file)
-  const json = await readJsonFile(file)
-  const cookies = extractCookiesFromJson(json)
+  const file = flags.file === '-' ? '-' : path.resolve(flags.file)
+  const text = flags.file === '-' ? await readStdin() : await fs.readFile(file, 'utf8')
+  const cookies = extractCookiesFromInput(text, {
+    defaultDomain: flags.domain || RAW_COOKIE_DEFAULT_DOMAINS[platform],
+  })
   const jar = new CookieJar(cookies)
   const out = platformCookiePath(platform)
   await ensureDir(credentialsDir())
@@ -111,8 +137,8 @@ async function authCommand(flags) {
       console.log(`✗ ${result.platform}: 未登录${result.error ? ` (${result.error})` : ''}`)
       continue
     }
-    const accountStatus = result.accountMatched ? '账号匹配' : `账号不匹配，期望「${result.expected || '未配置'}」`
-    console.log(`✓ ${result.platform}: ${result.username || result.userId || 'unknown'} (${accountStatus})`)
+    const accountStatus = result.accountMatched ? '账号匹配' : `账号不匹配，期望「${formatExpectedAccount(result.expected)}」`
+    console.log(`✓ ${result.platform}: ${formatAuthAccount(result)} (${accountStatus})`)
   }
 
   if (results.some((result) => !result.isAuthenticated || !result.accountMatched)) {
@@ -173,13 +199,13 @@ async function syncCommand(positional, flags) {
       throw new Error(`${platform} 未登录${auth.error ? `: ${auth.error}` : ''}`)
     }
     if (!auth.accountMatched) {
-      throw new Error(`${platform} 账号不匹配: 当前「${auth.username || auth.userId || 'unknown'}」，期望「${auth.expected || '未配置'}」`)
+      throw new Error(`${platform} 账号不匹配: 当前「${formatAuthAccount(auth)}」，期望「${formatExpectedAccount(auth.expected)}」`)
     }
   }
 
   console.log('账号校验通过:')
   for (const auth of authResults) {
-    console.log(`  ✓ ${auth.platform}: ${auth.username || auth.userId}`)
+    console.log(`  ✓ ${auth.platform}: ${formatAuthAccount(auth)}`)
   }
 
   const results = []

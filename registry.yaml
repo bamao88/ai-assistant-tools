@@ -283,7 +283,7 @@ engines:
   - id: platform-draft-direct
     path: engines/platform-draft-direct
     runtime: "node — src/cli.js"
-    purpose: 知乎/掘金/CSDN 无 Chrome 插件草稿直传；凭证落 var/credentials/platform-draft-direct
+    purpose: 知乎/掘金/CSDN/百家号/51CTO/博客园/思否/开源中国/B站专栏/搜狐号无 Chrome 插件草稿直传；凭证落 var/credentials/platform-draft-direct
   - id: calendar-task
     path: engines/calendar-task
     runtime: "sh — calendar-task.sh"

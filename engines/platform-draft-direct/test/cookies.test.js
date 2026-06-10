@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { CookieJar, extractCookiesFromJson, __cookieTest } from '../src/cookies.js'
+import { CookieJar, extractCookiesFromJson, extractCookiesFromInput, extractCookiesFromText, __cookieTest } from '../src/cookies.js'
 
 test('extractCookiesFromJson accepts array and storage_state shape', () => {
   const arrayCookies = extractCookiesFromJson([
@@ -45,4 +45,22 @@ test('Set-Cookie splitter keeps Expires comma intact', () => {
     'a=1; Expires=Wed, 21 Oct 2030 07:28:00 GMT; Path=/',
     'b=2; Path=/',
   ])
+})
+
+test('extractCookiesFromText accepts raw Cookie header strings', () => {
+  const cookies = extractCookiesFromText('Cookie: sid=abc; token=a=b=c', '.example.com')
+
+  assert.equal(cookies.length, 2)
+  assert.equal(cookies[0].name, 'sid')
+  assert.equal(cookies[0].domain, '.example.com')
+  assert.equal(cookies[1].value, 'a=b=c')
+})
+
+test('extractCookiesFromInput falls back to raw Cookie text', () => {
+  const cookies = extractCookiesFromInput('sid=abc; theme=dark', {
+    defaultDomain: '.example.com',
+  })
+
+  assert.equal(cookies.length, 2)
+  assert.equal(cookies[0].secure, true)
 })

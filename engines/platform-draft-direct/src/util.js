@@ -2,7 +2,18 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import crypto from 'node:crypto'
 
-export const SUPPORTED_PLATFORMS = ['zhihu', 'juejin', 'csdn']
+export const SUPPORTED_PLATFORMS = [
+  'zhihu',
+  'juejin',
+  'csdn',
+  'baijiahao',
+  '51cto',
+  'cnblogs',
+  'segmentfault',
+  'oschina',
+  'bilibili',
+  'sohu',
+]
 
 export function splitPlatforms(value) {
   return String(value || '')
@@ -60,10 +71,56 @@ export function redact(value) {
   return `${String(value).slice(0, 4)}...`
 }
 
-export function accountMatches(actual, expected) {
+function nameMatches(actual, expected) {
   if (!expected) return true
   if (!actual) return false
   return actual === expected || actual.includes(expected) || expected.includes(actual)
+}
+
+export function accountMatches(actualOrAuth, expected) {
+  if (!expected) return true
+
+  const auth = typeof actualOrAuth === 'object' && actualOrAuth !== null
+    ? actualOrAuth
+    : { username: actualOrAuth }
+
+  if (typeof expected === 'string') {
+    return nameMatches(auth.username, expected) || String(auth.userId || '') === expected
+  }
+
+  const expectedUserId = expected.userId || expected.userid || expected.id
+  if (expectedUserId) {
+    return Boolean(auth.userId) && String(auth.userId) === String(expectedUserId)
+  }
+
+  const names = [
+    expected.username,
+    expected.name,
+    expected.account,
+    ...(Array.isArray(expected.aliases) ? expected.aliases : []),
+  ].filter(Boolean)
+
+  return names.some((name) => nameMatches(auth.username, String(name)))
+}
+
+export function formatExpectedAccount(expected) {
+  if (!expected) return '未配置'
+  if (typeof expected === 'string') return expected
+  const parts = []
+  const userId = expected.userId || expected.userid || expected.id
+  const username = expected.username || expected.name || expected.account
+  if (username) parts.push(String(username))
+  if (userId) parts.push(`id:${userId}`)
+  if (parts.length === 0) return JSON.stringify(expected)
+  return parts.join(' / ')
+}
+
+export function formatAuthAccount(auth) {
+  if (!auth) return 'unknown'
+  const parts = []
+  if (auth.username) parts.push(auth.username)
+  if (auth.userId) parts.push(`id:${auth.userId}`)
+  return parts.join(' / ') || 'unknown'
 }
 
 export async function readJsonFile(file) {

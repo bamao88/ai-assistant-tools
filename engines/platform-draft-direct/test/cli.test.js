@@ -89,3 +89,25 @@ test('import-cookies stores cookies without printing values', async () => {
   const saved = await fs.readFile(path.join(dir, 'creds', 'zhihu.json'), 'utf8')
   assert.match(saved, /secret-cookie-value/)
 })
+
+test('import-cookies accepts raw Cookie header from stdin', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'draft-direct-cli-'))
+
+  const result = spawnSync(process.execPath, [cli, 'import-cookies', '--platform', 'baijiahao', '--file', '-'], {
+    cwd,
+    encoding: 'utf8',
+    input: 'sid=secret-cookie-value; theme=dark',
+    env: {
+      ...process.env,
+      DRAFT_DIRECT_CREDENTIAL_DIR: path.join(dir, 'creds'),
+    },
+  })
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /已导入 2 个 Cookie/)
+  assert.doesNotMatch(result.stdout, /secret-cookie-value/)
+
+  const saved = await fs.readFile(path.join(dir, 'creds', 'baijiahao.json'), 'utf8')
+  assert.match(saved, /\.baijiahao\.baidu\.com/)
+  assert.match(saved, /secret-cookie-value/)
+})

@@ -68,7 +68,7 @@ def require_env(keys: list[str]) -> dict[str, str]:
 
 # ---------- OSS 上传（拿公网直链）----------
 
-def upload_to_oss(audio: Path) -> tuple[str, callable]:
+def upload_to_oss(audio: Path) -> tuple[str, Callable[[], None]]:
     """上传本地音频到 OSS，返回 (presigned_url, cleanup())。用签名URL免去公读ACL。"""
     import oss2  # 延迟导入，便于 --audio-url 路径无需装 oss2
 

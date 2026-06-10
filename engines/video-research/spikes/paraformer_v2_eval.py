@@ -190,7 +190,7 @@ def write_srt(words: list[dict], path: Path) -> None:
 
 # ---------- 大白话评估 ----------
 
-def assess(full_text: str, words: list[dict]) -> None:
+def assess(words: list[dict]) -> None:
     n = len(words)
     timed = [w for w in words if w["begin_time"] is not None and w["end_time"] is not None]
     bad_order = sum(1 for w in timed if w["end_time"] <= w["begin_time"])

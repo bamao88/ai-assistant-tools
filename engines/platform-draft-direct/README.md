@@ -1,6 +1,8 @@
 # platform-draft-direct
 
-无 Chrome 插件的草稿直传引擎。当前支持知乎、掘金、CSDN、百家号、51CTO、博客园、思否、开源中国、B站专栏、搜狐号：使用本地 Cookie 调平台 Web 编辑器草稿 API，只保存草稿，不正式发布。
+无 Chrome 插件的草稿直传引擎。使用本地 Cookie 调平台 Web 编辑器草稿 API，只保存草稿，不正式发布。
+
+当前 `assistant_zh` 默认可用平台（2026-06-10 实测）：知乎、掘金、CSDN、百家号、思否。51CTO、博客园、开源中国、B站专栏、搜狐号有适配器能力，但当前账号/登录态未验证为可默认发布。
 
 ## 用法
 
@@ -14,7 +16,7 @@ node src/cli.js import-cookies --platform zhihu --file /absolute/path/cookies.js
 node src/cli.js import-cookies --platform baijiahao --file /absolute/path/baijiahao-cookie.txt
 node src/cli.js import-cookies --platform baijiahao --file - < /absolute/path/baijiahao-cookie.txt
 
-PLATFORMS=zhihu,juejin,csdn,baijiahao,51cto,cnblogs,segmentfault,oschina,bilibili,sohu
+PLATFORMS=zhihu,juejin,csdn,baijiahao,segmentfault
 
 # 检查登录态和账号白名单
 node src/cli.js auth --platform "$PLATFORMS"
@@ -23,6 +25,10 @@ node src/cli.js auth --platform "$PLATFORMS"
 node src/cli.js sync /absolute/path/article.md --platform "$PLATFORMS" --title "文章标题" --dry-run
 
 # 写入草稿箱
+node src/cli.js sync /absolute/path/article.md --platform "$PLATFORMS" --title "文章标题"
+
+# 图片较多或图床较慢时调大超时
+PLATFORM_DRAFT_DIRECT_TIMEOUT_MS=180000 \
 node src/cli.js sync /absolute/path/article.md --platform "$PLATFORMS" --title "文章标题"
 
 # 写入知乎草稿时预设发布设置
@@ -68,6 +74,32 @@ zhihu_toc: false
 - `zhihu_toc`: 是否开启目录
 
 ## 平台状态
+
+### assistant_zh 实测状态（2026-06-10）
+
+| 平台 | 当前结论 | 备注 |
+|------|----------|------|
+| `zhihu` | 成功写入草稿 | HTML + 本地图片 |
+| `juejin` | 成功写入草稿 | 账号需要已绑定手机号 |
+| `csdn` | 成功写入草稿 | Markdown + 本地图片 |
+| `baijiahao` | 成功写入草稿 | 大尺寸长图可能需要先压缩 |
+| `segmentfault` | 成功写入草稿 | Markdown + 本地图片 |
+| `cnblogs` | 当前账号不可用 | 用户尚未开通博客 |
+| `sohu` | 当前账号不可用 | 用户不通过 |
+| `51cto` | 当前 Cookie 未登录 | 需重新导入 Cookie 后验证 |
+| `oschina` | 当前 Cookie 未登录 | 需重新导入 Cookie 后验证 |
+| `bilibili` | 当前 Cookie 未登录 | 需重新导入 Cookie 后验证 |
+| `toutiao` | 无 direct adapter | 当前走 Chrome 编辑器自动保存草稿 |
+
+默认批量发布建议只使用：
+
+```text
+zhihu,juejin,csdn,baijiahao,segmentfault
+```
+
+百家号如果返回空响应或 JSON 解析失败，先检查是否有超大长图。已知大尺寸海报压缩后可重试成功。
+
+### 适配器能力
 
 - `zhihu`: HTML 草稿，返回 `https://zhuanlan.zhihu.com/p/<id>/edit`
 - `juejin`: Markdown 草稿，返回 `https://juejin.cn/editor/drafts/<id>`

@@ -1,7 +1,7 @@
 import { CookieJar } from './cookies.js'
 import { normalizeHeaderObject } from './util.js'
 
-const DEFAULT_TIMEOUT_MS = 30000
+const DEFAULT_TIMEOUT_MS = Number(process.env.PLATFORM_DRAFT_DIRECT_TIMEOUT_MS || 30000)
 const DEFAULT_USER_AGENT = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
   'AppleWebKit/537.36 (KHTML, like Gecko)',

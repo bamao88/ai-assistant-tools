@@ -125,7 +125,19 @@ export class BaijiahaoAdapter extends DirectAdapter {
     const jsonText = trimmed
       .replace(/^bjhdraft\(/, '')
       .replace(/\);?$/, '')
+    if (!jsonText) throw new Error('保存草稿失败: 平台返回空响应')
     return JSON.parse(jsonText)
+  }
+
+  async parseJsonResponse(response, label) {
+    const text = await response.text()
+    if (!response.ok) throw new Error(`${label}失败: ${response.status} - ${text.slice(0, 200)}`)
+    if (!text.trim()) throw new Error(`${label}失败: 平台返回空响应`)
+    try {
+      return JSON.parse(text)
+    } catch (error) {
+      throw new Error(`${label}失败: 响应不是有效 JSON - ${text.slice(0, 200)}`)
+    }
   }
 
   async uploadImageByUrl(src) {
@@ -145,7 +157,7 @@ export class BaijiahaoAdapter extends DirectAdapter {
       method: 'POST',
       body: formData,
     })
-    const res = await response.json()
+    const res = await this.parseJsonResponse(response, '图片上传')
     if (res.errmsg !== 'success' || !res.ret?.https_url) {
       throw new Error(res.errmsg || '图片上传失败')
     }

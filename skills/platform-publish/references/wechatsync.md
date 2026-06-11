@@ -1,14 +1,14 @@
-# WechatSync 本地发布助手
+# 文章多平台草稿路由
 
-使用全局 `wechatsync` CLI 把 Markdown/HTML 文章同步到多个内容平台。这个 skill 是本地 AI_Assistant 的发布操作层，只包装 Wechatsync CLI 的安全工作流；不要修改 Wechatsync 的 CLI、MCP Server、Chrome 扩展或平台适配器源码。
+把 Markdown/HTML 文章同步到多个内容平台的草稿箱。当前策略是：优先使用本地无插件直传引擎 `platform-draft-direct`；直传不可用且用户接受浏览器依赖时，才回退到 Wechatsync CLI 或人工浏览器草稿流程。
 
-**优先级更新**：知乎、掘金、CSDN 草稿发布优先使用无插件直传引擎 `/Volumes/ExtSSD2601/AI_Assistant/tools/engines/platform-draft-direct/src/cli.js`。只有该引擎缺 Cookie、账号校验失败、平台接口失败，且用户接受 Chrome 扩展 fallback 时，才回到本 Wechatsync 流程。
+**当前默认可发集合（2026-06-10 实测）**：`zhihu,juejin,csdn,baijiahao,segmentfault`。今日头条 `toutiao` 当前可通过 Chrome 编辑器自动保存草稿，但不是无插件直传。
 
 ## 边界
 
-- 默认使用全局 `wechatsync` 命令，不要调用本仓库 `packages/cli/dist/index.js`。
+- 默认使用 `platform-draft-direct`；只有回退到 Wechatsync 时才使用全局 `wechatsync` 命令，不要调用本仓库 `packages/cli/dist/index.js`。
 - 当前 Wechatsync 发布只服务 `assistant_zh`。`assistant_docfit` 暂无 Wechatsync 发布白名单，后续配置前不得发布。
-- 发布白名单和期望账号在 `/Volumes/ExtSSD2601/AI_Assistant/tools/wechatsync/config/project-platforms.json`。
+- 发布白名单和期望账号在 `/Volumes/ExtSSD2601/AI_Assistant/tools/vendor/wechatsync/config/project-platforms.json`。
 - `weixin` 和 `xiaohongshu` 即使显示已登录，也禁止通过这个 skill 发布；它们分别走专用公众号发布 skill 和 `xiaohongshu-skills`。
 - 不保存、不打印、不回显 `WECHATSYNC_TOKEN`、Cookie、账号密码或平台后台敏感信息。
 - 所有同步动作都先运行 `--dry-run`。只有用户明确确认后，才运行真实同步命令。
@@ -16,9 +16,9 @@
 - 不自动正式发布、提交审核、群发或点击平台后台的最终发布按钮。
 - 如果发现 Wechatsync 工具异常，按 `/Volumes/ExtSSD2601/AI_Assistant/tools/feedback/` 规则写反馈文件，不直接改工具源码。
 
-## 前置条件
+## Wechatsync 前置条件
 
-执行任何同步或提取前，依次检查：
+只有回退到 Wechatsync CLI 或执行浏览器页面提取时，才依次检查：
 
 ```bash
 command -v wechatsync
@@ -68,21 +68,58 @@ weixin, xiaohongshu
 
 用户用中文平台名时，转换为对应 ID。例如：知乎 `zhihu`，掘金 `juejin`，头条 `toutiao`。如果用户要求发布到公众号或小红书，停止 Wechatsync 流程并路由到对应专用 skill。
 
-## 无插件直传
+## 当前实测状态
 
-目标平台只包含以下平台时，优先走 `platform-draft-direct`：
+这张表记录 `assistant_zh` 在 2026-06-10 的真实发布结果。它优先级高于“适配器存在”的理论能力。
+
+| 平台 | 当前结论 | 默认动作 | 注意事项 |
+|------|----------|----------|----------|
+| 知乎 `zhihu` | 可成功写入草稿 | 用 `platform-draft-direct` | 图片多时使用更长超时 |
+| 掘金 `juejin` | 可成功写入草稿 | 用 `platform-draft-direct` | 账号必须已绑定手机号 |
+| CSDN `csdn` | 可成功写入草稿 | 用 `platform-draft-direct` | 图片多时使用更长超时 |
+| 百家号 `baijiahao` | 可成功写入草稿 | 用 `platform-draft-direct` | 大尺寸长图可能触发空响应；先压缩再重试 |
+| 思否 `segmentfault` | 可成功写入草稿 | 用 `platform-draft-direct` | 图片多时使用更长超时 |
+| 今日头条 `toutiao` | 可通过 Chrome 编辑器自动保存草稿 | 浏览器草稿流程 | 标题限制 2-30 字；当前没有直传 adapter |
+| 博客园 `cnblogs` | 当前账号不可用 | 默认跳过 | 报错为用户尚未开通博客 |
+| 搜狐号 `sohu` | 当前账号不可用 | 默认跳过 | 报错为用户不通过 |
+| 51CTO `51cto` | 当前直传 Cookie 未登录 | 默认跳过 | 需要重新导入有效 Cookie 后再验证 |
+| 开源中国 `oschina` | 当前直传 Cookie 未登录 | 默认跳过 | 需要重新导入有效 Cookie 后再验证 |
+| B站专栏 `bilibili` | 当前直传 Cookie 未登录 | 默认跳过 | 需要重新导入有效 Cookie 后再验证 |
+| 简书 `jianshu` | 无直传 adapter | 默认跳过 | 只能等 Wechatsync/浏览器链路恢复后再评估 |
+| 抖音图文 `douyin` | 不走文章直传 | 默认跳过 | 抖音视频/图文走 `references/douyin.md` |
+
+默认批量草稿命令只包含：
 
 ```text
-zhihu, juejin, csdn, baijiahao, 51cto, cnblogs, segmentfault, oschina, bilibili, sohu
+zhihu,juejin,csdn,baijiahao,segmentfault
+```
+
+如果用户明确要求其他平台，先说明当前状态，再单平台验证，不要把失败平台混入默认批量发布。
+
+## 无插件直传
+
+目标平台只包含当前直传可用平台时，优先走 `platform-draft-direct`：
+
+```text
+zhihu, juejin, csdn, baijiahao, segmentfault
 ```
 
 ```bash
 cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/platform-draft-direct
-PLATFORMS=zhihu,juejin,csdn,baijiahao,51cto,cnblogs,segmentfault,oschina,bilibili,sohu
+PLATFORMS=zhihu,juejin,csdn,baijiahao,segmentfault
 node src/cli.js auth --platform "$PLATFORMS"
 node src/cli.js sync /absolute/path/article.md --platform "$PLATFORMS" --title "标题" --dry-run
 node src/cli.js sync /absolute/path/article.md --platform "$PLATFORMS" --title "标题"
 ```
+
+图片较多或平台图床慢时，把超时调大：
+
+```bash
+PLATFORM_DRAFT_DIRECT_TIMEOUT_MS=180000 \
+node src/cli.js sync /absolute/path/article.md --platform "$PLATFORMS" --title "标题"
+```
+
+适配器存在但当前不要默认批量发布的平台：`51cto,cnblogs,oschina,bilibili,sohu`。只有用户明确要求并且 `auth` 验证通过后，才单独尝试。
 
 首次或 Cookie 过期时导入浏览器导出的 Cookie JSON；也支持原始 Cookie header 文本文件：
 
@@ -99,7 +136,22 @@ node src/cli.js import-cookies --platform baijiahao --file - < /absolute/path/ba
 - `auth` 会读取 `vendor/wechatsync/config/project-platforms.json` 校验 `assistant_zh` 期望账号。
 - 期望账号可配置为字符串，或 `{ "username": "...", "userId": "..." }`；配置 `userId` 后优先按稳定账号 ID 校验。
 - `--dry-run` 不访问平台 API；只展示文件、标题、平台和图片数量。
-- 今日头条不在直传首批，继续用 Wechatsync 或后续独立 spike。
+- 今日头条不在直传首批，当前走下面的浏览器草稿流程。
+- 百家号遇到图片上传空响应时，优先检查是否为超大长图；压缩该图并生成临时 Markdown 后重试。
+
+## 今日头条草稿流程
+
+今日头条当前没有可维护的无插件直传 adapter。公开 Wechatsync 仓库也没有可直接复用的头条 adapter 源码，且头条 Web 接口可能依赖浏览器上下文生成的 `msToken` / `a_bogus` 等参数。
+
+高优先级发布时使用 Chrome 编辑器：
+
+1. 打开 `https://mp.toutiao.com/profile_v4/graphic/publish`，确认登录的是 `assistant_zh` 对应账号。
+2. 今日头条标题限制 2-30 字；原始标题超过限制时，先压缩标题并告知用户。
+3. 把 Markdown 转成富文本 HTML，图片用可上传/可粘贴的本地或 data URI 形式注入编辑器。
+4. 粘贴到正文编辑区后等待自动保存。
+5. 验证页面出现 `草稿已保存`，并保留 Chrome 标签给用户人工检查。
+
+不要声称头条已经通过 API 直传成功；当前结果只能叫“浏览器编辑器草稿已自动保存”。
 
 ## 项目账号规则
 
@@ -117,17 +169,21 @@ node src/cli.js import-cookies --platform baijiahao --file - < /absolute/path/ba
 
 1. 确认输入文件是本地 Markdown、HTML 或文本文件，优先使用绝对路径。
 2. 确认当前项目是 `assistant_zh`；若是 `assistant_docfit` 或未知项目，停止并要求先配置白名单。
-3. 执行前置检查，尤其是 `wechatsync platforms --auth`。
-4. 用 `/Volumes/ExtSSD2601/AI_Assistant/tools/wechatsync/config/project-platforms.json` 校验平台白名单和账号名。
-5. 确认目标平台已登录；未登录的平台不要同步。
-6. 先运行 dry-run：
+3. 将目标平台分组：默认直传平台、今日头条浏览器草稿、其他待验证平台。
+4. 默认直传平台先运行 `platform-draft-direct auth` 和 `--dry-run`。
+5. `auth` 通过后再真实写入草稿；图片多时使用 `PLATFORM_DRAFT_DIRECT_TIMEOUT_MS=180000`。
+6. 今日头条按“今日头条草稿流程”单独处理。
+7. 其他待验证平台不要混入批量命令；先向用户说明当前状态，再单平台验证。
+
+只有回退到 Wechatsync 时，才执行 Wechatsync 前置检查，尤其是 `wechatsync platforms --auth`，并用 `/Volumes/ExtSSD2601/AI_Assistant/tools/vendor/wechatsync/config/project-platforms.json` 校验平台白名单和账号名。
+
+Wechatsync dry-run 示例：
 
 ```bash
 wechatsync sync /absolute/path/article.md -p zhihu,juejin --dry-run
 ```
 
-7. 向用户报告将同步的平台、文章文件、标题来源、账号校验和 dry-run 结果。
-8. 用户明确确认后，再运行真实同步：
+向用户报告将同步的平台、文章文件、标题来源、账号校验和 dry-run 结果。用户明确确认后，再运行真实同步：
 
 ```bash
 wechatsync sync /absolute/path/article.md -p zhihu,juejin
@@ -181,6 +237,10 @@ wechatsync extract -o /absolute/path/article.md
 | 当前账号名不匹配 | 停止发布，提示当前账号和期望账号 |
 | dry-run 失败 | 停止，不执行真实同步；报告命令、平台和错误摘要 |
 | 真实同步部分失败 | 报告成功和失败平台；不要自动重试大量平台，先让用户确认 |
+| 博客园提示用户尚未开通博客 | 默认跳过，除非用户先开通博客 |
+| 搜狐号提示用户不通过 | 默认跳过，除非用户处理账号资质 |
+| 百家号图片上传空响应 | 先压缩大图/长图，再用临时 Markdown 单平台重试 |
+| 今日头条直传缺 adapter | 使用 Chrome 编辑器草稿流程，不走直传批量命令 |
 | 本地 Wechatsync 源码/构建异常 | 写入 `tools/feedback/`，不改 CLI/MCP/扩展源码 |
 
 ## 输出格式

@@ -107,6 +107,59 @@ cp /tmp/candidate-imgs/img_X.png "$ASSETS/XX-描述.png"
 
 ---
 
+## 方式三：视频帧截图（演讲/访谈/产品演示）
+
+转写类文章（YouTube 演讲、播客视频、产品演示）的最佳正文配图，往往是**视频画面本身**——讲者播放的 PPT 数据图/架构图、产品操作界面。一手、可信、破墙、锚记忆点。
+
+工具：`engines/screenshot/video_frame.py`（封装 yt-dlp 下视频轨 + ffmpeg 截帧/裁区域；布局判断和选图仍由 AI 做）。
+
+**四步：**
+
+**第一步：定时间点** —— 从视频字幕（VTT）找讲到目标 slide/界面的时刻：
+```bash
+# 字幕下载见下文「字幕获取」；定位关键帧时刻：
+awk '/-->/{ts=$1} /关键词/{print ts" | "$0}' xx.vtt | grep -v "<c>"
+```
+slide 通常在讲者提到时已显示，截讲到点即可。
+
+**第二步：定 crop 区域** —— 会议/演讲录制常是**合成画面**（PPT 一区 + 讲者小窗 + logo + 横幅），必须只裁出 PPT/界面白区，去掉 mac 菜单栏、人像、横幅。
+- 已知布局**直接抄预设**（省去 probe）：
+
+  | 来源布局 | crop（W:H:X:Y） |
+  |---|---|
+  | AI Engineer 大会录制（1920×1080，PPT 右上） | `1418:783:472:30` |
+
+- 新布局先 probe 看画面：
+  ```bash
+  python3 engines/screenshot/video_frame.py probe "<youtube_url>"
+  # → 截 6 张整帧到 /tmp/ppt_probe，用 Read 看 PPT 在画面什么位置，定出 W:H:X:Y
+  ```
+
+**第三步：批量裁** ——
+```bash
+python3 engines/screenshot/video_frame.py grab "<youtube_url>" \
+  --crop 1418:783:472:30 \
+  --at 00:09:42=results,00:11:22=pareto,00:08:50=recursion \
+  --outdir "<文章目录>/assets"
+# 输出 ppt_results.jpg / ppt_pareto.jpg / ppt_recursion.jpg
+```
+不传 `--crop` 则截整帧（截视频画面本身，不裁子区域）。视频轨缓存在 `/Volumes/ExtSSD2601/media/`，同一视频复用不重下。
+
+**第四步：选图克制 + 视觉验证** —— Read 每张确认；只留比文字更能讲清的（数据图/架构图/多维对比，装饰图砍）；caption 标「（XX 演讲 slide）」。
+
+**字幕获取（第一步前置）：**
+```bash
+yt-dlp --cookies-from-browser chrome \
+  --extractor-args "youtube:player_client=web_embedded" \
+  --write-auto-subs --sub-langs "en.*" --skip-download \
+  "<youtube_url>" -o "/tmp/yt_%(id)s.%(ext)s"
+```
+`web_embedded` 绕 YouTube bot 墙；字幕也是 platform-fetch 的能力，已有逐字稿就直接用。
+
+⚠️ **抠图顺带核实事实**：截 slide 时常发现转录稿/字幕的专有名词错（auto-caption 对公司名/人名不可靠）。务必拿 slide 上的版权行/标题、视频官方标题交叉核对。这一步既产配图，也是一道事实校验。
+
+---
+
 ## 登录状态（方式一专用）
 
 需要登录的平台通过 `storage_state.json` 注入 cookies，从运行中的 Chrome（port 9222）导出。

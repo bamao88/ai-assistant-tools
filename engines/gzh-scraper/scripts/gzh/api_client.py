@@ -126,7 +126,13 @@ class ExporterClient:
         for item in publish_list:
             publish_info = item.get("publish_info", {})
             if isinstance(publish_info, str):
-                publish_info = json.loads(publish_info)
+                publish_info = publish_info.strip()
+                if not publish_info:
+                    continue
+                try:
+                    publish_info = json.loads(publish_info)
+                except json.JSONDecodeError:
+                    continue
             appmsgex = publish_info.get("appmsgex", [])
             for msg in appmsgex:
                 articles.append({

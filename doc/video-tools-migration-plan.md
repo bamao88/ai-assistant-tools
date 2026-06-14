@@ -213,7 +213,7 @@ assistant_zh（调用方）                            退化成「选 profile=z
 
 ### 阶段 2 · 迁移「LLM 内容决策」能力（低风险）
 - `pages_gen.py`、`srt_fix.py` 迁入 `video-slicer`。这两个本就 `sys.path` 反向依赖 video-slicer 引擎，迁入后改为正常包内导入，**消除跨项目硬路径**。
-- 张和术语表 / 分页 prompt 风格抽到 persona（`personas/zh_main.md` 扩展或并列文件）。
+- 张和术语表 / 分页 prompt 风格抽到定制层 `profiles/zh_main/`（`personas/zh_main.md` 扩展或并列文件）。
 - 验证：同一 clip.srt 跑迁移后 `pages_gen`/`srt_fix`，输出与基线一致。
 
 ### 阶段 3 · 迁移「像素渲染」能力，新建 video-framework-render（中风险）

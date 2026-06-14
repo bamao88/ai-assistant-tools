@@ -94,17 +94,18 @@
 
 | 文件 | 行数 | 性质 | 去向 |
 |---|---|---|---|
-| `slicer.py` | 300 | 渲染管线（locate→assets→pages→subs→compose→accelerate）；含锁定 `GEOM`/`SUB`/`PAGE_CSS` | **引擎**（视觉值→template 配置） |
+| `slicer.py` | 300 | 渲染管线（locate→assets→pages→subs→compose→accelerate）；含锁定 `GEOM`/`SUB`/`PAGE_CSS` | **引擎**；视觉值→定制层① `profiles/<account>` |
 | `render_page.js` | 15 | puppeteer 渲染页 PNG | **引擎** |
-| `pages_gen.py` | 154 | LLM 逐字稿→框架页 spec（已复用 video-slicer 的 llm 客户端） | **引擎**（prompt→persona） |
-| `srt_fix.py` | 152 | LLM 字幕术语纠错（1:1 保时间轴；含张和领域术语表） | **引擎**（术语表→persona） |
-| `run_pipeline.py` | 152 | 编排：选段清单→切片→pages→渲染→挑片索引 | **引擎**（薄管线，persona 参数化） |
-| `make_publish.py` | 118 | **半生半业务**：遮学员名闪帧(通用) + 裁片头 `c01:33s` / `CLIPS` 名单 / 读 `out_v1`(张和业务) | **拆分**：遮名→video-clip 原子；裁片头/名单→业务 |
+| `pages_gen.py` | 154 | LLM 逐字稿→框架页 spec（已复用 video-slicer 的 llm 客户端） | **引擎**；prompt→定制层① |
+| `srt_fix.py` | 152 | LLM 字幕术语纠错（1:1 保时间轴；含张和领域术语表） | **引擎**；术语表→定制层① |
+| `run_pipeline.py` | 152 | 编排：选段清单→切片→pages→渲染→挑片索引 | **引擎**（薄管线，`--profile` + `--out` 参数化） |
+| `gen_copy.py` / `gen_title.py` / `batch_gen.py` / `batch_title.py` / `build_keywords.py` | ~325 | 文案/标题/关键词**生成逻辑**（prompt + 参数可定制） | **定制层①**：生成 prompt/参数 → `profiles/<account>`（集中，不散回项目） |
+| `make_publish.py` | 118 | 遮学员名闪帧(通用) + 裁片头 `c01:33s` / `CLIPS` 名单(项目加工) | **拆分**：遮名→video-clip 原子；裁片头/名单→③项目自管 |
 | `rerender_subs.py` | 54 | 字幕重渲工具 | 引擎或弃 |
 | `parse_candidates.py` | 75 | 选段候选解析 | 视耦合度定 |
-| `finalize.py` | 214 | ⚠️**纯业务，非视频后处理**：写 `publish_copy.md`（内嵌 `FINALS` 张和定稿文案 + 关键词），硬编码 `assistant_zh` 绝对路径 | **留 assistant_zh** |
-| `gen_copy.py` / `gen_title.py` / `batch_gen.py` / `batch_title.py` / `build_keywords.py` | ~325 | 张和文案/标题/关键词生成 | **留 assistant_zh**（纯业务） |
-| `jobs/` `selections/` `out*/` `keywords_pool.json` `fixes.json` | — | 业务输入 + 成片产物（`out_v1/out_v2` = 已发布金标准） | **留 assistant_zh**（产物，规约上属 var 类） |
+| `finalize.py` | 214 | 内嵌 `FINALS` **人工定稿文案** + 写 `publish_copy.md` | **③项目自管**：定稿是工具产物之上的人工加工，放哪项目决定 |
+| `jobs/` `selections/` `keywords_pool.json` `fixes.json` | — | 每场选段输入 / 运行数据 | 工具直出②→默认 `tools/var/<account>/`（`--out` 可改） |
+| `out_v1/` `out_v2/` 成片 | — | `accel.mp4` 渲染直出(②) + `publish.mp4` 遮名发布版(③) | ②直出→`var/<account>`；③发布版/金标准→项目自管 |
 
 **`assistant_zh/workflow/video_vertical/`（竖屏布局成片）**
 

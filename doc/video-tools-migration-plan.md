@@ -207,7 +207,9 @@ assistant_zh/workflow/zh_video/   （或保留原名）
 - 验证：用阶段 0 基线的 pages JSON + clip 渲染，**逐帧比对**成片与基线一致。
 
 ### 阶段 4 · 后处理去重（中风险）
-- `finalize.py` / `make_publish.py` 的遮名、裁片头与 `video-clip` 原子比对，能合并的合并进 `video-clip`，避免两份实现。
+- 只处理 `make_publish.py` 的**遮学员名闪帧**：与 `video-clip` 原子比对，能合并的合并进 `video-clip`，避免两份实现。
+- `make_publish.py` 的裁片头（`c01:33s`）+ `CLIPS` 名单 + 读 `out_v1` 属张和业务，**留 assistant_zh**。
+- `finalize.py` **不在本阶段**——它是写文案物料的纯业务脚本，留 assistant_zh（见 §2.2 更正）。
 
 ### 阶段 5 · 编排薄化 + 业务回填（中风险，动线上入口）
 - `run_pipeline.py` 改造为 `video-framework-render/pipeline.py`，persona/template 参数化。

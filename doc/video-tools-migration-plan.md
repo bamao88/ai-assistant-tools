@@ -157,11 +157,31 @@ tools/engines/
 ```
 assistant_zh/workflow/zh_video/   （或保留原名）
 ├── gen_copy.py / gen_title.py / build_keywords.py   张和文案/标题/关键词
+├── finalize.py                                       写 publish_copy.md（张和定稿文案物料）
 ├── selections/                                       张和选段清单（业务输入）
 └── （成片产物 out*/ 按规约移入 var/ 或保留业务侧）
 ```
 
 业务侧的 `run` 脚本变成**薄胶水**：调 `tools/engines/video-slicer`（选内容）→ `tools/engines/video-framework-render --persona zh_main`（渲染）→ `tools/engines/tencent-video-publish`（发布）。
+
+> ⚠️ **配置源反向依赖（待解决）**：当前 `tools/engines/video-slicer/.env` 是**符号链 → `assistant_zh/knowledge_base/.env`**，即「共享工具层」的 LLM provider 密钥/配置物理上归属业务项目。这与「tools 不依赖 assistant_zh」的目标 G2 相悖。迁移须把 .env 真源归位（落 `var/credentials/` 或 tools 侧，符号链反向），与已合规的 `var/credentials/aliyun.env` 对齐；否则 assistant_zh 一旦解耦/改名，所有走 LLM 的引擎（planner / twostage / srt_fix / pages_gen）会因断链静默失效。
+
+### 3.3 集成缝隙：选段产物 → 渲染管线（两条路线的汇合点）
+
+这是方案B（能力升级）与渲染引擎（本迁移）**必须对接**的接口，目前缺失：
+
+| | 方案B 选段产物（`twostage/pipeline.py`） | 渲染入口（`run_pipeline.py`） |
+|---|---|---|
+| clip 标识 | `title` | `name` + `title` |
+| 切点 | `keep_sids` / `sentence_time_spans:[[秒,秒]]` | `segments:[{start:"HH:MM:SS", end:"HH:MM:SS"}]` |
+| 分页提示 | （无直接字段；候选 `one_argument`） | `hint`（pages_gen 用） |
+| 时间粒度 | 句级秒数（将来字级毫秒） | MM:SS 字符串（句级） |
+
+**必须定义**（建议作为执行前 grill / preflight 的输入）：
+1. **适配层归属**：`keep_sids/sentence_time_spans → segments` 的转换，归 `video-slicer`（产出标准 job）还是 `video-framework-render`（消费时转换）？建议归 video-slicer，让它直接吐渲染可吃的 job schema。
+2. **`hint` 来源**：从方案B 的 `title` / `one_argument` 映射，还是新增字段。
+3. **粒度**：适配层是否直接走秒级/毫秒 spans（一步到位为字级预留，呼应 §1.4 与决策点 6），而非中转回 MM:SS 字符串。
+4. **统一 job schema**：定义一份「选段 → 渲染」的稳定中间契约 JSON，两个引擎按它对接，业务薄胶水只负责串联。
 
 ---
 

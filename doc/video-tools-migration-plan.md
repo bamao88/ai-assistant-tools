@@ -224,8 +224,8 @@ assistant_zh（调用方）                            退化成「选 profile=z
 
 ### 阶段 4 · 后处理去重（中风险）
 - 只处理 `make_publish.py` 的**遮学员名闪帧**：与 `video-clip` 原子比对，能合并的合并进 `video-clip`，避免两份实现。
-- `make_publish.py` 的裁片头（`c01:33s`）+ `CLIPS` 名单 + 读 `out_v1` 属张和业务，**留 assistant_zh**。
-- `finalize.py` **不在本阶段**——它是写文案物料的纯业务脚本，留 assistant_zh（见 §2.2 更正）。
+- `make_publish.py` 的裁片头（`c01:33s`）+ `CLIPS` 名单 + 读 `out_v1` 是工具产物之上的项目加工，**③项目自管**。
+- `finalize.py` **不在本阶段**——它内嵌人工定稿文案，属③项目自管（见 §2.2 更正）。
 
 ### 阶段 5 · 定制层归集 + 编排薄化（中风险，动线上入口）
 - 建 `engines/<engine>/profiles/zh_main/`，把 persona / 术语表 / GEOM-模板 / 文案-标题 prompt 参数**集中迁入定制层**（不散回项目）。

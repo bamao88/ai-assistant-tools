@@ -196,7 +196,7 @@ assistant_zh（调用方）                            退化成「选 profile=z
 **必须定义**（建议作为执行前 grill / preflight 的输入）：
 1. **适配层归属**：`keep_sids/sentence_time_spans → segments` 的转换，归 `video-slicer`（产出标准 job）还是 `video-framework-render`（消费时转换）？建议归 video-slicer，让它直接吐渲染可吃的 job schema。
 2. **`hint` 来源**：从方案B 的 `title` / `one_argument` 映射，还是新增字段。
-3. **粒度**：适配层是否直接走秒级/毫秒 spans（一步到位为字级预留，呼应 §1.4 与决策点 6），而非中转回 MM:SS 字符串。
+3. **粒度（已定，D6）**：适配层与切片入口走**数值秒 spans**（粒度中立，毫秒可塞入同一接口），不中转回 MM:SS 字符串。见 §7.2。
 4. **统一 job schema**：定义一份「选段 → 渲染」的稳定中间契约 JSON，两个引擎按它对接，业务薄胶水只负责串联。
 
 ---

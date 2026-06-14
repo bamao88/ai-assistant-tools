@@ -233,6 +233,8 @@ assistant_zh/workflow/zh_video/   （或保留原名）
 | 依赖环境（venv / puppeteer / ffmpeg）在新 engine 缺失 | 中 | 每个新 engine 自带 requirements + README，首跑校验。 |
 | 业务与引擎边界判断错误（把张和业务当通用件搬错） | 中 | §3 边界先评审（§7）再动手；文案/标题/选题规则一律留业务。 |
 | **与平行路线方案B 撞车**：把方案A 旧架构冻结为目标；渲染引擎切片入口焊死在句级，方案B 句中精剪落地时要回头改 | 高 | 见 §1.4 耦合点：引擎同时容纳方案A/B；新建 render 引擎时切片入口预留字级毫秒 spans。 |
+| **选段→渲染不连通**：方案B 产物 schema 与渲染入口现在就对不上，缺适配层，端到端无法跑通 | 高 | 见 §3.3：执行前先定统一 job schema + 适配层归属，再动渲染引擎。 |
+| **配置源反向依赖**：`video-slicer/.env` 符号链指向 `assistant_zh`，业务一解耦即断链，LLM 引擎静默失效 | 中 | 见 §3.2：.env 真源归位到 `var/credentials/` 或 tools 侧，符号链反向。 |
 
 ---
 

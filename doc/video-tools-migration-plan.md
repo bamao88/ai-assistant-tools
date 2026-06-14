@@ -138,16 +138,16 @@ tools/engines/
 │   │   ├── twostage/      方案B 两阶段选段
 │   │   ├── pages_gen.py   ← 从 framework_slicer 迁入（分页器）
 │   │   └── srt_fix.py     ← 从 framework_slicer 迁入（字幕纠错）
-│   └── personas/          张和等账号的「编辑判断 + 术语表 + 分页风格」
+│   └── profiles/<account>/ ★ 定制层（见 §3.2）：编辑判断 persona + 术语表 + 文案/标题规则
 │
 ├── video-framework-render/   新引擎 · 像素渲染：把 spec + video 渲染成竖版成片
 │   ├── render.py          ← slicer.py 渲染管线（compose/accelerate/subs）
 │   ├── reframe_locate.py  ← video_vertical 人脸定位
 │   ├── render_page.js     ← puppeteer
-│   ├── pipeline.py        ← run_pipeline.py 薄编排（persona 参数化）
-│   └── templates/         ← GEOM/PAGE_CSS/HTML 模板（按账号，张和为默认）
+│   ├── pipeline.py        ← run_pipeline.py 薄编排（--profile 参数化，--out 可配置产物地址）
+│   └── profiles/<account>/ ★ 定制层：GEOM/PAGE_CSS/HTML 模板（张和为内置默认）
 │
-└── video-clip/            原子操作：拼接/进度条/片尾/变速/遮名/封面（现有 + 吸收 finalize/make_publish 去重）
+└── video-clip/            原子操作：拼接/进度条/片尾/变速/遮名/封面（现有 + 吸收 make_publish 遮名）
 ```
 
 > 备选方案：把 `pages_gen` / `srt_fix` 也放进 render 引擎而非 slicer。判据是「它读逐字稿做 LLM 决策」≈ slicer 家族，且已复用 slicer 的 llm 客户端，故归 slicer 更内聚。**此点待 §7 确认。**

@@ -52,9 +52,15 @@ def run(
     clips = []
     for i, clip in enumerate(topics, 1):
         print(f"[stage2] ({i}/{len(topics)}) 定脚本：{clip.get('title','')[:24]}…", file=sys.stderr)
-        keep = select_script(clip, sentences, persona_text, providers=providers)
+        keep = []
+        for attempt in (1, 2):  # 一条失败不拖累整批：重试一次，仍失败则跳过
+            try:
+                keep = select_script(clip, sentences, persona_text, providers=providers)
+                break
+            except Exception as ex:  # noqa: BLE001
+                print(f"         ↳ 第{attempt}次失败：{str(ex)[:120]}", file=sys.stderr)
         if not keep:
-            print("         ↳ 无可用句，跳过", file=sys.stderr)
+            print("         ↳ 无可用句/调用失败，跳过", file=sys.stderr)
             continue
         asm = assemble_script(keep, sentences)
         if not asm["script"].strip():

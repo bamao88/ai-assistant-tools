@@ -68,6 +68,7 @@ export function renderBodyPage(cfg, pageHtml = "") {
   .md-body ul { margin-bottom: ${paraGap}px; padding-left: ${Math.round(fontSize * 1.3)}px; list-style-type: disc; }
   .md-body ol { margin-bottom: ${paraGap}px; padding-left: ${Math.round(fontSize * 1.6)}px; list-style-type: decimal; }
   .md-body li { margin-bottom: ${Math.round(fontSize * 0.35)}px; line-height: ${lineHeight}; }
+  .md-body li[data-split-part="start"], .md-body li[data-split-part="middle"] { margin-bottom: 0; }
   .md-body li > ul, .md-body li > ol { margin-top: ${Math.round(fontSize * 0.2)}px; margin-bottom: 0; }
   .md-body strong { font-weight: 700; color: ${accent}; }
   .md-body em { font-style: italic; }

@@ -4,6 +4,7 @@ export const DEFAULT_COVER_VARIANT = "primary";
 export const FONT_STACKS = {
   serif: "'Noto Serif SC', 'Songti SC', serif",
   sans: "'Noto Sans SC', 'PingFang SC', sans-serif",
+  xhsSans: "'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', sans-serif",
   display: "'Noto Serif SC', 'Playfair Display', 'Songti SC', serif",
   mono: "'SF Mono', 'Fira Code', 'Consolas', monospace",
 };
@@ -141,6 +142,7 @@ export function baseBodyCss(cfg, theme) {
     margin-bottom: ${theme.paraGap}px; padding-left: ${Math.round(theme.fontSize * 1.35)}px;
   }
   .md-body li { margin-bottom: ${Math.round(theme.fontSize * 0.35)}px; line-height: ${theme.lineHeight}; }
+  .md-body li[data-split-part="start"], .md-body li[data-split-part="middle"] { margin-bottom: 0; }
   .md-body li::marker { color: var(--accent); font-weight: 800; }
   .md-body hr { border: none; margin: ${Math.round(theme.paraGap * 0.9)}px 0; }
   .md-body table {
@@ -258,8 +260,8 @@ function resolveTheme(template, cfg, options = {}) {
     paraGap: Math.round((def.paraGap || fontSize * 0.78) * fontScale),
     contentWidth: def.contentWidth || cfg.cssWidth - paddingH * 2,
     bodyFont: FONT_STACKS[def.font],
-    serifFont: FONT_STACKS.serif,
-    sansFont: FONT_STACKS.sans,
+    serifFont: def.serifFont || FONT_STACKS.serif,
+    sansFont: def.sansFont || FONT_STACKS.sans,
     monoFont: FONT_STACKS.mono,
   };
 }

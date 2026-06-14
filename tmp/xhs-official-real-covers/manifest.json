@@ -1,0 +1,302 @@
+[
+  {
+    "i": 1,
+    "name": "理性现代",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/01-理性现代.png",
+    "cls": "cover-container editor-item",
+    "text": "小红书长文封面模板测试封面模板测试",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "理性现代",
+    "slider": "拖动滑块快速定位2 21 共2张"
+  },
+  {
+    "i": 2,
+    "name": "逻辑结构",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/02-逻辑结构.png",
+    "cls": "editor-item-new active editor-item  theme-49 render-mode-disabled",
+    "text": "小红书长文封面模板测试封面模板测试这是一次用于观察小红书长文自动排版模板的测试内容，不用于发布。我们主要关注封面版式、标题层级、背景色、图文组合方式和模板缩略图展示。\\n\\n好的长文封面需要在第一眼传",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "逻辑结构",
+    "slider": "拖动滑块快速定位1 11 共1张"
+  },
+  {
+    "i": 3,
+    "name": "素雅底纹",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/03-素雅底纹.png",
+    "cls": "editor-item-new active editor-item  theme-51 render-mode-disabled",
+    "text": "小红书长文封面模板测试封面模板测试这是一次用于观察小红书长文自动排版模板的测试内容，不用于发布。我们主要关注封面版式、标题层级、背景色、图文组合方式和模板缩略图展示。\\n\\n好的长文封面需要在第一眼传",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "素雅底纹",
+    "slider": "拖动滑块快速定位1 11 共1张"
+  },
+  {
+    "i": 4,
+    "name": "杂志先锋",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/04-杂志先锋.png",
+    "cls": "cover-container editor-item",
+    "text": "小红书长文封面模板测试封面模板测试测试小红书长文排版模板，优化封面设计与标题层级，提升内容呈现效果。",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "杂志先锋",
+    "slider": "拖动滑块快速定位2 21 共2张"
+  },
+  {
+    "i": 5,
+    "name": "交叉拓扑",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/05-交叉拓扑.png",
+    "cls": "editor-item-new active editor-item  theme-53 render-mode-disabled",
+    "text": "小红书长文封面模板测试封面模板测试这是一次用于观察小红书长文自动排版模板的测试内容，不用于发布。我们主要关注封面版式、标题层级、背景色、图文组合方式和模板缩略图展示。\\n\\n好的长文封面需要在第一眼传",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "交叉拓扑",
+    "slider": "拖动滑块快速定位1 11 共1张"
+  },
+  {
+    "i": 6,
+    "name": "黑白极简",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/06-黑白极简.png",
+    "cls": "editor-item-new active editor-item  theme-48 render-mode-disabled",
+    "text": "小红书长文封面模板测试封面模板测试这是一次用于观察小红书长文自动排版模板的测试内容，不用于发布。我们主要关注封面版式、标题层级、背景色、图文组合方式和模板缩略图展示。\\n\\n好的长文封面需要在第一眼传",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "黑白极简",
+    "slider": "拖动滑块快速定位1 11 共1张"
+  },
+  {
+    "i": 7,
+    "name": "清晰明朗",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/07-清晰明朗.png",
+    "cls": "cover-container editor-item",
+    "text": "小红书长文封面模板测试封面模板测试测试小红书长文排版模板，优化封面设计与标题层级，提升内容呈现效果。",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "清晰明朗",
+    "slider": "拖动滑块快速定位2 21 共2张"
+  },
+  {
+    "i": 8,
+    "name": "札记集尘",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/08-札记集尘.png",
+    "cls": "editor-item-new active editor-item  theme-7 render-mode-disabled",
+    "text": "小红书长文 封面模板测 试这是一次用于观察小红书长文自动排版模板的测试内容，不用于发布。我们主要关注封面版式、标题层级、背景色、图文组合方式和模板缩略图展示。\\n\\n好的长文封面需要在第一眼传达主题、",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "札记集尘",
+    "slider": "拖动滑块快速定位1 11 共1张"
+  },
+  {
+    "i": 9,
+    "name": "简约基础",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/09-简约基础.png",
+    "cls": "editor-item-new active editor-item  theme-6 render-mode-disabled",
+    "text": "小红书长文封面模板测试封面模板测试这是一次用于观察小红书长文自动排版模板的测试内容，不用于发布。我们主要关注封面版式、标题层级、背景色、图文组合方式和模板缩略图展示。\\n\\n好的长文封面需要在第一眼传",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "简约基础",
+    "slider": "拖动滑块快速定位1 11 共1张"
+  },
+  {
+    "i": 10,
+    "name": "优雅几何",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/10-优雅几何.png",
+    "cls": "cover-container editor-item",
+    "text": "小红书长文封面模板测试封面模板测试测试小红书长文排版模板，优化封面设计与标题层级，提升内容呈现效果。",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "优雅几何",
+    "slider": "拖动滑块快速定位2 21 共2张"
+  },
+  {
+    "i": 11,
+    "name": "灵感备忘",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/11-灵感备忘.png",
+    "cls": "editor-item-new active editor-item  theme-59 render-mode-disabled",
+    "text": "小红书长文封面模板测试封面模板测试这是一次用于观察小红书长文自动排版模板的测试内容，不用于发布。我们主要关注封面版式、标题层级、背景色、图文组合方式和模板缩略图展示。\\n\\n好的长文封面需要在第一眼传",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "灵感备忘",
+    "slider": "拖动滑块快速定位1 11 共1张"
+  },
+  {
+    "i": 12,
+    "name": "平实叙事",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/12-平实叙事.png",
+    "cls": "editor-item-new active editor-item  theme-50 render-mode-disabled",
+    "text": "小红书长文封面模板测试封面模板测试这是一次用于观察小红书长文自动排版模板的测试内容，不用于发布。我们主要关注封面版式、标题层级、背景色、图文组合方式和模板缩略图展示。\\n\\n好的长文封面需要在第一眼传",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "平实叙事",
+    "slider": "拖动滑块快速定位1 11 共1张"
+  },
+  {
+    "i": 13,
+    "name": "黄昏手稿",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/13-黄昏手稿.png",
+    "cls": "editor-item-new active editor-item  theme-10 render-mode-disabled",
+    "text": "小红书长文封面模板测试封面模板测试这是一次用于观察小红书长文自动排版模板的测试内容，不用于发布。我们主要关注封面版式、标题层级、背景色、图文组合方式和模板缩略图展示。\\n\\n好的长文封面需要在第一眼传",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "黄昏手稿",
+    "slider": "拖动滑块快速定位1 11 共1张"
+  },
+  {
+    "i": 14,
+    "name": "文艺清新",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/14-文艺清新.png",
+    "cls": "cover-container editor-item",
+    "text": "小红书长文封面模板测试封面模板测试测试小红书长文排版模板，优化封面设计与标题层级，提升内容呈现效果。",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "文艺清新",
+    "slider": "拖动滑块快速定位2 21 共2张"
+  },
+  {
+    "i": 15,
+    "name": "手帐书写",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/15-手帐书写.png",
+    "cls": "cover-container editor-item",
+    "text": "小红书长文封面模板测试封面模板测试",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "手帐书写",
+    "slider": "拖动滑块快速定位2 21 共2张"
+  },
+  {
+    "i": 16,
+    "name": "线条复古",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/16-线条复古.png",
+    "cls": "cover-container editor-item",
+    "text": "小红书长文封面模板测试封面模板测试测试小红书长文排版模板，优化封面设计与标题层级，提升内容呈现效果。",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "线条复古",
+    "slider": "拖动滑块快速定位2 21 共2张"
+  },
+  {
+    "i": 17,
+    "name": "拼接色块",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/17-拼接色块.png",
+    "cls": "editor-item-new active editor-item  theme-52 render-mode-disabled",
+    "text": "小红书长文封面模板测试封面模板测试这是一次用于观察小红书长文自动排版模板的测试内容，不用于发布。我们主要关注封面版式、标题层级、背景色、图文组合方式和模板缩略图展示。\\n\\n好的长文封面需要在第一眼传",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "拼接色块",
+    "slider": "拖动滑块快速定位1 11 共1张"
+  },
+  {
+    "i": 18,
+    "name": "轻感明快",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/18-轻感明快.png",
+    "cls": "cover-container editor-item",
+    "text": "小红书长文封面模板测试封面模板测试 右划查看全文",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "轻感明快",
+    "slider": "拖动滑块快速定位2 21 共2张"
+  },
+  {
+    "i": 19,
+    "name": "大图纯享",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/19-大图纯享.png",
+    "cls": "cover-container editor-item",
+    "text": "小红书长文封面模板测试封面模板测试",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "大图纯享",
+    "slider": "拖动滑块快速定位2 21 共2张"
+  },
+  {
+    "i": 20,
+    "name": "涂鸦马克",
+    "file": "/Volumes/ExtSSD2601/AI_Assistant/tools/tmp/xhs-official-real-covers/cards/20-涂鸦马克.png",
+    "cls": "cover-container editor-item",
+    "text": "小红书长文封面模板测试封面模板测试测试小红书长文排版模板，优化封面设计与标题层级，提升内容呈现效果。",
+    "rect": {
+      "x": 124,
+      "y": 285,
+      "w": 375,
+      "h": 625
+    },
+    "selected": "涂鸦马克",
+    "slider": "拖动滑块快速定位2 21 共2张"
+  }
+]

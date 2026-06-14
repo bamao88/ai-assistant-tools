@@ -95,6 +95,19 @@ const overrideResult = await renderMarkdownToCards(markdown, {
 });
 await assertPngSet(overrideResult, "coral_manual_overrides");
 
+const defaultCoverResult = await renderMarkdownToCards(markdown, {
+  base_dir: baseDir,
+  output_dir: path.join(outputRoot, "unified_claude_default_cover"),
+  style: "unified-claude",
+  cover_template: "default",
+  chapter_label: "张和 AI 产品实战派",
+});
+await assertPngSet(defaultCoverResult, "unified_claude_default_cover");
+assertCoverCount(defaultCoverResult, "unified_claude_default_cover", 1);
+if (defaultCoverResult.style !== "unified-claude" || defaultCoverResult.cover_template !== "default") {
+  throw new Error(`unified_claude_default_cover: expected unified-claude/default, got ${defaultCoverResult.style}/${defaultCoverResult.cover_template}`);
+}
+
 try {
   await renderMarkdownToCards(markdown, {
     base_dir: baseDir,

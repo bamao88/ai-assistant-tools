@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "prefix": "unified",
+  "themes": [
+    {
+      "id": "claude",
+      "name": "Claude",
+      "description": "共享主题实验：温润燕麦底、珊瑚强调，适合深度长文和观点拆解",
+      "mode": "claude",
+      "font": "sans",
+      "colors": {
+        "paper": "#f8f6f0",
+        "ink": "#2b2b2b",
+        "muted": "#666666",
+        "accent": "#b75c3d",
+        "accentDeep": "#9b4a30",
+        "accentSoft": "rgba(183,92,61,0.08)",
+        "rule": "rgba(183,92,61,0.28)",
+        "codeBg": "#f0ece4",
+        "codeText": "#b75c3d"
+      },
+      "typography": {
+        "wechatBody": 16,
+        "wechatLine": 1.7,
+        "cardBody": 12.5,
+        "cardLine": 1.78,
+        "h1": 32,
+        "h2": 22,
+        "h3": 18
+      }
+    },
+    {
+      "id": "medium",
+      "name": "Medium",
+      "description": "共享主题实验：西式博客感、衬线正文，适合随笔和沉淀型内容",
+      "mode": "medium",
+      "font": "serif",
+      "colors": {
+        "paper": "#fcfcfc",
+        "ink": "#242424",
+        "muted": "#666666",
+        "accent": "#111111",
+        "accentDeep": "#000000",
+        "accentSoft": "#f5f5f5",
+        "rule": "#e0e0e0",
+        "codeBg": "#f2f3f5",
+        "codeText": "#333333"
+      },
+      "typography": {
+        "wechatBody": 16,
+        "wechatLine": 1.7,
+        "cardBody": 12.5,
+        "cardLine": 1.84,
+        "h1": 32,
+        "h2": 24,
+        "h3": 18
+      }
+    },
+    {
+      "id": "minimal",
+      "name": "极简",
+      "description": "共享主题实验：纯白底、低干扰排版，适合信息密度高的内容",
+      "mode": "minimal",
+      "font": "sans",
+      "colors": {
+        "paper": "#ffffff",
+        "ink": "#333333",
+        "muted": "#666666",
+        "accent": "#111111",
+        "accentDeep": "#111111",
+        "accentSoft": "#f5f5f5",
+        "rule": "#eeeeee",
+        "codeBg": "#f5f5f5",
+        "codeText": "#333333"
+      },
+      "typography": {
+        "wechatBody": 16,
+        "wechatLine": 1.8,
+        "cardBody": 12.5,
+        "cardLine": 1.88,
+        "h1": 28,
+        "h2": 22,
+        "h3": 18
+      }
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "description": "共享主题实验：黑白极简、清晰分层，适合理性产品文章",
+      "mode": "openai",
+      "font": "sans",
+      "colors": {
+        "paper": "#ffffff",
+        "ink": "#000000",
+        "muted": "#4a4a4a",
+        "accent": "#000000",
+        "accentDeep": "#000000",
+        "accentSoft": "rgba(0,0,0,0.045)",
+        "rule": "#e5e7eb",
+        "codeBg": "rgba(0,0,0,0.045)",
+        "codeText": "#000000"
+      },
+      "typography": {
+        "wechatBody": 17,
+        "wechatLine": 1.6,
+        "cardBody": 12.8,
+        "cardLine": 1.72,
+        "h1": 26,
+        "h2": 26,
+        "h3": 20
+      }
+    },
+    {
+      "id": "cards-claude",
+      "name": "卡片 Claude",
+      "description": "共享主题实验：卡片默认温润橙调，适合公众号和小红书统一视觉",
+      "mode": "cards-claude",
+      "font": "serif",
+      "colors": {
+        "paper": "#faf9f5",
+        "ink": "#141413",
+        "muted": "#706e68",
+        "accent": "#d97757",
+        "accentDeep": "#be5f42",
+        "accentSoft": "rgba(217,119,87,0.09)",
+        "rule": "#e8e6dc",
+        "codeBg": "#1e1e1c",
+        "codeText": "#e8e6dc"
+      },
+      "typography": {
+        "wechatBody": 16,
+        "wechatLine": 1.8,
+        "cardBody": 12.5,
+        "cardLine": 1.88,
+        "h1": 26,
+        "h2": 22,
+        "h3": 18
+      }
+    },
+    {
+      "id": "coral",
+      "name": "珊瑚极简",
+      "description": "共享主题实验：珊瑚强调、纸感底色，适合 AI 产品日报和观点卡片",
+      "mode": "coral",
+      "font": "serif",
+      "colors": {
+        "paper": "#fdfcf9",
+        "ink": "#0f1216",
+        "muted": "#52555b",
+        "accent": "#ff515a",
+        "accentDeep": "#db2a3d",
+        "accentSoft": "rgba(255,81,90,0.08)",
+        "rule": "rgba(255,81,90,0.35)",
+        "codeBg": "rgba(255,81,90,0.06)",
+        "codeText": "#db2a3d"
+      },
+      "typography": {
+        "wechatBody": 16,
+        "wechatLine": 1.95,
+        "cardBody": 12.5,
+        "cardLine": 1.95,
+        "h1": 28,
+        "h2": 22,
+        "h3": 18
+      }
+    },
+    {
+      "id": "monograph",
+      "name": "黑白书页",
+      "description": "共享主题实验：黑白书页感、衬线正文、克制留白",
+      "mode": "monograph",
+      "font": "serif",
+      "colors": {
+        "paper": "#ffffff",
+        "ink": "#111111",
+        "muted": "#333333",
+        "accent": "#111111",
+        "accentDeep": "#000000",
+        "accentSoft": "#f1f1f1",
+        "rule": "#111111",
+        "codeBg": "#f1f1f1",
+        "codeText": "#111111"
+      },
+      "typography": {
+        "wechatBody": 17,
+        "wechatLine": 2,
+        "cardBody": 12.5,
+        "cardLine": 2,
+        "h1": 26,
+        "h2": 21,
+        "h3": 18
+      }
+    }
+  ]
+}

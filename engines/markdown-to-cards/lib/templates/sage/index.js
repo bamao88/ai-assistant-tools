@@ -41,7 +41,7 @@ function bodyCss(theme) {
   .md-body h2 { color: var(--accent); font-size: ${theme.h2Size}px; line-height: 1.5; margin-bottom: ${Math.round(theme.paraGap * 0.75)}px; font-weight: 700; }
   .md-body h2::before { content: "▸ "; }
   .md-body h3 { font-size: ${theme.h3Size}px; margin-bottom: ${Math.round(theme.paraGap * 0.55)}px; font-weight: 700; }
-  .md-body p { text-indent: 2em; text-align: justify; }
+  .md-body p { text-indent: 0; text-align: justify; }
   .md-body blockquote { background: var(--accent-soft); border-left: ${sc(3)}px solid var(--accent); border-radius: 0 ${sc(8)}px ${sc(8)}px 0; color: var(--accent); padding: ${sc(10)}px ${sc(14)}px; }
   .md-body ul li::marker { content: "▸  "; }
   .md-body pre { background: var(--accent-soft); border-left: ${sc(3)}px solid var(--accent); border-radius: 0 ${sc(8)}px ${sc(8)}px 0; padding: ${sc(10)}px ${sc(14)}px; color: color-mix(in oklab, var(--accent) 90%, var(--ink)); }

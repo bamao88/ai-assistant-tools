@@ -42,7 +42,7 @@ function bodyCss(theme) {
   .md-body h1::after { content: ""; display: block; width: ${sc(60)}px; height: ${sc(2)}px; background: var(--accent); margin-top: ${sc(10)}px; }
   .md-body h2 { color: var(--accent); font-size: ${theme.h2Size}px; line-height: 1.5; margin-bottom: ${Math.round(theme.paraGap * 0.8)}px; font-weight: 700; }
   .md-body h3 { font-size: ${theme.h3Size}px; margin-bottom: ${Math.round(theme.paraGap * 0.55)}px; font-weight: 700; }
-  .md-body p { text-indent: 2em; text-align: justify; }
+  .md-body p { text-indent: 0; text-align: justify; }
   .md-body blockquote { border-left: ${sc(3)}px solid var(--accent); padding-left: ${sc(14)}px; color: var(--accent); font-style: italic; font-weight: 600; }
   .md-body ul li::marker { content: "—  "; }
   .md-body ol { list-style: decimal-leading-zero; }

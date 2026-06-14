@@ -16,6 +16,24 @@ _ACCOUNTS_FILE = _CONFIG_DIR / "accounts.json"
 # 命名账号端口起始值（默认账号使用 9222）
 _NAMED_PORT_START = 9223
 
+_CARD_CONFIG_KEYS = {
+    "style",
+    "color_scheme",
+    "chapter_label",
+    "cover_template",
+    "cover_style",
+    "cover_bg_path",
+    "cover_image_path",
+    "cover_variant",
+    "accent_color",
+    "background_color",
+    "text_color",
+    "font_size",
+}
+
+_COVER_TEMPLATES = {"style", "default"}
+_COVER_STYLES = {"template", "image", "both"}
+
 
 def _load_config() -> dict:
     """加载账号配置。"""
@@ -46,6 +64,7 @@ def list_accounts() -> list[dict]:
                 "is_default": slot == default,
                 "profile_dir": get_profile_dir(slot),
                 "port": info.get("port", _NAMED_PORT_START),
+                "card_config": info.get("card_config", {}),
             }
         )
     return result
@@ -115,6 +134,60 @@ def update_account_description(slot: str, description: str) -> None:
     accounts[slot]["description"] = description
     _save_config(config)
     logger.info("账号 %s 描述已更新: %s", slot, description)
+
+
+def get_account_card_config(slot: str) -> dict:
+    """获取指定账号的小红书卡片默认配置。"""
+    config = _load_config()
+    accounts = config.get("accounts", {})
+    if slot not in accounts:
+        raise ValueError(f"账号 '{slot}' 不存在")
+    return dict(accounts[slot].get("card_config", {}))
+
+
+def set_account_card_config(slot: str, clear: bool = False, **updates: object) -> dict:
+    """设置指定账号的小红书卡片默认配置。
+
+    未传入的字段保持不变；传入空字符串会删除对应字段。
+    """
+    config = _load_config()
+    accounts = config.get("accounts", {})
+    if slot not in accounts:
+        raise ValueError(f"账号 '{slot}' 不存在")
+
+    if clear:
+        accounts[slot].pop("card_config", None)
+        _save_config(config)
+        logger.info("账号 %s 卡片配置已清除", slot)
+        return {}
+
+    card_config = dict(accounts[slot].get("card_config", {}))
+    for key, value in updates.items():
+        if key not in _CARD_CONFIG_KEYS:
+            raise ValueError(f"未知卡片配置字段: {key}")
+        if value is None:
+            continue
+        if value == "":
+            card_config.pop(key, None)
+            continue
+        card_config[key] = value
+
+    cover_template = card_config.get("cover_template")
+    if cover_template and cover_template not in _COVER_TEMPLATES:
+        raise ValueError("cover_template 只能是 style 或 default")
+
+    cover_style = card_config.get("cover_style")
+    if cover_style and cover_style not in _COVER_STYLES:
+        raise ValueError("cover_style 只能是 template、image 或 both")
+
+    if card_config:
+        accounts[slot]["card_config"] = card_config
+    else:
+        accounts[slot].pop("card_config", None)
+
+    _save_config(config)
+    logger.info("账号 %s 卡片配置已更新: %s", slot, card_config)
+    return card_config
 
 
 def get_default_account() -> str:

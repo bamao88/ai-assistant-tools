@@ -40,7 +40,7 @@ function bodyCss(theme) {
   .md-body h1 { font-size: ${theme.h1Size}px; line-height: 1.5; text-align: center; padding: ${sc(4)}px 0 ${sc(8)}px; font-weight: 700; margin-bottom: ${theme.paraGap}px; }
   .md-body h2 { font-size: ${theme.h2Size}px; line-height: 1.5; margin-top: ${sc(4)}px; margin-bottom: ${Math.round(theme.paraGap * 0.75)}px; font-weight: 700; }
   .md-body h3 { font-size: ${theme.h3Size}px; margin-bottom: ${Math.round(theme.paraGap * 0.55)}px; font-weight: 700; }
-  .md-body p { text-indent: 2em; text-align: justify; }
+  .md-body p { text-indent: 0; text-align: justify; }
   .md-body blockquote { padding: 0 ${sc(18)}px; color: var(--muted); font-style: italic; text-align: justify; }
   .md-body pre { background: var(--accent-soft); border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent); padding: ${sc(10)}px ${sc(14)}px; color: var(--ink); }
   .md-body code { background: var(--accent-soft); color: var(--ink); padding: .08em .38em; border-radius: 3px; }

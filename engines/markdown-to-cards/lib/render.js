@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs/promises";
 import os from "os";
 import { fileURLToPath } from "url";
+import { resolveAccountCardOptions } from "./accountConfig.js";
 import {
   CARD_STYLE_IDS,
   COLOR_SCHEME_IDS,
@@ -76,6 +77,14 @@ function normalizeCoverStyle(value) {
   throw new Error(`Unknown cover_style: ${value}. Available styles: template, image, both`);
 }
 
+function normalizeCoverTemplate(value) {
+  const template = String(value || "").trim().toLowerCase();
+  if (!template) return "style";
+  if (template === "style" || template === "theme") return "style";
+  if (template === "default" || template === "legacy") return "default";
+  throw new Error(`Unknown cover_template: ${value}. Available templates: style, default`);
+}
+
 function hasExplicitColorScheme(options = {}) {
   return options.color_scheme !== undefined && String(options.color_scheme || "").trim() !== "";
 }
@@ -124,6 +133,7 @@ function buildRenderContext(options = {}) {
     chapterLabel: String(options.chapter_label || "精选长图文"),
     coverVariant: normalizeCoverVariant(options.cover_variant),
     coverStyleOption: normalizeCoverStyle(options.cover_style),
+    coverTemplate: normalizeCoverTemplate(options.cover_template),
   };
 }
 
@@ -153,6 +163,33 @@ function removeTitle(mdText) {
   return mdText.replace(/^#\s+.+\n?/m, "").trimStart();
 }
 
+function preprocessMarkdown(mdText) {
+  const parts = String(mdText || "").split(/(\r?\n)/);
+  let inFence = false;
+
+  return parts.map((part) => {
+    if (/^\r?\n$/.test(part)) return part;
+
+    const trimmed = part.trimStart();
+    if (/^(```|~~~)/.test(trimmed)) {
+      inFence = !inFence;
+      return part;
+    }
+
+    if (inFence) return part;
+
+    return part.replace(/\*\*([^*\n]+?)\*\*/g, (match, inner, offset, whole) => {
+      const text = inner.trim();
+      if (!text) return match;
+      const before = whole[offset - 1] || "";
+      const after = whole[offset + match.length] || "";
+      const prefix = /[\p{L}\p{N}]/u.test(before) ? " " : "";
+      const suffix = /[\p{L}\p{N}]/u.test(after) ? " " : "";
+      return `${prefix}**${text}**${suffix}`;
+    });
+  }).join("");
+}
+
 function countWords(mdText) {
   const clean = mdText.replace(/```[\s\S]*?```/g, "")
                       .replace(/[#*`_~\[\]()\->|]/g, " ")
@@ -161,6 +198,21 @@ function countWords(mdText) {
   const enWords = clean.replace(/[\u4e00-\u9fa5]/g, " ")
                        .split(/\s+/).filter(w => /[a-zA-Z0-9]/.test(w)).length;
   return zhCount + enWords;
+}
+
+function extractCoverExcerpt(mdText, maxLength = 240) {
+  const clean = String(mdText || "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/!\[[^\]]*]\([^)]*\)/g, "")
+    .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^>\s?/gm, "")
+    .replace(/^\s*(?:[-*+]|\d+[.)])\s+/gm, "")
+    .replace(/[*_`~|<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!clean) return "";
+  return clean.length > maxLength ? `${clean.slice(0, maxLength - 1)}…` : clean;
 }
 
 function escapeHtml(value) {
@@ -313,7 +365,8 @@ function collectMarkdownImageRefs(mdText) {
 
 async function prepareMarkdownHtml(mdText, options) {
   const baseDir = options.base_dir || process.cwd();
-  const imageRefs = collectMarkdownImageRefs(mdText);
+  const normalizedMdText = preprocessMarkdown(mdText);
+  const imageRefs = collectMarkdownImageRefs(normalizedMdText);
   const imageSources = new Map();
   const warnings = [];
   let firstImageSrc = null;
@@ -339,7 +392,7 @@ async function prepareMarkdownHtml(mdText, options) {
   };
 
   return {
-    html: marked.parse(mdText, { renderer }),
+    html: marked.parse(normalizedMdText, { renderer }),
     firstImageSrc,
     warnings,
   };
@@ -366,10 +419,10 @@ async function waitForImages(page, rootSelector) {
 // ============================================================
 // 封面 HTML
 // ============================================================
-function buildCoverHtml(title, wordCount, cfg, coverBgSrc, fontOpts = {}, coverImageSrc = null, coverStyle = "template", theme = null, coverVariant = "primary") {
+function buildCoverHtml(title, wordCount, cfg, coverBgSrc, fontOpts = {}, coverImageSrc = null, coverStyle = "template", theme = null, coverVariant = "primary", contentExcerpt = "") {
   if (theme) {
     const themedCoverImage = coverStyle === "template" ? null : coverImageSrc;
-    return buildThemedCoverHtml(title, wordCount, cfg, theme, themedCoverImage, fontOpts, coverVariant);
+    return buildThemedCoverHtml(title, wordCount, cfg, theme, themedCoverImage, fontOpts, coverVariant, contentExcerpt);
   }
   return getCardTemplate("legacy").renderCover({
     title,
@@ -400,7 +453,7 @@ function coverLabelFor(index, coverCount, variant, style) {
   return `card_${String(index).padStart(2, "0")}_cover_${suffix}`;
 }
 
-function buildCoverPageSpecs(title, wordCount, cfg, coverBgSrc, fontOpts, coverImageSrc, coverStyle, theme, coverVariant) {
+function buildCoverPageSpecs(title, wordCount, cfg, coverBgSrc, fontOpts, coverImageSrc, coverStyle, theme, coverVariant, contentExcerpt = "") {
   const variants = coverVariantsFor(theme, coverVariant);
   const styles = coverStylesFor(coverStyle, coverImageSrc);
   const specs = [];
@@ -414,7 +467,7 @@ function buildCoverPageSpecs(title, wordCount, cfg, coverBgSrc, fontOpts, coverI
     kind: "cover",
     label: coverLabelFor(index, specs.length, spec.variant, spec.style),
     selector: "#cover-page",
-    html: buildCoverHtml(title, wordCount, cfg, coverBgSrc, fontOpts, coverImageSrc, spec.style, theme, spec.variant),
+    html: buildCoverHtml(title, wordCount, cfg, coverBgSrc, fontOpts, coverImageSrc, spec.style, theme, spec.variant, contentExcerpt),
     cover_variant: spec.variant,
     cover_style: spec.style,
   }));
@@ -455,6 +508,19 @@ async function paginateBodyHtml(bodyPage, bodyHtml, maxHeight, imageMaxHeight) {
     function isSplittableParagraph(node) {
       return node.nodeType === Node.ELEMENT_NODE &&
         node.tagName === "P" &&
+        node.textContent.trim().length > 0 &&
+        !node.querySelector("img, table, pre, iframe, video, canvas, svg");
+    }
+
+    function isListBlock(node) {
+      return node.nodeType === Node.ELEMENT_NODE &&
+        (node.tagName === "OL" || node.tagName === "UL") &&
+        Array.from(node.children).some((child) => child.tagName === "LI");
+    }
+
+    function isSplittableListItem(node) {
+      return node.nodeType === Node.ELEMENT_NODE &&
+        node.tagName === "LI" &&
         node.textContent.trim().length > 0 &&
         !node.querySelector("img, table, pre, iframe, video, canvas, svg");
     }
@@ -579,6 +645,31 @@ async function paginateBodyHtml(bodyPage, bodyHtml, maxHeight, imageMaxHeight) {
       if (first) first.textContent = first.textContent.replace(/^\s+/, "");
     }
 
+    function markListContinuation(item) {
+      item.setAttribute("data-list-continuation", "true");
+      const currentStyle = item.getAttribute("style") || "";
+      item.setAttribute("style", `${currentStyle}; list-style-type: none;`);
+      return item;
+    }
+
+    function cloneListItem(item, continuation = false) {
+      const clone = item.cloneNode(true);
+      return continuation ? markListContinuation(clone) : clone;
+    }
+
+    function listStart(list) {
+      if (list.tagName !== "OL") return 1;
+      const value = Number(list.getAttribute("start") || "1");
+      return Number.isFinite(value) && value > 0 ? value : 1;
+    }
+
+    function listFragmentHtml(list, items, start) {
+      const clone = list.cloneNode(false);
+      if (clone.tagName === "OL") clone.setAttribute("start", String(start));
+      for (const item of items) clone.appendChild(item.cloneNode(true));
+      return htmlFromNode(clone);
+    }
+
     function adjustCutToBoundary(text, best, total) {
       if (best >= total) return best;
       const windowStart = Math.max(1, best - 48);
@@ -623,6 +714,47 @@ async function paginateBodyHtml(bodyPage, bodyHtml, maxHeight, imageMaxHeight) {
       };
     }
 
+    function splitListItemForFit(list, item, start, prefixHtml, continuation = false) {
+      const total = textLength(item);
+      let lo = 1;
+      let hi = total;
+      let best = 0;
+
+      while (lo <= hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        const prefixNode = cloneTextRange(item, 0, mid);
+        if (prefixNode && continuation) markListContinuation(prefixNode);
+        if (prefixNode && mid < total) prefixNode.setAttribute("data-split-part", "start");
+        const candidate = prefixNode ? prefixHtml + listFragmentHtml(list, [prefixNode], start) : prefixHtml;
+        if (prefixNode && fits(candidate)) {
+          best = mid;
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+
+      if (best <= 0) return { beforeHtml: "", afterNode: item };
+
+      best = adjustCutToBoundary(item.textContent || "", best, total);
+      const beforeNode = cloneTextRange(item, 0, best);
+      if (!beforeNode) return { beforeHtml: "", afterNode: item };
+      if (continuation) markListContinuation(beforeNode);
+      if (best < total) beforeNode.setAttribute("data-split-part", "start");
+
+      const afterNode = cloneTextRange(item, best, total);
+      if (afterNode) {
+        trimLeadingWhitespace(afterNode);
+        markListContinuation(afterNode);
+        afterNode.setAttribute("data-split-part", "middle");
+      }
+
+      return {
+        beforeHtml: listFragmentHtml(list, [beforeNode], start),
+        afterNode: afterNode && afterNode.textContent.trim() ? afterNode : null,
+      };
+    }
+
     const tmp = document.createElement("div");
     tmp.innerHTML = htmlContent;
     const blocks = [];
@@ -634,6 +766,68 @@ async function paginateBodyHtml(bodyPage, bodyHtml, maxHeight, imageMaxHeight) {
     const pages = [];
     let current = "";
 
+    function appendListBlock(list) {
+      const items = Array.from(list.children).filter((child) => child.tagName === "LI");
+      const firstStart = listStart(list);
+      let pendingItems = [];
+      let pendingStart = firstStart;
+
+      function flushPending(pushPage = false) {
+        if (pendingItems.length) {
+          current += listFragmentHtml(list, pendingItems, pendingStart);
+          pendingItems = [];
+        }
+        if (pushPage && current) {
+          pages.push(current);
+          current = "";
+        }
+      }
+
+      function processItem(item, ordinal, continuation = false) {
+        const itemClone = cloneListItem(item, continuation);
+        if (!pendingItems.length) pendingStart = ordinal;
+
+        const candidateItems = [...pendingItems, itemClone];
+        if (fits(current + listFragmentHtml(list, candidateItems, pendingStart))) {
+          pendingItems = candidateItems;
+          return;
+        }
+
+        if (pendingItems.length) {
+          flushPending(true);
+          processItem(item, ordinal, continuation);
+          return;
+        }
+
+        if (isSplittableListItem(item)) {
+          const split = splitListItemForFit(list, item, ordinal, current, continuation);
+          if (split.beforeHtml) {
+            current += split.beforeHtml;
+            pages.push(current);
+            current = "";
+            if (split.afterNode) processItem(split.afterNode, ordinal, true);
+            return;
+          }
+        }
+
+        if (current) {
+          pages.push(current);
+          current = "";
+          processItem(item, ordinal, continuation);
+          return;
+        }
+
+        pendingItems = [itemClone];
+        pendingStart = ordinal;
+        flushPending(true);
+      }
+
+      items.forEach((item, index) => {
+        processItem(item, firstStart + index, false);
+      });
+      flushPending(false);
+    }
+
     function appendBlock(block) {
       const blockHtml = htmlFromNode(block);
       if (fits(current + blockHtml)) {
@@ -642,6 +836,11 @@ async function paginateBodyHtml(bodyPage, bodyHtml, maxHeight, imageMaxHeight) {
       }
 
       if (fitImageIntoCurrentPage(block)) return;
+
+      if (isListBlock(block)) {
+        appendListBlock(block);
+        return;
+      }
 
       if (isSplittableParagraph(block)) {
         const split = splitParagraphForFit(block, current);
@@ -685,19 +884,22 @@ function buildBodyPageDocument(cfg, pageHtml, theme = null, pageMeta = {}) {
 }
 
 export async function renderMarkdownToHtmlPages(markdownText, options = {}) {
+  options = resolveAccountCardOptions(options);
   const baseDir = options.base_dir ? path.resolve(options.base_dir) : process.cwd();
-  let { cfg, style, colorScheme, theme, chapterLabel, coverVariant, coverStyleOption } = buildRenderContext(options);
+  let { cfg, style, colorScheme, theme, chapterLabel, coverVariant, coverStyleOption, coverTemplate } = buildRenderContext(options);
   const contentText = stripFrontMatter(markdownText);
 
   const title     = extractTitle(contentText);
   const bodyMd    = removeTitle(contentText);
   const wordCount = countWords(contentText);
+  const coverExcerpt = extractCoverExcerpt(bodyMd);
   const prepared  = await prepareMarkdownHtml(bodyMd, { ...options, base_dir: baseDir });
   const bodyHtml  = prepared.html;
   const warnings  = [...prepared.warnings];
 
+  const coverUsesTheme = Boolean(theme) && coverTemplate !== "default";
   let coverBgSrc = null;
-  const bgPath = options.cover_bg_path || (!theme ? cfg.coverBgPath : null);
+  const bgPath = options.cover_bg_path || (!coverUsesTheme ? cfg.coverBgPath : null);
   if (bgPath) {
     const resolvedBg = await resolveAssetSource(bgPath, baseDir, "封面底图");
     if (resolvedBg.src && !resolvedBg.warning) coverBgSrc = resolvedBg.src;
@@ -715,12 +917,13 @@ export async function renderMarkdownToHtmlPages(markdownText, options = {}) {
   }
   const coverStyle = coverStyleOption || (coverImageSrc ? "image" : "template");
 
-  const fontOpts = theme ? {} : await loadCoverFontOpts(cfg);
+  const fontOpts = coverUsesTheme ? {} : await loadCoverFontOpts(cfg);
   if (theme) {
     theme = { ...theme, fontCss: await loadThemedFontCSS() };
   } else {
     cfg = { ...cfg, fontCss: await loadLegacyFontCSS() };
   }
+  const coverTheme = coverUsesTheme ? theme : null;
 
   const browser = await puppeteer.launch({
     headless: true,
@@ -737,13 +940,14 @@ export async function renderMarkdownToHtmlPages(markdownText, options = {}) {
     const imageMaxHeight = Math.round(maxHeight * 0.48);
     const pageFragments = await paginateBodyHtml(bodyPage, bodyHtml, maxHeight, imageMaxHeight);
     await bodyPage.close();
-    const coverPages = buildCoverPageSpecs(title, wordCount, cfg, coverBgSrc, fontOpts, coverImageSrc, coverStyle, theme, coverVariant);
+    const coverPages = buildCoverPageSpecs(title, wordCount, cfg, coverBgSrc, fontOpts, coverImageSrc, coverStyle, coverTheme, coverVariant, coverExcerpt);
     const totalPages = pageFragments.length + coverPages.length;
 
     return {
       cfg,
       style,
       color_scheme: colorScheme?.id || null,
+      cover_template: coverTemplate,
       title,
       wordCount,
       warnings,
@@ -770,8 +974,9 @@ export async function renderMarkdownToHtmlPages(markdownText, options = {}) {
 // 核心渲染函数
 // ============================================================
 export async function renderMarkdownToCards(markdownText, options = {}) {
+  options = resolveAccountCardOptions(options);
   const baseDir = options.base_dir ? path.resolve(options.base_dir) : process.cwd();
-  let { cfg, style, colorScheme, theme, chapterLabel, coverVariant, coverStyleOption } = buildRenderContext(options);
+  let { cfg, style, colorScheme, theme, chapterLabel, coverVariant, coverStyleOption, coverTemplate } = buildRenderContext(options);
   const contentText = stripFrontMatter(markdownText);
 
   let outputDir = options.output_dir;
@@ -781,6 +986,7 @@ export async function renderMarkdownToCards(markdownText, options = {}) {
   const title     = extractTitle(contentText);
   const bodyMd    = removeTitle(contentText);
   const wordCount = countWords(contentText);
+  const coverExcerpt = extractCoverExcerpt(bodyMd);
   const prepared  = await prepareMarkdownHtml(bodyMd, { ...options, base_dir: baseDir });
   const bodyHtml  = prepared.html;
   const warnings  = [...prepared.warnings];
@@ -794,8 +1000,9 @@ export async function renderMarkdownToCards(markdownText, options = {}) {
     const files = [];
 
     // 封面底图
+    const coverUsesTheme = Boolean(theme) && coverTemplate !== "default";
     let coverBgSrc = null;
-    const bgPath = options.cover_bg_path || (!theme ? cfg.coverBgPath : null);
+    const bgPath = options.cover_bg_path || (!coverUsesTheme ? cfg.coverBgPath : null);
     if (bgPath) {
       const resolvedBg = await resolveAssetSource(bgPath, baseDir, "封面底图");
       if (resolvedBg.src && !resolvedBg.warning) coverBgSrc = resolvedBg.src;
@@ -815,14 +1022,15 @@ export async function renderMarkdownToCards(markdownText, options = {}) {
     const coverStyle = coverStyleOption || (coverImageSrc ? "image" : "template");
 
     // 字体 CSS
-    const fontOpts = theme ? {} : await loadCoverFontOpts(cfg);
+    const fontOpts = coverUsesTheme ? {} : await loadCoverFontOpts(cfg);
     if (theme) {
       theme = { ...theme, fontCss: await loadThemedFontCSS() };
     } else {
       cfg = { ...cfg, fontCss: await loadLegacyFontCSS() };
     }
+    const coverTheme = coverUsesTheme ? theme : null;
 
-    const coverPages = buildCoverPageSpecs(title, wordCount, cfg, coverBgSrc, fontOpts, coverImageSrc, coverStyle, theme, coverVariant);
+    const coverPages = buildCoverPageSpecs(title, wordCount, cfg, coverBgSrc, fontOpts, coverImageSrc, coverStyle, coverTheme, coverVariant, coverExcerpt);
 
     // 封面页
     for (const coverSpec of coverPages) {
@@ -872,7 +1080,7 @@ export async function renderMarkdownToCards(markdownText, options = {}) {
     }
     await bodyPage.close();
 
-    return { files, total_pages: totalPages, output_dir: outputDir, style, color_scheme: colorScheme?.id || null, warnings };
+    return { files, total_pages: totalPages, output_dir: outputDir, style, color_scheme: colorScheme?.id || null, cover_template: coverTemplate, warnings };
   } finally {
     await browser.close();
   }

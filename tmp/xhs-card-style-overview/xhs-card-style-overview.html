@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小红书卡片样式总览</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #f4f5f7; color: #111827; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif; }
+  body { padding: 34px; }
+  #overview { width: 1440px; margin: 0 auto; }
+  .hero { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 24px; }
+  .hero h1 { margin: 0; font-size: 38px; line-height: 1.12; letter-spacing: 0; }
+  .hero p { margin: 10px 0 0; font-size: 15px; line-height: 1.55; color: #5b6472; }
+  .badge { flex: 0 0 auto; border: 1px solid #d7dce3; background: #fff; border-radius: 999px; padding: 9px 14px; color: #374151; font-size: 13px; }
+  .section { margin-top: 28px; }
+  .section-head { display: flex; justify-content: space-between; align-items: end; margin-bottom: 14px; }
+  .section-head h2 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: 0; }
+  .section-head p { margin: 6px 0 0; color: #6b7280; font-size: 13px; }
+  .section-head span { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; align-items: start; }
+  .item { background: #fff; border: 1px solid #e1e5eb; border-radius: 10px; padding: 10px; box-shadow: 0 12px 28px rgba(15,23,42,.08); overflow: hidden; }
+  .meta { height: 76px; display: flex; flex-direction: column; justify-content: space-between; gap: 7px; padding-bottom: 8px; }
+  .meta h3 { margin: 0 0 4px; font-size: 15px; line-height: 1.2; letter-spacing: 0; color: #111827; }
+  .meta code { display: inline-block; max-width: 100%; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 5px; padding: 2px 5px; color: #374151; font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta span { color: #7b8494; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+  .item img { display: block; width: 100%; aspect-ratio: 3 / 5; object-fit: cover; object-position: top center; border: 1px solid #e5e7eb; border-radius: 7px; background: #fff; }
+</style>
+</head>
+<body>
+  <main id="overview">
+    <header class="hero">
+      <div>
+        <h1>小红书卡片样式总览</h1>
+        <p>基于当前 markdown-to-cards 代码直接渲染。上半部分是可传给 <code>style</code> 的模板样式；下半部分是 <code>style=legacy</code> 专用旧配色。</p>
+      </div>
+      <div class="badge">14 styles + 10 legacy schemes</div>
+    </header>
+    
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>可用 style</h2>
+          <p>这些值可以直接传给 --style / MCP style 参数。</p>
+        </div>
+        <span>14 items</span>
+      </div>
+      <div class="grid">
+        
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>默认模板</h3>
+                <code>legacy</code>
+              </div>
+              <span>默认配色 claude-orange-light</span>
+            </div>
+            <img src="cards/legacy/card_01.png" alt="legacy preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>珊瑚极简</h3>
+                <code>coral</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/coral/card_01.png" alt="coral preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>薰衣草</h3>
+                <code>lavender</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/lavender/card_01.png" alt="lavender preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>编辑部</h3>
+                <code>editorial</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/editorial/card_01.png" alt="editorial preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>清新晨光</h3>
+                <code>sage</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/sage/card_01.png" alt="sage preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>序章手记</h3>
+                <code>prologue</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/prologue/card_01.png" alt="prologue preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>经典书页</h3>
+                <code>classic</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/classic/card_01.png" alt="classic preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>黑白书页</h3>
+                <code>monograph</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/monograph/card_01.png" alt="monograph preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>Claude</h3>
+                <code>claude</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/claude/card_01.png" alt="claude preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>Medium</h3>
+                <code>medium</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/medium/card_01.png" alt="medium preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>极简</h3>
+                <code>minimal</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/minimal/card_01.png" alt="minimal preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>OpenAI</h3>
+                <code>openai</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/openai/card_01.png" alt="openai preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>卡片 Claude</h3>
+                <code>cards-claude</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/cards-claude/card_01.png" alt="cards-claude preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>黑白书页</h3>
+                <code>monograph_all_both</code>
+              </div>
+              <span>style</span>
+            </div>
+            <img src="cards/monograph_all_both/card_01.png" alt="monograph_all_both preview">
+          </article>
+        
+      </div>
+    </section>
+    
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>legacy 旧配色</h2>
+          <p>这些值只在 style=legacy 时传给 color_scheme。</p>
+        </div>
+        <span>10 items</span>
+      </div>
+      <div class="grid">
+        
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>橙调亮色</h3>
+                <code>claude-orange-light</code>
+              </div>
+              <span>legacy color_scheme</span>
+            </div>
+            <img src="cards/legacy-claude-orange-light/card_01.png" alt="claude-orange-light preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>橙调暗色</h3>
+                <code>claude-orange-dark</code>
+              </div>
+              <span>legacy color_scheme</span>
+            </div>
+            <img src="cards/legacy-claude-orange-dark/card_01.png" alt="claude-orange-dark preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>蓝调亮色</h3>
+                <code>claude-blue-light</code>
+              </div>
+              <span>legacy color_scheme</span>
+            </div>
+            <img src="cards/legacy-claude-blue-light/card_01.png" alt="claude-blue-light preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>绿调亮色</h3>
+                <code>claude-green-light</code>
+              </div>
+              <span>legacy color_scheme</span>
+            </div>
+            <img src="cards/legacy-claude-green-light/card_01.png" alt="claude-green-light preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>冷静科技蓝</h3>
+                <code>tech-blue</code>
+              </div>
+              <span>legacy color_scheme</span>
+            </div>
+            <img src="cards/legacy-tech-blue/card_01.png" alt="tech-blue preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>温暖专业砂岩</h3>
+                <code>sandstone</code>
+              </div>
+              <span>legacy color_scheme</span>
+            </div>
+            <img src="cards/legacy-sandstone/card_01.png" alt="sandstone preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>自然可持续绿</h3>
+                <code>sustainable-green</code>
+              </div>
+              <span>legacy color_scheme</span>
+            </div>
+            <img src="cards/legacy-sustainable-green/card_01.png" alt="sustainable-green preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>高端中性黑</h3>
+                <code>premium-neutral</code>
+              </div>
+              <span>legacy color_scheme</span>
+            </div>
+            <img src="cards/legacy-premium-neutral/card_01.png" alt="premium-neutral preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>创意前沿紫</h3>
+                <code>creative-purple</code>
+              </div>
+              <span>legacy color_scheme</span>
+            </div>
+            <img src="cards/legacy-creative-purple/card_01.png" alt="creative-purple preview">
+          </article>
+        
+
+          <article class="item">
+            <div class="meta">
+              <div>
+                <h3>活力增长珊瑚</h3>
+                <code>growth-coral</code>
+              </div>
+              <span>legacy color_scheme</span>
+            </div>
+            <img src="cards/legacy-growth-coral/card_01.png" alt="growth-coral preview">
+          </article>
+        
+      </div>
+    </section>
+  </main>
+</body>
+</html>

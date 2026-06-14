@@ -1,0 +1,37 @@
+{
+  "id": "huashu-red-team",
+  "name": "红队叙事",
+  "source": "https://mp.weixin.qq.com/s/4EaopxsTHEGx1f91DteElg",
+  "intent": "从样例文章抽象出的同等风格公众号模板。保留视觉节奏和组件规则，不复用原文内容、截图或账号品牌资产。",
+  "tokens": {
+    "layout": {
+      "background": "#ffffff",
+      "maxWidth": "700px",
+      "padding": "16px 12px 36px",
+      "bodyMargin": "18px 0",
+      "sectionMargin": "32px 0 16px"
+    },
+    "typography": {
+      "bodyFont": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", Arial, sans-serif",
+      "bodySize": "16px",
+      "bodyLineHeight": 1.85,
+      "headingSize": "20px",
+      "headingWeight": 600
+    },
+    "colors": {
+      "paper": "#ffffff",
+      "ink": "#1a1a1a",
+      "accent": "#d32f2f",
+      "accentSoft": "rgba(211, 47, 47, 0.08)",
+      "accentShadow": "rgba(211, 47, 47, 0.12)",
+      "rule": "rgba(211, 47, 47, 0.36)",
+      "muted": "#595959"
+    },
+    "components": {
+      "h2": "Red filled heading bar with white text, 4px radius, 12px x 20px padding.",
+      "strong": "Inline red emphasis with very light red background, compact padding, 3px radius.",
+      "image": "Centered media, max-height 500px, 6px radius, 2px accent border, soft accent shadow.",
+      "blockquote": "Soft red callout with accent border-left, used sparingly for conclusions or warnings."
+    }
+  }
+}

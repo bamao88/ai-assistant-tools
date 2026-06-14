@@ -44,7 +44,7 @@ function bodyCss(theme) {
   .md-body h2 { color: var(--accent); font-size: ${theme.h2Size}px; line-height: 1.45; text-align: center; margin: ${sc(4)}px 0 ${Math.round(theme.paraGap * 0.8)}px; font-weight: 700; }
   .md-body h2::after { content: ""; display: block; width: ${sc(18)}px; height: 1px; background: var(--accent); margin: ${sc(6)}px auto 0; opacity: .5; }
   .md-body h3 { color: var(--accent); font-size: ${theme.h3Size}px; margin-bottom: ${Math.round(theme.paraGap * 0.55)}px; font-weight: 700; }
-  .md-body p { text-indent: 2em; text-align: justify; color: color-mix(in oklab, var(--ink) 88%, transparent); }
+  .md-body p { text-indent: 0; text-align: justify; color: color-mix(in oklab, var(--ink) 88%, transparent); }
   .md-body blockquote { color: var(--accent); text-align: center; font-style: italic; padding: 0 ${sc(18)}px; }
   .md-body blockquote::before { content: "“"; }
   .md-body blockquote::after { content: "”"; }

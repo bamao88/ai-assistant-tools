@@ -1064,6 +1064,43 @@ def cmd_set_default_account(args: argparse.Namespace) -> None:
     _output({"success": True, "default": args.slot})
 
 
+def cmd_get_card_config(args: argparse.Namespace) -> None:
+    """查看账号的小红书卡片默认配置。"""
+    import sys as _sys
+
+    _sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+    import account_manager
+
+    card_config = account_manager.get_account_card_config(args.slot)
+    _output({"success": True, "slot": args.slot, "card_config": card_config})
+
+
+def cmd_set_card_config(args: argparse.Namespace) -> None:
+    """设置账号的小红书卡片默认配置。"""
+    import sys as _sys
+
+    _sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+    import account_manager
+
+    card_config = account_manager.set_account_card_config(
+        args.slot,
+        clear=args.clear,
+        style=args.style,
+        color_scheme=args.color_scheme,
+        chapter_label=args.chapter_label,
+        cover_template=args.cover_template,
+        cover_style=args.cover_style,
+        cover_bg_path=args.cover_bg_path,
+        cover_image_path=args.cover_image_path,
+        cover_variant=args.cover_variant,
+        accent_color=args.accent_color,
+        background_color=args.background_color,
+        text_color=args.text_color,
+        font_size=args.font_size,
+    )
+    _output({"success": True, "slot": args.slot, "card_config": card_config})
+
+
 # ========== 参数解析 ==========
 
 
@@ -1272,6 +1309,29 @@ def build_parser() -> argparse.ArgumentParser:
     sub = subparsers.add_parser("set-default-account", help="设置默认账号")
     sub.add_argument("--slot", required=True, help="账号 slot")
     sub.set_defaults(func=cmd_set_default_account)
+
+    # get-card-config（查看账号卡片配置）
+    sub = subparsers.add_parser("get-card-config", help="查看账号小红书卡片默认配置")
+    sub.add_argument("--slot", required=True, help="账号 slot")
+    sub.set_defaults(func=cmd_get_card_config)
+
+    # set-card-config（设置账号卡片配置）
+    sub = subparsers.add_parser("set-card-config", help="设置账号小红书卡片默认配置")
+    sub.add_argument("--slot", required=True, help="账号 slot")
+    sub.add_argument("--style", help="卡片正文模板风格，如 unified-claude")
+    sub.add_argument("--color-scheme", help="legacy 默认模板专用配色")
+    sub.add_argument("--chapter-label", help="封面/页眉标签")
+    sub.add_argument("--cover-template", choices=["style", "default"], help="封面模板来源：style=当前主题，default=默认封面")
+    sub.add_argument("--cover-style", choices=["template", "image", "both"], help="封面样式：template/image/both")
+    sub.add_argument("--cover-bg-path", help="封面底图路径")
+    sub.add_argument("--cover-image-path", help="图片封面路径或 URL")
+    sub.add_argument("--cover-variant", choices=["primary", "alt", "all"], help="新主题封面版式")
+    sub.add_argument("--accent-color", help="强调色覆盖")
+    sub.add_argument("--background-color", help="背景色覆盖")
+    sub.add_argument("--text-color", help="文字色覆盖")
+    sub.add_argument("--font-size", type=int, help="正文字号 px")
+    sub.add_argument("--clear", action="store_true", help="清空该账号卡片配置")
+    sub.set_defaults(func=cmd_set_card_config)
 
     return parser
 

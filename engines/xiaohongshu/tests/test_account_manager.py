@@ -54,3 +54,39 @@ def test_list_accounts_includes_port():
     accounts = account_manager.list_accounts()
     assert len(accounts) == 1
     assert accounts[0]["port"] == 9223
+
+
+def test_set_account_card_config():
+    """账号可绑定默认卡片配置。"""
+    account_manager.add_account("zhanghe", "张和")
+    card_config = account_manager.set_account_card_config(
+        "zhanghe",
+        style="unified-claude",
+        chapter_label="张和 AI 产品实战派",
+        cover_template="default",
+        cover_style="template",
+    )
+    assert card_config == {
+        "style": "unified-claude",
+        "chapter_label": "张和 AI 产品实战派",
+        "cover_template": "default",
+        "cover_style": "template",
+    }
+    accounts = account_manager.list_accounts()
+    assert accounts[0]["card_config"]["style"] == "unified-claude"
+
+
+def test_set_account_card_config_clear_removes_config():
+    """卡片配置可以清空。"""
+    account_manager.add_account("zhanghe")
+    account_manager.set_account_card_config("zhanghe", style="unified-claude")
+    card_config = account_manager.set_account_card_config("zhanghe", clear=True)
+    assert card_config == {}
+    assert account_manager.get_account_card_config("zhanghe") == {}
+
+
+def test_set_account_card_config_rejects_bad_cover_template():
+    """封面模板字段应校验枚举值。"""
+    account_manager.add_account("zhanghe")
+    with pytest.raises(ValueError, match="cover_template"):
+        account_manager.set_account_card_config("zhanghe", cover_template="weird")

@@ -43,7 +43,7 @@ function bodyCss(theme) {
   .md-body h2 { color: var(--accent); font-size: ${theme.h2Size}px; line-height: 1.5; padding-bottom: ${sc(4)}px; border-bottom: 1px solid var(--accent); margin-bottom: ${theme.paraGap}px; font-weight: 700; }
   .md-body h3 { color: var(--accent); font-size: ${theme.h3Size}px; margin-bottom: ${Math.round(theme.paraGap * 0.55)}px; font-weight: 700; }
   .md-body h3::before { content: "※ "; }
-  .md-body p { text-indent: 2em; text-align: justify; }
+  .md-body p { text-indent: 0; text-align: justify; }
   .md-body blockquote { background: var(--accent-soft); color: var(--accent); border-radius: ${sc(10)}px; padding: ${sc(10)}px ${sc(14)}px; font-style: italic; }
   .md-body ul li::marker { content: "◆  "; }
   .md-body pre { background: var(--accent-soft); border: 1px solid var(--rule); border-radius: ${sc(10)}px; padding: ${sc(10)}px ${sc(14)}px; color: var(--accent-deep); }

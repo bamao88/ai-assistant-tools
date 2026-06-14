@@ -21,16 +21,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: "markdown_to_cards",
-      description: "将 Markdown 文章转换为小红书风格卡片图片（PNG）。自动生成封面 + 正文多页卡片；正文支持标题、引用、代码块、表格和 Markdown 图片；默认 legacy 样式使用 claude-orange-light 配色，也可选择 coral/lavender/editorial/sage/prologue/classic/monograph 等模板风格。color_scheme 仅适用于 legacy 默认模板；其他风格可用 accent_color/background_color/text_color/font_size 手动微调。返回所有生成图片的路径。",
+      description: "将 Markdown 文章转换为小红书风格卡片图片（PNG）。自动生成封面 + 正文多页卡片；正文支持标题、引用、代码块、表格和 Markdown 图片；默认 legacy 样式使用 claude-orange-light 配色，也可选择 coral/lavender/editorial/sage/prologue/classic/monograph，以及与公众号发布对齐的 claude/medium/minimal/openai/cards-claude/monograph_all_both 等模板风格；小红书官方风格启发的封面模板使用 xhs-* style。color_scheme 仅适用于 legacy 默认模板；其他风格可用 accent_color/background_color/text_color/font_size 手动微调。返回所有生成图片的路径。",
       inputSchema: {
         type: "object",
         properties: {
           markdown: { type: "string", description: "要转换的 Markdown 文章内容（支持 H1 标题作为封面标题）" },
+          account: { type: "string", description: "小红书账号 slot；提供后会从 ~/.xhs/accounts.json 读取该账号的 card_config 作为默认卡片配置（可选）" },
           output_dir: { type: "string", description: "图片输出目录（可选，默认为临时目录）" },
           base_dir: { type: "string", description: "解析 Markdown 相对图片路径的基准目录（可选，默认当前工作目录）" },
           cover_bg_path: { type: "string", description: "封面底图路径（可选，默认使用内置底图）" },
           cover_image_path: { type: "string", description: "图片封面样式使用的封面图片路径或 URL（可选）" },
           cover_style: { type: "string", enum: ["template", "image", "both"], description: "封面样式：template 为纯文字封面，image 为文字+图片封面，both 同时生成两种（可选；提供 cover_image_path 时默认 image）" },
+          cover_template: { type: "string", enum: ["style", "default"], description: "封面模板来源：style 使用当前主题封面，default 使用默认 legacy 封面但正文仍用当前主题（可选，默认 style）" },
           style: { type: "string", enum: CARD_STYLE_IDS, description: "卡片模板风格（可选，默认 legacy）" },
           color_scheme: { type: "string", enum: COLOR_SCHEME_IDS, description: `legacy 默认模板专用预设配色（可选，默认 ${DEFAULT_COLOR_SCHEME_ID}；style 非 legacy 时不要传）` },
           chapter_label: { type: "string", description: "新主题封面/页眉显示的章节或栏目标签（可选，默认 精选长图文）" },
@@ -55,11 +57,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     try {
       const result = await renderMarkdownToCards(args.markdown, {
+        account: args.account,
         output_dir: args.output_dir,
         base_dir: args.base_dir,
         cover_bg_path: args.cover_bg_path,
         cover_image_path: args.cover_image_path,
         cover_style: args.cover_style,
+        cover_template: args.cover_template,
         style: args.style,
         color_scheme: args.color_scheme,
         chapter_label: args.chapter_label,

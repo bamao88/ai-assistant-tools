@@ -1,0 +1,32 @@
+export const huashuRedTeamTheme = {
+  id: 'huashu-red-team',
+  name: '红队叙事',
+  description: '白底窄栏、红色标题条和红色重点高亮，适合产品体验、Agent 工作流和观点型长文。',
+  styles: {
+    container: 'background-color: #fff !important; padding: 16px 12px 36px 12px; max-width: 700px; margin: 0 auto; box-sizing: border-box; word-wrap: break-word; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif; font-size: 16px; line-height: 1.85 !important; color: #1a1a1a !important;',
+    h1: 'font-size: 24px; font-weight: 700; color: #1a1a1a !important; line-height: 1.35 !important; margin: 34px 0 18px; padding: 0 0 10px; border-bottom: 3px solid #d32f2f;',
+    h2: 'font-size: 20px; font-weight: 600; color: #fff !important; line-height: 1.4 !important; margin: 32px 0 16px; padding: 12px 20px; background-color: #d32f2f !important; border-radius: 4px;',
+    h3: 'font-size: 18px; font-weight: 700; color: #d32f2f !important; line-height: 1.45 !important; margin: 28px 0 12px; padding-left: 10px; border-left: 4px solid #d32f2f;',
+    h4: 'font-size: 16px; font-weight: 700; color: #1a1a1a !important; line-height: 1.45 !important; margin: 24px 0 10px;',
+    p: 'margin: 18px 0 !important; line-height: 1.85 !important; color: #1a1a1a !important; text-align: left !important; letter-spacing: normal !important;',
+    strong: 'font-weight: 700; color: #d32f2f !important; background-color: rgba(211, 47, 47, 0.08) !important; padding: 2px 6px; border-radius: 3px;',
+    em: 'font-style: normal; color: #d32f2f !important;',
+    a: 'color: #d32f2f !important; text-decoration: none; border-bottom: 1px solid rgba(211, 47, 47, 0.5); padding-bottom: 1px;',
+    ul: 'margin: 16px 0; padding-left: 0 !important; padding-inline-start: 0 !important; margin-left: 0 !important; -webkit-padding-start: 0 !important;',
+    ol: 'margin: 16px 0; padding-left: 0 !important; padding-inline-start: 0 !important; margin-left: 0 !important; -webkit-padding-start: 0 !important;',
+    li: 'margin: 8px 0; line-height: 1.85 !important; color: #1a1a1a !important; text-align: left !important;',
+    ulMarker: 'color: #d32f2f !important; font-weight: 700;',
+    olMarker: 'color: #d32f2f !important; font-weight: 700;',
+    blockquote: 'margin: 22px 0; padding: 14px 18px; background-color: rgba(211, 47, 47, 0.06) !important; border-left: 4px solid #d32f2f; color: #4a4a4a !important; border-radius: 4px; font-style: normal;',
+    code: 'font-family: "SF Mono", Consolas, Monaco, monospace; padding: 2px 6px; background-color: rgba(211, 47, 47, 0.08) !important; color: #d32f2f !important; border-radius: 4px; font-size: 13px !important; line-height: 1.5 !important;',
+    pre: 'margin: 22px 0; padding: 16px 18px; background-color: #fff7f7 !important; color: #1a1a1a !important; border: 1px solid rgba(211, 47, 47, 0.24); border-left: 4px solid #d32f2f; border-radius: 6px; overflow-x: auto; font-size: 13px !important; line-height: 1.65 !important;',
+    hr: 'margin: 34px auto; border: none; height: 1px; background-color: rgba(211, 47, 47, 0.28) !important; width: 100%;',
+    img: 'max-width: 100%; max-height: 500px; height: auto; display: block; margin: 24px auto; border-radius: 6px; border: 2px solid #d32f2f; box-shadow: 0 4px 12px rgba(211, 47, 47, 0.12); box-sizing: border-box;',
+    table: 'width: 100%; margin: 24px 0; border-collapse: collapse; font-size: 14px; line-height: 1.6; border-top: 2px solid #d32f2f;',
+    th: 'background-color: rgba(211, 47, 47, 0.08) !important; padding: 10px 12px; text-align: left; font-weight: 700; color: #d32f2f !important; border-bottom: 1px solid rgba(211, 47, 47, 0.36);',
+    td: 'padding: 10px 12px; border-bottom: 1px solid rgba(211, 47, 47, 0.16); color: #1a1a1a !important;',
+    tr: 'border: none;',
+    codeDots: 'none',
+    codeHighlight: 'mono'
+  }
+};

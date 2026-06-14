@@ -41,7 +41,7 @@ function bodyCss(theme) {
   .md-body h1 { font-size: ${theme.h1Size}px; line-height: 1.55; text-align: center; letter-spacing: .04em; font-weight: 500; padding: ${sc(8)}px 0 ${sc(6)}px; margin-bottom: ${theme.paraGap}px; }
   .md-body h2 { font-size: ${theme.h2Size}px; line-height: 1.55; letter-spacing: .03em; margin-top: ${sc(4)}px; margin-bottom: ${Math.round(theme.paraGap * 0.75)}px; font-weight: 600; }
   .md-body h3 { font-size: ${theme.h3Size}px; letter-spacing: .02em; margin-bottom: ${Math.round(theme.paraGap * 0.55)}px; font-weight: 600; }
-  .md-body p { text-indent: 2em; text-align: justify; color: #111; }
+  .md-body p { text-indent: 0; text-align: justify; color: #111; }
   .md-body blockquote { padding: 0 ${sc(22)}px; color: #333; font-style: italic; text-align: justify; }
   .md-body ul li::marker { content: "·  "; }
   .md-body pre { border-top: 1px solid #111; border-bottom: 1px solid #111; padding: ${sc(10)}px 0; color: #111; background: transparent; }

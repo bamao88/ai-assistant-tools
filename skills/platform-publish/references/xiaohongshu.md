@@ -31,6 +31,27 @@
 
 ---
 
+## 账号卡片样式映射（长文卡片）
+
+小红书长文卡片支持像公众号一样按账号绑定固定样式。账号配置存放在 `~/.xhs/accounts.json` 的 `card_config` 字段；生成卡片时把同一个账号 slot 传给 `markdown-to-cards`：
+
+```bash
+node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
+  --account <ACCOUNT> \
+  --input "<files.cards_md_file>" \
+  --output-dir "$OUTDIR"
+```
+
+当前固定映射：
+
+| 账号 slot | 固定正文风格 | 栏目/页眉标签 | 封面 |
+|---|---|---|---|
+| `张和_专业号` | `unified-claude` | `张和 AI 产品实战派` | `cover_template=default`，即正文用共用模板，封面使用默认小红书封面 |
+
+如果用户没有明确要求实验风格，不要覆盖账号配置。需要临时测试其他风格时，显式传 `--style` / `--cover-template` 等参数，显式参数优先于账号默认配置。
+
+---
+
 ## 网络分流前置步骤（强制）
 
 为避免 Tailscale exit node 导致小红书发布走海外出口，账号选定后、任何会访问小红书网页的 CLI 前，必须先刷新本地分流路由：
@@ -128,11 +149,14 @@ OUTDIR="/tmp/xhs_cards_$(date +%s)"
 mkdir -p "$OUTDIR"
 
 node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
+  --account <ACCOUNT> \
   --input "<files.cards_md_file>" \
   --output-dir "$OUTDIR"
 ```
 
 解析返回 JSON 中的 `files` 数组，记录所有图片路径（含封面 `card_00_cover.png`）。
+
+若账号配置中已有 `card_config`，不要再手动重复传 `--style`；例如 `张和_专业号` 会自动使用 `unified-claude` 正文风格、`张和 AI 产品实战派` 页眉标签和默认封面模板。
 
 **验收条件**：`files` 数组长度 > 0。若为空或报错 → 失败，不继续。
 

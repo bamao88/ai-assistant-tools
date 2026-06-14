@@ -218,7 +218,7 @@ assistant_zh（调用方）                            退化成「选 profile=z
 
 ### 阶段 3 · 迁移「像素渲染」能力，新建 video-framework-render（中风险）
 - 新建 `engines/video-framework-render/`，迁入 `slicer.py`（渲染部分）、`render_page.js`、`reframe_locate.py`、渲染 js、HTML 模板。
-- 锁定几何 `GEOM`/`SUB`/`PAGE_CSS` 与 HTML 模板**原样**迁入 `templates/zh_main/`，引擎读 `--template zh_main`。
+- 锁定几何 `GEOM`/`SUB`/`PAGE_CSS` 与 HTML 模板**原样**迁入定制层 `profiles/zh_main/`，引擎读 `--profile zh_main`。
 - 建独立 venv（pillow + opencv-python-headless）+ node puppeteer 依赖说明。
 - 验证：用阶段 0 基线的 pages JSON + clip 渲染，**逐帧比对**成片与基线一致。
 

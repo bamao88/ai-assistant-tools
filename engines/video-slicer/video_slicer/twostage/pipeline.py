@@ -67,7 +67,8 @@ def run(
             continue
         clips.append({**{k: clip.get(k) for k in
                          ("title", "one_argument", "hook_line", "audience", "mainstream", "why")},
-                      "keep_sids": keep, **asm})
+                      "keep_sids": keep, **asm,
+                      "备注": ""})  # 留空，供人工审查填写
     return {"source": minutes_path, "persona": persona, "host": host, "clips": clips}
 
 

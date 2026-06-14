@@ -76,6 +76,7 @@ def to_markdown(result: dict) -> str:
     out = [f"# 方案B 选段结果（{len(result['clips'])} 条） · persona={result['persona']}", ""]
     for i, c in enumerate(result["clips"], 1):
         out.append(f"## {i}. {c['title']}")
+        out.append(f"- 📝 **备注（审查填写）**：{c.get('备注','')}")
         out.append(f"- 论点：{c['one_argument']}")
         out.append(f"- 受众：{c.get('audience','')} ｜ 流量：{c.get('mainstream','')} ｜ 估时：{c['est_duration']}s")
         out.append(f"- 句号：{c['keep_sids']} ｜ 时间段：{c['sentence_time_spans']}")

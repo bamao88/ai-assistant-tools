@@ -259,7 +259,8 @@ assistant_zh（调用方）                            退化成「选 profile=z
 ## 6. 验证清单（Definition of Done）
 
 - [ ] G1：`assistant_zh/workflow/` 下无可复用引擎代码（grep 确认）。
-- [ ] G2：张和视觉/术语/选题规则全在 persona/template，引擎代码无账号硬编码。
+- [ ] G2：各账号定制（视觉/术语/选题/文案-标题规则）全集中在 `engines/<engine>/profiles/<account>/`，引擎代码无账号硬编码，定制未散回任何项目。
+- [ ] G2b：工具直出产物默认落 `tools/var/<account>/` 且 `--out` 可改落点；③项目加工归项目自管。
 - [ ] G3：`registry.yaml` 引擎清单与目录一致；`scripts/check-tools.py` 通过。
 - [ ] G4：同一选段清单，迁移后成片与阶段 0 基线一致（逐帧/逐字）。
 - [ ] G4b（集成缝隙，见 §3.3）：选段产物经统一 job schema 能直接驱动渲染管线，方案B 端到端跑通一条 clip。

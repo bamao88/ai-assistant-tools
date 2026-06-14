@@ -152,17 +152,31 @@ tools/engines/
 
 > 备选方案：把 `pages_gen` / `srt_fix` 也放进 render 引擎而非 slicer。判据是「它读逐字稿做 LLM 决策」≈ slicer 家族，且已复用 slicer 的 llm 客户端，故归 slicer 更内聚。**此点待 §7 确认。**
 
-### 3.2 `assistant_zh` 迁移后只剩业务
+### 3.2 多租户 + 定制化：定制集中在工具，不散回各项目
+
+**核心原则（本节为架构基石）**：`tools/` 是**服务多个项目的平台**。每个项目（张和号 / 其他号 / 其他业务）各有自己的定制化部分。这些定制**本就属于 skill 的一部分——skill 支持定制化**，因此**集中在工具内、按 account 组织**，而**不是散回各项目**（散回去 = 多份近似副本，skill 必然失控）。项目调用时**只需「选中」自己那一份 profile**。即使某项目暂时还没有特殊定制，结构也先预留。
+
+由此，原来想「回落 assistant_zh」的东西按**性质**重新归位到三个地方：
+
+| 类别 | 例子 | 归位 |
+|---|---|---|
+| **① 定制化逻辑 / 配置**（skill 的定制层） | persona 选题规则、术语表、GEOM/模板、文案/标题生成的 prompt 与参数（`gen_copy`/`gen_title`/`build_keywords` 的可定制部分） | `tools/engines/<engine>/profiles/<account>/` —— **集中、版本管理** |
+| **② 工具直出产物**（skill 直接产生的内容） | `accel.mp4` 渲染直出、`clip.srt`/`fixed.srt`、`pages.json`、AI 文案候选 | **默认** `tools/var/<account>/`（gitignored）；**且引擎暴露 `--out` 让各项目可指定自己预期的最终地址** |
+| **③ 项目在产物之上的额外处理**（不归工具管） | `publish.mp4`（遮名+裁片头后的可发布版）、`FINALS` 人工定稿文案、发布记录/物料库 | **项目自己管**，放哪由项目决定 |
 
 ```
-assistant_zh/workflow/zh_video/   （或保留原名）
-├── gen_copy.py / gen_title.py / build_keywords.py   张和文案/标题/关键词
-├── finalize.py                                       写 publish_copy.md（张和定稿文案物料）
-├── selections/                                       张和选段清单（业务输入）
-└── （成片产物 out*/ 按规约移入 var/ 或保留业务侧）
+tools/engines/video-slicer/profiles/zh_main/      定制层①：persona + 术语表 + 文案/标题规则
+tools/engines/video-framework-render/profiles/zh_main/   定制层①：GEOM/模板
+tools/var/zh_main/                                工具直出产物②（默认家，--out 可改）
+└── selections/ pages/ clips/ ...
+
+assistant_zh（调用方）                            退化成「选 profile=zh_main + 触发」+ 管自己的③
+└── 发布物料 / publish.mp4 / 定稿文案库            项目自管（②的产物之上的再加工）
 ```
 
-业务侧的 `run` 脚本变成**薄胶水**：调 `tools/engines/video-slicer`（选内容）→ `tools/engines/video-framework-render --persona zh_main`（渲染）→ `tools/engines/tencent-video-publish`（发布）。
+调用方的 `run` 脚本变成**薄胶水**：调 `video-slicer --profile zh_main`（选内容）→ `video-framework-render --profile zh_main [--out 项目指定地址]`（渲染）→ `tencent-video-publish`（发布）。它**几乎不留视频逻辑**，只做 profile 选择、产物落点选择、以及③的项目自管部分。
+
+> **关于「定制化逻辑」能否都做成配置**：当前张和的文案/标题/选题规则大多能表达为 profile 配置（prompt + 参数 + 术语表）。若将来某项目需要无法配置化的特殊代码，也作为该 engine 的 `profiles/<account>/` 下的定制 hook 集中存放，**仍不散回项目**。本计划先把这个定制层结构立起来，即使现在只有 zh_main 一个租户。
 
 > ⚠️ **配置源反向依赖（待解决）**：当前 `tools/engines/video-slicer/.env` 是**符号链 → `assistant_zh/knowledge_base/.env`**，即「共享工具层」的 LLM provider 密钥/配置物理上归属业务项目。这与「tools 不依赖 assistant_zh」的目标 G2 相悖。迁移须把 .env 真源归位（落 `var/credentials/` 或 tools 侧，符号链反向），与已合规的 `var/credentials/aliyun.env` 对齐；否则 assistant_zh 一旦解耦/改名，所有走 LLM 的引擎（planner / twostage / srt_fix / pages_gen）会因断链静默失效。
 

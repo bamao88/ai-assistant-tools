@@ -152,7 +152,7 @@ tools/engines/
 └── video-clip/            原子操作：拼接/进度条/片尾/变速/遮名/封面（现有 + 吸收 make_publish 遮名）
 ```
 
-> 备选方案：把 `pages_gen` / `srt_fix` 也放进 render 引擎而非 slicer。判据是「它读逐字稿做 LLM 决策」≈ slicer 家族，且已复用 slicer 的 llm 客户端，故归 slicer 更内聚。**此点待 §7 确认。**
+> 备选方案（**已定，D1**）：`pages_gen` / `srt_fix` 归 `video-slicer` 而非 render 引擎——「读逐字稿做 LLM 决策」≈ slicer 家族，且已复用 slicer 的 llm 客户端，最内聚。见 §7.1。
 
 ### 3.2 多租户 + 定制化：定制集中在工具，不散回各项目
 

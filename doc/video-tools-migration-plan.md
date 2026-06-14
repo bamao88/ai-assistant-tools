@@ -227,9 +227,10 @@ assistant_zh（调用方）                            退化成「选 profile=z
 - `make_publish.py` 的裁片头（`c01:33s`）+ `CLIPS` 名单 + 读 `out_v1` 属张和业务，**留 assistant_zh**。
 - `finalize.py` **不在本阶段**——它是写文案物料的纯业务脚本，留 assistant_zh（见 §2.2 更正）。
 
-### 阶段 5 · 编排薄化 + 业务回填（中风险，动线上入口）
-- `run_pipeline.py` 改造为 `video-framework-render/pipeline.py`，persona/template 参数化。
-- `assistant_zh` 侧留薄胶水脚本调三个引擎；文案/标题/选段清单留业务侧。
+### 阶段 5 · 定制层归集 + 编排薄化（中风险，动线上入口）
+- 建 `engines/<engine>/profiles/zh_main/`，把 persona / 术语表 / GEOM-模板 / 文案-标题 prompt 参数**集中迁入定制层**（不散回项目）。
+- `run_pipeline.py` 改造为 `video-framework-render/pipeline.py`，`--profile` + `--out`（可配置产物地址）参数化。
+- `assistant_zh` 侧退化为薄胶水：选 `profile=zh_main`、选产物落点、管自己的③（发布版/定稿文案）。
 - 验证 G4：同一份选段清单端到端跑通，成片与基线一致。
 
 ### 阶段 6 · 登记与文档收口（零风险）

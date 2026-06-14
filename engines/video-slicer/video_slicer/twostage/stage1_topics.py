@@ -39,7 +39,7 @@ STAGE1_TASK = """\
   "why": "为什么会被传播 / 记忆点",
   "rough_sid_spans": [[起句号, 止句号]]
 }]}
-按 mainstream 高→低排序。挑 6-12 条精的，宁缺毋滥。只输出这个 JSON 对象。"""
+按 mainstream 高→低排序。**覆盖优先、宁多勿漏，目标 18-25 条**：过得了选题闸的都收（含细分操作技巧/insider 干货，低流量的标 mainstream=低也要收），只排除寒暄/跑题/重复/立不住观点的段落。只输出这个 JSON 对象。"""
 
 
 def select_topics(

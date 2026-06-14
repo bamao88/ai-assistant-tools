@@ -244,7 +244,9 @@ assistant_zh/workflow/zh_video/   （或保留原名）
 - [ ] G2：张和视觉/术语/选题规则全在 persona/template，引擎代码无账号硬编码。
 - [ ] G3：`registry.yaml` 引擎清单与目录一致；`scripts/check-tools.py` 通过。
 - [ ] G4：同一选段清单，迁移后成片与阶段 0 基线一致（逐帧/逐字）。
+- [ ] G4b（集成缝隙，见 §3.3）：选段产物经统一 job schema 能直接驱动渲染管线，方案B 端到端跑通一条 clip。
 - [ ] G5：`tmp/` 实验脚本已固化或归档，无遗留散落脚本。
+- [ ] G6（配置源，见 §3.2）：`video-slicer/.env` 不再反向依赖 `assistant_zh`，真源归位且各引擎 LLM 调用正常。
 - [ ] 文档：`CLAUDE.md`/`README.md`/各 engine README 已更新，无失效指引。
 
 ---

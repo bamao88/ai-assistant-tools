@@ -97,9 +97,10 @@
 | `pages_gen.py` | 154 | LLM 逐字稿→框架页 spec（已复用 video-slicer 的 llm 客户端） | **引擎**（prompt→persona） |
 | `srt_fix.py` | 152 | LLM 字幕术语纠错（1:1 保时间轴；含张和领域术语表） | **引擎**（术语表→persona） |
 | `run_pipeline.py` | 152 | 编排：选段清单→切片→pages→渲染→挑片索引 | **引擎**（薄管线，persona 参数化） |
-| `finalize.py` / `make_publish.py` | 214 / 118 | 后处理：遮学员名闪帧、裁片头 | **引擎**（与 video-clip 合并，去重） |
+| `make_publish.py` | 118 | **半生半业务**：遮学员名闪帧(通用) + 裁片头 `c01:33s` / `CLIPS` 名单 / 读 `out_v1`(张和业务) | **拆分**：遮名→video-clip 原子；裁片头/名单→业务 |
 | `rerender_subs.py` | 54 | 字幕重渲工具 | 引擎或弃 |
 | `parse_candidates.py` | 75 | 选段候选解析 | 视耦合度定 |
+| `finalize.py` | 214 | ⚠️**纯业务，非视频后处理**：写 `publish_copy.md`（内嵌 `FINALS` 张和定稿文案 + 关键词），硬编码 `assistant_zh` 绝对路径 | **留 assistant_zh** |
 | `gen_copy.py` / `gen_title.py` / `batch_gen.py` / `batch_title.py` / `build_keywords.py` | ~325 | 张和文案/标题/关键词生成 | **留 assistant_zh**（纯业务） |
 | `jobs/` `selections/` `out*/` `keywords_pool.json` `fixes.json` | — | 业务输入 + 成片产物（`out_v1/out_v2` = 已发布金标准） | **留 assistant_zh**（产物，规约上属 var 类） |
 

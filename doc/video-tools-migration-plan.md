@@ -319,7 +319,7 @@ tools/engines/
 - [ ] G2b：工具直出产物默认落 `tools/var/<account>/` 且 `--out` 可改落点；③项目加工归项目自管。
 - [ ] G2c（能力组合，见 §3.4）：能力在 `video-compose/catalog.json` 注册；`zh_business` recipe 复刻线上业务流；句级/词级作两个共存 `cut_*` 能力可切换；至少一条非业务 recipe 验证组合可换；依赖单向 compose→各引擎。
 - [ ] G3：`registry.yaml` 引擎清单与目录一致（含 `video-framework-render` + `video-compose`）；`scripts/check-tools.py` 通过。
-- [ ] G4：同一选段清单，迁移后成片与阶段 0 基线一致（逐帧/逐字）。
+- [ ] G4（replay-based，见 §1.2 / 阶段0 基线）：渲染层用冻结 `job.json`+`clip.mp4`+`clip.fixed.srt` 重放迁移后渲染引擎，`accel.mp4` 与阶段0 基线逐帧/逐字节一致（或差异可解释）；LLM 决策层（pages_gen/srt_fix）同输入比结构等价。
 - [ ] G4b（集成缝隙，见 §3.3）：选段产物经统一 job schema 能直接驱动渲染管线，方案B 端到端跑通一条 clip。
 - [ ] G5：`tmp/` 实验脚本已固化或归档，无遗留散落脚本。
 - [ ] G6（配置源，见 §3.2）：`video-slicer/.env` 不再反向依赖 `assistant_zh`，真源归位且各引擎 LLM 调用正常。

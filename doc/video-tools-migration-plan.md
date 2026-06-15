@@ -285,7 +285,9 @@ tools/engines/
 - `make_publish.py` 的裁片头（`c01:33s`）+ `CLIPS` 名单 + 读 `out_v1` 是工具产物之上的项目加工，**③项目自管**。
 - `finalize.py` **不在本阶段**——它内嵌人工定稿文案，属③项目自管（见 §2.2 更正）。
 
-### 阶段 5 · 定制层归集 + 编排薄化（中风险，动线上入口）
+### 阶段 5 · 定制层归集 + 编排薄化（中风险，动线上入口）🟡 核心完成（2026-06-15）
+> 已做：`--profile` **端到端贯通**——`run_pipeline.py` 加 `--profile`（默认 zh_main，selection 可带 `profile`）→ `run_clip` → `pages_gen.generate_pages(profile=)`/`srt_fix.correct_srt(profile=)`/`render --profile`；薄胶水"选 profile + 选落点(--out-root D5)"成形。定制层文档 `profiles/zh_main/README.md`（fixes.json 已外置；GEOM/PAGE_CSS=内置默认）。验证：py_compile ✅ / 三引擎 fn 均含 profile 参数 ✅ / zh_main 默认 = 行为零变化。
+> ⏸ parked（需帧验证/属敏感）：① GEOM/SUB/ACCEL/PAGE_CSS **值外置**为 profile 文件——改像素核心，须 G4 逐帧兜底（BLOCKED_NEEDS_LOCAL_VALIDATION）；保持"张和=内置默认 + 可选 profile 覆盖"。② **G6 `.env` 反向符号链** = 涉密钥搬运（Hard-stop 类），未自动执行，建议复制真源到 `var/credentials/` 并反转符号链，待用户确认。
 - 建 `engines/<engine>/profiles/zh_main/`，把 persona / 术语表 / GEOM-模板 / 文案-标题 prompt 参数**集中迁入定制层**（不散回项目）。
 - `run_pipeline.py` 的编排逻辑改造为组合层可调的形态，`--profile` + `--out`（可配置产物地址）参数化。
 - `assistant_zh` 侧退化为薄胶水：选 `profile=zh_main`、选产物落点、管自己的③（发布版/定稿文案）。

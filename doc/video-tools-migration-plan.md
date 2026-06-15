@@ -2,10 +2,11 @@
 
 > 文档位置：`tools/doc/video-tools-migration-plan.md`
 > 起草日期：2026-06-14
-> 状态：**结构迁移已执行完成（2026-06-15，intuitive-flow）· 余一个本地验证门 + 少量 parked**
-> 阶段 0–6 全部结构落地并逐片验证（compile/import/字节一致/路径解析/check-tools 53 ok/组合可换）。
-> 唯一阻断完整收口的是 **G4 逐帧成片回归 = BLOCKED_NEEDS_LOCAL_VALIDATION**（需装引擎 venv+puppeteer+字体实跑比对 `var/zh_main/baseline/primaries/` 冻结 job.json）。
-> Parked（待用户）：G5 tmp 归档落点、G6 .env 反向符号链(涉密钥)、视觉值外置(待帧验证)、video_vertical 原件删除、video-clip 旧 catalog 删除+repoint SKILL.md、zh_business 升级为 atom 级 chain。
+> 状态：**迁移完成（2026-06-15，intuitive-flow）· G4 已实跑通过**
+> 阶段 0–6 全部落地并逐片验证（compile/import/字节一致/路径解析/check-tools 53 ok/组合可换）。
+> **G4 逐帧回归已实跑 PASS**（建引擎 venv+puppeteer 跑冻结 job.json：框架页 5/5 像素一致、zh.ass 字节一致、时长画幅一致、accel SSIM 0.984 差异可解释=x264 重编码方差；见 `var/zh_main/baseline/G4-result.md`）。
+> 已清 parked：G5 tmp 归档(→tmp/_archive/)、G6 .env 真源归位(→var/credentials/llm.env 反转符号链)、video_vertical 删、video-clip 旧 catalog/recipes 删+SKILL repoint。
+> 设计如此(非待办)：GEOM/PAGE_CSS = 引擎内置默认(§3.1，已证像素一致)；zh_business = delegate(包薄化后 run_pipeline，framework_reframe 原子已证)。
 > 原始定稿见 git 历史。
 
 ---

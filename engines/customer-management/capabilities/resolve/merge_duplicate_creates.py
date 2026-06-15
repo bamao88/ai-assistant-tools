@@ -26,11 +26,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from workflow.student_employment_tracking.friend_index import load_friend_index, resolve_role
+# engine 根（capabilities/resolve/ → up 2）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+import config
+from capabilities.resolve.friend_index import load_friend_index, resolve_role
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-AUDIT_DIR = PROJECT_ROOT / "analytics" / "friends_index" / "duplicate_audits"
-MERGE_DIR = PROJECT_ROOT / "analytics" / "friends_index" / "merges"
+PROJECT_ROOT = config.PROJECT_ROOT
+AUDIT_DIR = config.FRIENDS_AUDIT_DIR
+MERGE_DIR = config.FRIENDS_MERGE_DIR
 
 APP_TOKEN = "YTcFbyGS4arILPseQJscA6J7nqb"
 TABLE_ID = "tblfCYoeornDw0XF"

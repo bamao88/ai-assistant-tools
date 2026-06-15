@@ -1,8 +1,8 @@
 # video-clip 引擎
 
-视频剪辑/合成的**原子能力库 + 编辑类型配方**。被 `skills/video-clip` 调用，自身不触发。
+积木厂：视频剪辑/合成的**叠加原子能力库**。被 `skills/video-clip` 调用，自身不触发。
 
-- 真源：`catalog.json`（原子目录）、`recipes.json`（编辑类型）。文档不重复清单，看这两个 JSON。
+- 真源：`capabilities.json`（本引擎 9 个原子声明）。编辑类型配方 + 总能力表已上移到 `engines/video-compose/`（`recipes.json` / `catalog.json`，真源唯一）。
 - 共享工具：`vutil.py`（`run`/`probe`/`ffprobe_dur`/`x264`，去重散落各处的 helper）。
 - 原子约定：`atoms/<name>.py IN OUT [--params]`，**幂等、不改原片、可单跑可串联**。
 - 产物/测试：一律写 `tools/var/video-clip/`，不进 git、不进业务真源。

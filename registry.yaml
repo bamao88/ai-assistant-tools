@@ -95,6 +95,13 @@ skills:
     install_kind: dir
     purpose: 为文章寻找合适配图，支持直接截图和登录墙场景下的网络搜索提取
     uses_engines: [screenshot]
+  - name: customer-management
+    layer: L2
+    source: skills/customer-management
+    install_kind: dir
+    scope: assistant_zh   # 业务专属：不进全局 ~/.claude/skills；仅 assistant_zh 项目本地双 host 软链
+    purpose: 客户/学员资产管理（4 能力 + 任务卡 + 7 配方）：学员入表 / 就业回访 / 客户资产体检订正 / 好友刷新建行 / 付款 / 客户表同步飞书
+    uses_engines: [customer-management]
   - name: humanizer
     layer: util
     source: vendor/humanizer/SKILL.md

@@ -1,7 +1,9 @@
 """共享：好友名单加载器 + 账号角色预设。
 
-供 sync_friends_to_feishu / audit_duplicate_creates / merge_duplicate_creates 复用，
-让"助理号""张和2号"等多个数据源走同一套同步/去重逻辑。
+供 outputs.sync_friends_to_feishu / recipes.health_check（duplicate_creates 缺陷类的
+audit+merge）/ recipes.friends_sync 复用，让"助理号""张和2号"等多个数据源走同一套
+同步/去重逻辑。（原 audit_duplicate_creates / merge_duplicate_creates 死脚本已于 P4
+吸收进 health_check.duplicate_creates 后删除。）
 
 支持两种 friend 源 schema，统一规约成英文键 dict：
   1. analytics/friends_index/friends.json

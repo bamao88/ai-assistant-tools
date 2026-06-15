@@ -14,11 +14,11 @@
 
 跑两次是幂等的。默认 dry-run，--apply 真写。
 
-用法:
-    python3 -m workflow.student_employment_tracking.sync_to_feishu              # 默认 dry-run
-    python3 -m workflow.student_employment_tracking.sync_to_feishu --apply      # 真写
-    python3 -m workflow.student_employment_tracking.sync_to_feishu --wxid <id>  # 单人
-    python3 -m workflow.student_employment_tracking.sync_to_feishu --limit 5    # 控制范围
+用法（迁移后从 engine 根跑）:
+    python3 -m outputs.sync_to_feishu              # 默认 dry-run
+    python3 -m outputs.sync_to_feishu --apply      # 真写
+    python3 -m outputs.sync_to_feishu --wxid <id>  # 单人
+    python3 -m outputs.sync_to_feishu --limit 5    # 控制范围
 """
 
 from __future__ import annotations
@@ -32,10 +32,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-LATEST_FILE = PROJECT_ROOT / "student_manage" / "state" / "student_employment_tracking_latest.json"
-ANALYTICS_DIR = PROJECT_ROOT / "analytics" / "student_employment_tracking"
-SYNC_RUNS_DIR = ANALYTICS_DIR / "sync_runs"
+# engine 根（outputs/ → up 1）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import config
+
+PROJECT_ROOT = config.PROJECT_ROOT
+LATEST_FILE = config.EMPLOYMENT_LATEST_FILE
+ANALYTICS_DIR = config.EMPLOYMENT_ANALYTICS_DIR
+SYNC_RUNS_DIR = config.EMPLOYMENT_SYNC_RUNS_DIR
 
 APP_TOKEN = "YTcFbyGS4arILPseQJscA6J7nqb"
 TABLE_ID = "tblfCYoeornDw0XF"

@@ -48,6 +48,8 @@ class Card:
     meta: dict[str, Any]                 # front-matter / 元数据段
     blocks: dict[str, str]               # 段名 → 该段内第一个 fenced 块（提示词）
     raw: str = ""                        # 原始全文（调试用）
+    # 正文 front-matter 之后所有 fenced 块，按文档顺序（多块/段的卡用，如就业 USER+PREV 同段）
+    ordered_blocks: list[str] = field(default_factory=list)
 
     # --- 三要素便捷访问 ---
     @property

@@ -13,7 +13,7 @@
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
-## 原子（全部 ready，详见 catalog.json；统一用 .venv/bin/python 跑）
+## 原子（全部 ready，详见 capabilities.json；统一用 .venv/bin/python 跑）
 
 ```bash
 PY=.venv/bin/python

@@ -36,11 +36,14 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
-from workflow.student_employment_tracking.friend_index import load_friend_index, resolve_role
+# engine 根（outputs/ → up 1）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import config
+from capabilities.resolve.friend_index import load_friend_index, resolve_role
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-STAFF_EXCLUDE_FILE = PROJECT_ROOT / "student_manage" / "staff_exclude.json"
-RUN_DIR_BASE = PROJECT_ROOT / "analytics" / "friends_index" / "sync_runs"
+PROJECT_ROOT = config.PROJECT_ROOT
+STAFF_EXCLUDE_FILE = config.STAFF_EXCLUDE_FILE
+RUN_DIR_BASE = config.FRIENDS_SYNC_RUNS_DIR
 
 APP_TOKEN = "YTcFbyGS4arILPseQJscA6J7nqb"
 TABLE_ID = "tblfCYoeornDw0XF"

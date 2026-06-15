@@ -339,10 +339,10 @@ tools/engines/
 - [x] G2b：`--out-root`(D5) 可改落点；默认 `var/zh_main/`；③项目加工归项目自管。
 - [x] G2c：17 原子注册 `video-compose/catalog.json`；`zh_business` recipe 建模线上流；句级/词级 `cut_sentence`/`cut_word` 共存可切；`raw_quickcut` 验证组合可换（`run.py --plan` 实测）；依赖单向 compose→各引擎。
 - [x] G3：`registry.yaml` 含 `video-framework-render` + `video-compose` 且与目录一致；`scripts/check-tools.py` = **53 ok, 0 errors**。
-- [ ] ⏸ **G4（replay-based）= BLOCKED_NEEDS_LOCAL_VALIDATION**：结构迁移已证（compile/import/字节一致/路径解析）；逐帧 `accel.mp4` 比对需装引擎 venv(pillow+opencv)+puppeteer+字体，用 `var/zh_main/baseline/primaries/` 冻结 job.json 实跑。
-- [ ] ⏸ G4b：job schema(job.json) 已是渲染稳定契约；方案B `keep_sids/spans → segments` 适配层 + 端到端跑通待建（数值秒 spans 已定 D6）。
-- [x] 🟡 G5：方案A 基准 `select_clips.py` 已固化进 `video-slicer/baselines/`；⏸ `tmp/` 一次性脚本归档 parked（业务项目内·破坏性·待用户定归档落点）。
-- [ ] ⏸ G6（配置源）= parked：`video-slicer/.env` 仍符号链 → `assistant_zh`；涉密钥搬运(Hard-stop 类)，建议复制真源到 `var/credentials/` 并反转符号链，待用户确认。
+- [x] **G4（replay-based）= 实跑 PASS**：建引擎 venv(pillow12.2+opencv4.13)+puppeteer 跑冻结 `v2_c02` job.json，全 6 阶段通；框架页 5/5 **100% 像素一致**、`zh.ass` 字节一致、时长 101.729s + 画幅一致、`accel.mp4` SSIM **0.984（差异可解释=x264 跨版本重编码）**。见 `var/zh_main/baseline/G4-result.md`。
+- [x] 🟡 G4b：job.json 已是渲染稳定契约且 G4 实跑验证可驱动渲染。方案B `keep_sids/spans → segments` 适配层仍 parked（方案B 整链未通，数值秒 spans 已定 D6；属方案B 路线非本迁移阻塞）。
+- [x] G5：方案A 基准 `select_clips.py` 固化进 `video-slicer/baselines/`；`tmp/` 视频一次性脚本(camp4_render_clips/migrate_v1_slices/mint_video_items/slicer_backstop_validation + slice_copy_test/) 已归档 → `assistant_zh/tmp/_archive/`。
+- [x] G6（配置源）：`.env` 真源已归位 `var/credentials/llm.env`（gitignored, chmod600），`video-slicer/.env` 符号链反转指向 tools 侧；`_discover_env_file` 解析确认不再依赖 assistant_zh，env 加载正常。
 - [x] 文档：`README.md`(tools 引擎表) / 各 engine README / assistant_zh README 已更新无失效指引；`CLAUDE.md` 不列清单(真源在 registry，无需改)。
 
 ---

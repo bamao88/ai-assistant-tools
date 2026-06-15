@@ -72,9 +72,10 @@ def notify_error(reason: str) -> None:
     """发飞书失败告警 @吴湘萍。本身失败时只打印,不再级联。"""
     try:
         subprocess.run(
-            ["python3", "-m", "student_manage.notify", "--error", reason],
+            ["python3", "-m", "outputs.notify", "--error", reason],
             timeout=30,
             check=False,
+            cwd=str(ENGINE_ROOT),
         )
     except Exception as e:
         log(f"[ALARM_FAILED] notify 调用失败: {e}")

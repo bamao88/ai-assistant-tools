@@ -13,8 +13,8 @@
   杨羚     → wxid_mkn8v58ofzeq22 (M5-群昵称头部)
 
 用法:
-  python3 -m workflow.student_employment_tracking.update_existing_wxids           # dry-run
-  python3 -m workflow.student_employment_tracking.update_existing_wxids --apply
+  python3 -m capabilities.resolve.update_existing_wxids           # dry-run
+  python3 -m capabilities.resolve.update_existing_wxids --apply
 """
 
 from __future__ import annotations

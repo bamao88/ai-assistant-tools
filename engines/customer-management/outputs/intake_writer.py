@@ -10,7 +10,7 @@ worksheet schema (wxid -> {}):
   phone          手机号（空则不填；只填飞书该字段为空时）
   pay            {amt, method(转账/小鹅通/微信支付), img(相对路径)} 付款；img 用 --as bot 传
 
-用法: python3 -m student_manage.intake.intake_writer <worksheet.json> [--apply]
+用法: python3 -m outputs.intake_writer <worksheet.json> [--apply]
 只填空+多选append，不覆盖已有文本；幂等。
 """
 import json, subprocess, sys, time, os

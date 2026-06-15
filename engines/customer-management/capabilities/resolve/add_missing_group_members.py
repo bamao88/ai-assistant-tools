@@ -12,8 +12,8 @@
 过滤掉 staff_exclude.json 里的 wxid。
 
 用法:
-  python3 -m workflow.student_employment_tracking.add_missing_group_members           # dry-run
-  python3 -m workflow.student_employment_tracking.add_missing_group_members --apply
+  python3 -m capabilities.resolve.add_missing_group_members           # dry-run
+  python3 -m capabilities.resolve.add_missing_group_members --apply
 """
 
 from __future__ import annotations

@@ -11,7 +11,7 @@
 输出 audit_duplicates.md / .json，不写飞书。
 
 用法：
-  python3 -m workflow.student_employment_tracking.audit_duplicate_creates
+  python3 -m capabilities.resolve.audit_duplicate_creates
 """
 
 from __future__ import annotations

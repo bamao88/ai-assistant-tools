@@ -14,9 +14,9 @@
 幂等：两列都不需要改 → skip_no_change。
 
 用法：
-  python3 -m workflow.student_employment_tracking.fix_zh2_weixin_name_to_nick --role zh2
-  python3 -m workflow.student_employment_tracking.fix_zh2_weixin_name_to_nick --role zh2 --apply
-  python3 -m workflow.student_employment_tracking.fix_zh2_weixin_name_to_nick --role assistant --apply
+  python3 -m capabilities.resolve.fix_zh2_weixin_name_to_nick --role zh2
+  python3 -m capabilities.resolve.fix_zh2_weixin_name_to_nick --role zh2 --apply
+  python3 -m capabilities.resolve.fix_zh2_weixin_name_to_nick --role assistant --apply
 """
 
 from __future__ import annotations

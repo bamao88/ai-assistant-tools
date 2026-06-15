@@ -11,8 +11,8 @@
   - 微信名称：当前值 == nick_name → 纠正为 (alias or wxid)；否则不动
 
 用法：
-  python3 -m workflow.student_employment_tracking.fix_friends_column_misplacement          # dry-run
-  python3 -m workflow.student_employment_tracking.fix_friends_column_misplacement --apply
+  python3 -m capabilities.resolve.fix_friends_column_misplacement          # dry-run
+  python3 -m capabilities.resolve.fix_friends_column_misplacement --apply
 """
 
 from __future__ import annotations

@@ -5,10 +5,10 @@
 覆盖语义: 3 个 number 字段每次都按当前 by_wxid.json 覆盖；不在某个群里 → 该字段写 null
 
 用法:
-    python3 -m workflow.student_employment_tracking.sync_group_order            # 默认 dry-run
-    python3 -m workflow.student_employment_tracking.sync_group_order --apply    # 真写
-    python3 -m workflow.student_employment_tracking.sync_group_order --wxid X
-    python3 -m workflow.student_employment_tracking.sync_group_order --limit 5
+    python3 -m outputs.sync_group_order            # 默认 dry-run
+    python3 -m outputs.sync_group_order --apply    # 真写
+    python3 -m outputs.sync_group_order --wxid X
+    python3 -m outputs.sync_group_order --limit 5
 """
 
 from __future__ import annotations
@@ -22,9 +22,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-BY_WXID_FILE = PROJECT_ROOT / "analytics" / "group_member_order" / "by_wxid.json"
-SYNC_RUNS_DIR = PROJECT_ROOT / "analytics" / "group_member_order" / "sync_runs"
+# engine 根（outputs/ → up 1）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import config
+
+PROJECT_ROOT = config.PROJECT_ROOT
+BY_WXID_FILE = config.BY_WXID_FILE
+SYNC_RUNS_DIR = config.GROUP_ORDER_SYNC_RUNS_DIR
 
 APP_TOKEN = "YTcFbyGS4arILPseQJscA6J7nqb"
 TABLE_ID = "tblfCYoeornDw0XF"

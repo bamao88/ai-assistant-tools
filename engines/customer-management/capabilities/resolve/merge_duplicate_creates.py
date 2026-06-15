@@ -11,8 +11,8 @@
     nick ∈ {ss, 十一, 流浪猫, 克柔, Dustinn, Thor}
 
 用法：
-  python3 -m workflow.student_employment_tracking.merge_duplicate_creates           # dry-run
-  python3 -m workflow.student_employment_tracking.merge_duplicate_creates --apply
+  python3 -m capabilities.resolve.merge_duplicate_creates           # dry-run
+  python3 -m capabilities.resolve.merge_duplicate_creates --apply
 """
 
 from __future__ import annotations

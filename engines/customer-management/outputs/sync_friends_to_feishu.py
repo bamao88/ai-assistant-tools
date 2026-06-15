@@ -20,9 +20,9 @@
 staff_exclude.json 里的 wxid 一律跳过（自己人不进客户管理表）。
 
 用法：
-  python3 -m workflow.student_employment_tracking.sync_friends_to_feishu                    # 助理号 dry-run
-  python3 -m workflow.student_employment_tracking.sync_friends_to_feishu --role zh2         # 张和2号 dry-run
-  python3 -m workflow.student_employment_tracking.sync_friends_to_feishu --role zh2 --apply
+  python3 -m outputs.sync_friends_to_feishu                    # 助理号 dry-run
+  python3 -m outputs.sync_friends_to_feishu --role zh2         # 张和2号 dry-run
+  python3 -m outputs.sync_friends_to_feishu --role zh2 --apply
 """
 
 from __future__ import annotations

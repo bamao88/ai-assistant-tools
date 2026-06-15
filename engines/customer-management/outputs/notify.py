@@ -3,9 +3,9 @@
 notify.py — 学员表更新摘要 / 失败告警 → lark-cli im +send
 
 用法:
-    python3 -m student_manage.notify             # 成功摘要(从 last_update_summary.json 读)
-    python3 -m student_manage.notify --error "xxx失败原因"  # 失败告警 @吴湘萍
-    python3 -m student_manage.notify --dry-run   # 打印不发
+    python3 -m outputs.notify             # 成功摘要(从 last_update_summary.json 读)
+    python3 -m outputs.notify --error "xxx失败原因"  # 失败告警 @吴湘萍
+    python3 -m outputs.notify --dry-run   # 打印不发
 """
 
 from __future__ import annotations

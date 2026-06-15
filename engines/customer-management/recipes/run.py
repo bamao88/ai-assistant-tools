@@ -58,7 +58,7 @@ def run_step(name: str, cmd: list[str]) -> None:
     log_path = LOG_DIR / f"{datetime.now().strftime('%Y-%m-%d')}.log"
     with log_path.open("a", encoding="utf-8") as logf:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                text=True, bufsize=1)
+                                text=True, bufsize=1, cwd=str(ENGINE_ROOT))
         for line in proc.stdout:
             sys.stdout.write(line)
             logf.write(line)

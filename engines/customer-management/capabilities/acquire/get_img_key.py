@@ -9,7 +9,7 @@ WeFlow 把 key 用 Electron safeStorage 加密存在 WeFlow-config.json 的 imag
 输出: 写 imgkey.txt(16字节ASCII原样) 和 imgxor.txt；打印摘要(不打印明文 key)。
 前置: WeFlow 装过并登录过(配置存在即可,WeFlow 不必在运行)。
 """
-import subprocess, base64, json, os
+import subprocess, base64, json, os, sys
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes

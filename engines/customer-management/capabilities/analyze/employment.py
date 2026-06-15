@@ -169,9 +169,9 @@ def parse_prompt_template() -> tuple[str, str, str]:
     `## SYSTEM_PROMPT / ## USER_PROMPT_TEMPLATE / ## ...PREVIOUS_CONTEXT...` 标记。
     """
     card = load_card(CARD_NAME)
-    blocks = card.blocks
-    # 兼容卡里的段命名：按出现顺序取，要求 ≥3 块（SYSTEM / USER / PREVIOUS_CONTEXT）。
-    ordered = list(blocks.values())
+    # 按文档顺序取前 3 个 fenced 块（SYSTEM / USER / PREVIOUS_CONTEXT），
+    # 与旧 analyze.py 的 re.findall(r"```\n(.*?)\n```") 顺序一致（PREV 与 USER 同段）。
+    ordered = card.ordered_blocks
     if len(ordered) < 3:
         raise RuntimeError(
             f"任务卡 {CARD_NAME} 需要 ≥3 个 fenced 提示词块"

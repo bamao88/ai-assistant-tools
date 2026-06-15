@@ -96,12 +96,12 @@ def main():
     if is_apply:
         log("✗ --auto 模式已 DEPRECATED：")
         log("  旧学员表 tbl2LOMxbMV4ipwe 不再维护。")
-        log("  写飞书统一走 `workflow.student_employment_tracking.sync_to_feishu --apply`")
+        log("  写飞书统一走 `python3 -m outputs.sync_to_feishu --apply`")
         log("  （唯一真源 = 客户管理表 tblfCYoeornDw0XF）")
         log("")
         log("  本脚本现在只用于本地主数据维护。建议改用：")
-        log("    python3 -m student_manage.run --dry-run   # 本地预览")
-        log("    python3 -m student_manage.run --skip-llm  # 跳过 LLM 只跑规则")
+        log("    python3 -m recipes.run --dry-run   # 本地预览")
+        log("    python3 -m recipes.run --skip-llm  # 跳过 LLM 只跑规则")
         sys.exit(2)
 
     log(f"═══════════════════════════════════════")

@@ -268,7 +268,11 @@ tools/engines/
 - 张和术语表 / 分页 prompt 风格抽到定制层 `profiles/zh_main/`（`personas/zh_main.md` 扩展或并列文件）。
 - 验证：同一 clip.srt 跑迁移后 `pages_gen`/`srt_fix`，输出与基线一致；**且线上 `run_pipeline.py` 端到端仍能出片（G4）**。
 
-### 阶段 3 · 迁移「像素渲染」能力，新建 video-framework-render（中风险）
+### 阶段 3 · 迁移「像素渲染」能力，新建 video-framework-render（中风险）✅ 结构完成（2026-06-15）
+> 已做：新建 `engines/video-framework-render/`；`slicer.py`→`video_framework_render/render.py`（**near-verbatim**，6 阶段函数即原子：locate/assets/render_pages/subtitles/compose/accelerate）；`render_page.js`（puppeteer 去硬编码：PUPPETEER_PATH→本地→npx 兜底）；`reframe_locate.py` + 竖屏 HTML/js 模板迁入；张和 `fixes.json`→`profiles/zh_main/`（**byte-identical**，`load_fixes(profile)` 读）；GEOM/SUB/ACCEL/PAGE_CSS 保留为 render.py 内置默认（=zh_main 默认，§3.1，阶段5 再外置）；`capabilities.json`(声明原子) + `requirements.txt` + `README` 就位；线上 `run_pipeline.py`/`rerender_subs.py` 的 slicer.py 子进程调用重定向到新引擎。原 slicer.py/render_page.js/fixes.json 已从 assistant_zh 删除（G1）。
+> 验证：py_compile ✅ / 8 原子 import ✅ / fixes.json 字节一致 ✅ / 无遗留 slicer.py 调用方 ✅。
+> ⏸ **G4 逐帧成片回归 = BLOCKED_NEEDS_LOCAL_VALIDATION**：需装引擎 venv(pillow+opencv) + puppeteer + 字体(Hannotate/PingFang SC)，用 `var/zh_main/baseline/primaries/` 冻结 job.json 实跑 render，逐帧/逐字节比对 accel.mp4。
+> ⏸ 残留 parked：`video_vertical/` 原件（reframe_locate.py + html/js）已复制入引擎但**原件未删**（删前需确认无 video_vertical 独立 runner）。
 - 新建 `engines/video-framework-render/`，迁入 `slicer.py`（渲染部分）、`render_page.js`、`reframe_locate.py`、渲染 js、HTML 模板。
 - **渲染核心拆成可组合原子**（compose / accelerate / subs / framework_reframe / raw…），在 `capabilities.json` 声明，供 §3.4 组合层引用——不做成单体黑盒。
 - 锁定几何 `GEOM`/`SUB`/`PAGE_CSS` 与 HTML 模板**原样**迁入定制层 `profiles/zh_main/`，引擎读 `--profile zh_main`。

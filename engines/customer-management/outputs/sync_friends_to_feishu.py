@@ -255,7 +255,9 @@ def main():
     print(f"\n[{mode}] role={args.role} update={len(updates)} create={len(creates)} skip_no_change={skip_no_change}")
     print(f"  → plan: {run_dir / 'plan.md'}")
     if creates:
-        print(f"  ⚠️ {len(creates)} 个新建行；apply 后请跑 audit_duplicate_creates --role {args.role} 检查与空 wxid 老行的重复")
+        print(f"  ⚠️ {len(creates)} 个新建行；建议用 recipes.friends_sync（sync+audit+merge 三步合一）"
+              f"而非单跑本脚本，避免漏查与空 wxid 老行的重复。"
+              f"（单查/单合并：python3 -m recipes.health_check duplicate_creates --role {args.role}）")
 
     if not args.apply:
         print("[dry-run] 不真写。要真写：加 --apply")

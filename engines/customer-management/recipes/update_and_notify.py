@@ -16,18 +16,25 @@ import subprocess
 import sys
 import csv
 from datetime import datetime
+from pathlib import Path
 
-BASE_DIR          = "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/student_manage"
-WECHAT_STATE_DIR  = "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/mac/wechat/state"
-STUDENT_FILE      = os.path.join(BASE_DIR, "all_student.json")
-CSV_FILE          = os.path.join(BASE_DIR, "all_student.csv")
-SUMMARY_FILE      = os.path.join(BASE_DIR, "last_update_summary.json")
-SYNC_SUMMARY      = os.path.join(WECHAT_STATE_DIR, "last_sync_summary.json")
-OVERRIDES_FILE    = os.path.join(BASE_DIR, "manual_overrides.json")
+# engine 根（recipes/ → up 1）：子进程 `-m` 调用以此为 cwd/PYTHONPATH 锚点。
+ENGINE_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ENGINE_ROOT))
+import config
 
-PIPELINE_SCRIPTS = [
-    os.path.join(BASE_DIR, "extract_students.py"),
-    os.path.join(BASE_DIR, "enrich_students.py"),
+BASE_DIR          = str(config.BASE_DIR)
+WECHAT_STATE_DIR  = str(config.WECHAT_STATE_DIR)
+STUDENT_FILE      = str(config.STUDENT_FILE)
+CSV_FILE          = str(config.CSV_FILE)
+SUMMARY_FILE      = str(config.SUMMARY_FILE)
+SYNC_SUMMARY      = str(config.SYNC_SUMMARY_FILE)
+OVERRIDES_FILE    = str(config.MANUAL_OVERRIDES_FILE)
+
+# pipeline 步骤以 engine 模块形式跑（cwd=ENGINE_ROOT）
+PIPELINE_MODULES = [
+    "capabilities.extract_students",
+    "capabilities.enrich_students",
 ]
 
 # CSV 字段顺序

@@ -4,7 +4,7 @@ run.py — 学员主数据周更新顶层入口
 
 ⚠️ DEPRECATED (2026-05-18)：第 5 步飞书 sync 已停用。
     旧"学员表" tbl2LOMxbMV4ipwe 不再维护。飞书唯一真源 = 客户管理表 tblfCYoeornDw0XF。
-    写飞书统一走 `workflow.student_employment_tracking.sync_to_feishu`。
+    写飞书统一走 `outputs.sync_to_feishu`。
     这个脚本只保留 1/2/3/4 步本地主数据维护；--auto 模式禁用。
 
 执行序列:
@@ -134,7 +134,7 @@ def main():
 
         # 5. ❌ DEPRECATED: 旧学员表 sync 已停用。写飞书走客户管理表 sync。
         log("Step 5: sync_to_feishu SKIPPED (DEPRECATED — 旧学员表不再维护)")
-        log("       写飞书改走 `python3 -m workflow.student_employment_tracking.sync_to_feishu --apply`")
+        log("       写飞书改走 `python3 -m outputs.sync_to_feishu --apply`")
 
         # 6. notify 在 dry-run 模式下也不发
         log("Step 6: notify SKIPPED (only local maintenance, no feishu push)")

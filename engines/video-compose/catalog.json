@@ -1,6 +1,6 @@
 {
   "_schema": "video-catalog/v1",
-  "_doc": "总能力表（真源·跨引擎聚合，从各引擎 capabilities.json 汇总）。video-compose 是唯一对外入口，只指挥不产原子。重建：python build_catalog.py。",
+  "_doc": "总能力表（真源·跨引擎聚合，从各引擎 capabilities.json 汇总）。重建：python build_catalog.py。",
   "engines": {
     "video-slicer": {
       "role": "积木厂：提供「剪辑策略」原子（AI 读文字选段 → 切点）。只产原子，不指挥。",

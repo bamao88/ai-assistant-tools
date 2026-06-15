@@ -8,7 +8,7 @@
 ```
 catalog.json      总能力表（真源·跨引擎聚合，build_catalog.py 从各引擎 capabilities.json 重建）
 recipes.json      命名预设（zh_business / raw_quickcut / simple_concat / chaptered_growth）
-select.py         AI 读视频 → 选 recipe / 自由组合
+selector.py         AI 读视频 → 选 recipe / 自由组合
 run.py            按 recipe 解析能力链 → 跨引擎调原子
 build_catalog.py  重建 catalog（新增原子 → 在所属引擎声明 → 重跑此脚本即并入）
 ```
@@ -17,8 +17,8 @@ build_catalog.py  重建 catalog（新增原子 → 在所属引擎声明 → �
 
 ```bash
 python build_catalog.py                       # 重建总能力表
-python select.py --list                       # 列能力 + 配方
-python select.py --describe "口播框架页切片"   # → zh_business
+python selector.py --list                       # 列能力 + 配方
+python selector.py --describe "口播框架页切片"   # → zh_business
 python run.py --plan zh_business              # 审能力链（每步原子+引擎+entry）
 python run.py --run zh_business --selection sel.json --profile zh_main
 ```

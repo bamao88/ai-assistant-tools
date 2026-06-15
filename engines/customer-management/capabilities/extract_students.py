@@ -8,12 +8,18 @@ import json
 import os
 import re
 import glob
+import sys
+from pathlib import Path
 
-BASE_DIR = "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/student_manage"
-DATA_DIR = "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/knowledge_base/client/raw/chat"
-DASHBOARD_PATH = "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/mac/wechat/state/dashboard.json"
-OUTPUT_PATH = os.path.join(BASE_DIR, "all_student.json")
-STAFF_EXCLUDE_PATH = os.path.join(BASE_DIR, "staff_exclude.json")
+# engine 根（capabilities/ → up 1）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import config
+
+BASE_DIR = str(config.BASE_DIR)
+DATA_DIR = str(config.DATA_DIR)
+DASHBOARD_PATH = str(config.DASHBOARD_PATH)
+OUTPUT_PATH = str(config.STUDENT_FILE)
+STAFF_EXCLUDE_PATH = str(config.STAFF_EXCLUDE_FILE)
 
 GROUP_ID_MAP = {
     "54388823635@chatroom": "四期-AI实战训练营-无所畏惧！",

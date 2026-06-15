@@ -329,7 +329,7 @@ tools/engines/
 ### 7.1 已定（技术判断，可推翻）
 
 - **D1 引擎边界**：`pages_gen` / `srt_fix` 归 **`video-slicer`**。两者都「读逐字稿 → LLM 决策」（分页 / 纠错），已复用 video-slicer 的 llm 客户端与 `.env` 发现，归内容决策家族最内聚；渲染引擎保持纯像素。
-- **D2 新引擎命名**：新建 **`video-framework-render`**，不并入 `video-clip`。它是多阶段合成管线（locate→pages→subs→compose→accelerate）+ 重依赖（opencv / puppeteer），与 `video-clip` 的无状态原子库性质不同；并入会撑爆原子库。`video-clip` 继续只放原子。
+- **D2 新引擎命名**：新建 **`video-framework-render`**，不并入 `video-clip`。理由是**依赖与领域**不同——它带重依赖（opencv / puppeteer）、做框架页渲染这一类专门能力，独立成一座「积木厂」便于隔离环境与版式定制。其内部同样**拆成原子**注册进 catalog（见 §3.4/D7），只是物理上单独成引擎；与 `video-clip`（轻量叠加原子）按领域分厂，不混在一起。
 - **D4 成片产物**（已由 §3.2 解决）：工具直出②默认落 `tools/var/<account>/` 且 `--out` 可改落点；项目在产物之上的加工③由项目自管。
 - **D5 调用方命名**：默认把 `assistant_zh/workflow/video_framework_slicer/` 退化后的残留重命名为 `zh_video/`（薄胶水 + ③物料），反映「只选 profile + 管自己发布物料」。低风险、可改。
 

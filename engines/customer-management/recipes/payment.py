@@ -1,15 +1,24 @@
 #!/usr/bin/env python3
-"""批量解密某批学员的微信图片并拼成九宫格，供人工/视觉定位付款截图。
+"""payment.py — 付款金额配方：acquire(解图) + analyze(视觉读卡) → 写回（§5/§6）。
+
+组成（配方 = 能力 + 卡 + 出口）：
+  1. acquire : 调 capabilities.acquire.decrypt_dat 把目标学员的微信 .dat 图解密，
+               拼成九宫格 montage/<昵称>.png（前置：先跑 capabilities.acquire.get_img_key
+               生成 imgkey.txt）。
+  2. analyze : **视觉读卡 cards/payment.md**——由 agent（Claude）用自身视觉逐张读 montage
+               定位付款交易页、取金额+渠道。**注意本 engine 的 analyze/core.call_llm 是纯文本
+               通道，不支持读图**；付款视觉读历来由 agent 直接看图完成（见 cards/payment.md 顶部说明），
+               故本配方止于「把图解好 + 指向视觉卡」，不调任何 LLM API（不 hack 多模态）。
+  3. 写回    : agent 读图得出的 {amt, method, img} 填进 outputs/intake_writer 的 worksheet 的
+               `pay` 字段，由 intake_writer 幂等写「实付/付款方式」+ 上传「提成截图凭证」。
 
 流程：读 all_student.json 选目标学员(默认 学期=参数) → 每人图片目录=md5(wxid) → 解全部 .dat 变体
-(_t→jpg缩略 / _h→png高清 / 普通→wxgf跳过) → 每人拼一张 montage.png。
-然后用视觉读 montage/<昵称>.png 定位付款交易页(交易详情/支付成功,大额数字,收款方=张和All in AI),
-再读该图的高清/缩略原生分辨率取 金额+渠道。排除：助理收款码QR、SZplayer、课程页、群聊、入群卡片。
+(_t→jpg缩略 / _h→png高清 / 普通→wxgf跳过) → 每人拼一张 montage.png → 打印视觉读卡指引。
 
-用法:
-  python3 extract_payments.py --term 5期            # 解某一期全部学员
-  python3 extract_payments.py --wxid wxid_a wxid_b   # 只解指定 wxid
-前置: 先跑 get_img_key.py 生成 imgkey.txt。
+用法（迁移后从 engine 根跑）:
+  python3 -m recipes.payment --term 5期             # 解某一期全部学员
+  python3 -m recipes.payment --wxid wxid_a wxid_b   # 只解指定 wxid
+前置: 先跑 capabilities.acquire.get_img_key 生成 imgkey.txt。
 """
 import sys, os, glob, json, hashlib, math, argparse
 from pathlib import Path

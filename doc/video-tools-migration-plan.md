@@ -279,7 +279,8 @@ tools/engines/
 - 建独立 venv（pillow + opencv-python-headless）+ node puppeteer 依赖说明。
 - 验证：用阶段 0 基线的 pages JSON + clip 渲染，**逐帧比对**成片与基线一致。
 
-### 阶段 4 · 后处理去重（中风险）
+### 阶段 4 · 后处理去重（中风险）✅ 完成（2026-06-15）
+> `video-clip/atoms/name_mask.py` 早已是遮名能力的单一实现（"源自 make_publish.py，写死 PIP→--region 参数"，已注册 catalog）。本阶段把 `make_publish.py`（③项目自管）的内联 `detect_black`/`good_ts`/overlay **删除**，改为委托该原子（`--region 250x250+435+850 --mask --trim`）。编码参数一致（vutil.x264 crf18/medium/aac128k = 原 make_publish）、blackdetect/good_ts 逻辑同源 → 输出保持。验证：py_compile ✅ / 内联遮名函数 0 残留 ✅ / 原子可调 ✅。裁片头映射 nat2acc + CLIPS 名单 + out_v1 保留为③项目编排。
 - 只处理 `make_publish.py` 的**遮学员名闪帧**：与 `video-clip` 原子比对，能合并的合并进 `video-clip`，避免两份实现。
 - `make_publish.py` 的裁片头（`c01:33s`）+ `CLIPS` 名单 + 读 `out_v1` 是工具产物之上的项目加工，**③项目自管**。
 - `finalize.py` **不在本阶段**——它内嵌人工定稿文案，属③项目自管（见 §2.2 更正）。

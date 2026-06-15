@@ -113,7 +113,16 @@ stub 约定：`remark_append` 每次跑写一段带日期戳「未回访」块�
 
 ## 飞书 sync（就业字段写回）
 
-由 `employment` 配方内的 outputs 写回承接（原独立 `sync_to_feishu.py` 已并入 engine outputs），
+就业字段写回是**独立一步**：`employment` analyze 只写本地 `latest.json`/state，飞书写回走
+`outputs.sync_to_feishu`：
+
+```bash
+cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines
+python3 -m customer-management.outputs.sync_to_feishu            # 默认 dry-run 出 plan.md
+python3 -m customer-management.outputs.sync_to_feishu --apply    # 真写，须用户明说「同步飞书」
+python3 -m customer-management.outputs.sync_to_feishu --wxid <id> --limit 5
+```
+
 把 latest.json 同步到客户管理表。默认 dry-run 出 `plan.md`；真写须 `--apply` 且用户明说「同步飞书」。
 合并幂等：`拿到offer` 覆盖、`客户画像`/`备注` skip-if-marked（含 `AI回访分析` 标记则跳过，否则 append）。
 `no_match`（飞书行没填 wxid）一般补完飞书 wxid 后重跑即可，已 sync 的不会重复写。

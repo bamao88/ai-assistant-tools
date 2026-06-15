@@ -69,7 +69,7 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/customer-management && python3
 |---|---|---|
 | `gather` | ★读取侧 Facade：本地+飞书镜像+微信+付款+diff/建议回填 | **默认只读 0-LLM**（`--analyze` 读 latest.json 仍不调 LLM） |
 | `intake` | 新学员入表：gather → 判断 → 写回 | 写回类，`--apply` 授权门 |
-| `employment` | 就业回访：recognize gate → analyze 就业卡 → 写回 | **默认 `--auto` 真写**；试跑必须先 `--dry-run` |
+| `employment` | 就业回访：recognize gate → analyze 就业卡 → 写本地 latest/state | **默认 `--auto` 真写本地**；试跑必须先 `--dry-run`。飞书写回是独立一步 `python3 -m customer-management.outputs.sync_to_feishu [--apply]` |
 | `friends-sync` | 好友刷新建行：sync+audit+merge **三步合一** | 写回类，`--apply` 授权门 |
 | `group-order` | 群序号同步 | 写回类，`--apply` 授权门 |
 | `payment` | 付款金额：acquire 解图 → 视觉卡读 montage | 解图+拼 montage（写盘到付款产物，不碰飞书） |

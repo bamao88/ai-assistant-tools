@@ -116,7 +116,11 @@ def main():
         if not info.get("no_dir"):
             build_montage(info["name"])
         print(info)
-    print(f"\n解出图在 {OUT}/<昵称>/  拼图在 {MON}/<昵称>.png  → 用视觉逐张读 montage 定位付款页")
+    card = Path(__file__).resolve().parents[1] / "cards" / "payment.md"
+    print(f"\n[acquire 完成] 解出图在 {OUT}/<昵称>/  拼图在 {MON}/<昵称>.png")
+    print(f"[analyze 视觉读] 按视觉读卡 {card} 逐张读 montage 定位付款页 → 取 金额+渠道")
+    print(f"  ⚠️ 本 engine analyze 机器核纯文本不读图；付款视觉读由 agent 直接看 montage 完成。")
+    print(f"[写回] 把 {{amt,method,img}} 填进 worksheet 的 pay 字段 → recipes.intake / outputs.intake_writer")
 
 
 if __name__ == "__main__":

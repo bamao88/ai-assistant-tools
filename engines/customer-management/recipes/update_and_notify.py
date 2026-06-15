@@ -32,9 +32,9 @@ SYNC_SUMMARY      = str(config.SYNC_SUMMARY_FILE)
 OVERRIDES_FILE    = str(config.MANUAL_OVERRIDES_FILE)
 
 # pipeline 步骤以 engine 模块形式跑（cwd=ENGINE_ROOT）
+# P3: extract_students + enrich_students 合并为 capabilities.recognize（确定性合一）。
 PIPELINE_MODULES = [
-    "capabilities.extract_students",
-    "capabilities.enrich_students",
+    "capabilities.recognize",
 ]
 
 # CSV 字段顺序

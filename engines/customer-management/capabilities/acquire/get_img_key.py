@@ -42,9 +42,10 @@ def main():
     cfg = json.load(open(CFG))
     imgaes = dec(cfg["imageAesKey"])
     imgxor = dec(cfg["imageXorKey"])
-    open(os.path.join(HERE, "imgkey.txt"), "w").write(
+    config.ensure_dir(config.PAYMENT_PROOF_DIR)
+    config.PAYMENT_IMGKEY_FILE.write_text(
         imgaes.decode("latin-1") if all(c < 128 for c in imgaes) else imgaes.hex())
-    open(os.path.join(HERE, "imgxor.txt"), "w").write(imgxor.decode("latin-1", "replace"))
+    config.PAYMENT_IMGXOR_FILE.write_text(imgxor.decode("latin-1", "replace"))
     print(f"imgkey 写入 imgkey.txt (len {len(imgaes)})；imgxor={imgxor!r} (本机通常=b'127' → XOR 0x7F)")
     print("DONE")
 

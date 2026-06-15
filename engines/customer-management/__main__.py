@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
-"""customer-management engine — 命令分发入口（P2 stub）。
+"""customer-management engine — 命令分发入口。
 
-按 §6 暴露 7 个一级命令；P2 仅落骨架 + 路由到已迁移模块，配方内部编排
-（gather facade、health_check 吸收死脚本、analyze 合并）在 P3/P4 完成。
+按 §6 暴露 7 个一级命令，每个落到 recipes/ 的配方（P4 起全部接线，无 stub）。
 
 用法:
     python3 -m customer-management <command> [args...]
     # 或从 engine 根: python3 __main__.py <command> [args...]
 
-命令:
-    gather         读取侧 Facade（acquire+recognize+resolve 对账）— P4 新建
-    intake         新学员入表（gather → 判断 → 写回）           — recipes/intake (P4)
-    employment     就业回访（recognize gate → analyze → 写回）  → capabilities.analyze.employment
-    friends-sync   好友刷新建行（sync+audit+merge 三步合一）     — recipes/friends_sync (P4)
-    group-order    群序号同步                                   → outputs.sync_group_order
-    payment        付款金额（acquire 解图 + analyze 视觉读）     → recipes.payment
-    health-check   客户表数据体检/订正闭环（吸收死脚本）         — recipes/health_check (P4)
+命令（→ 配方）:
+    gather         读取侧 Facade（本地+飞书镜像+微信+付款+diff，默认只读 0-LLM）  → recipes.gather
+    intake         新学员入表（gather → 判断 → 写回）                          → recipes.intake
+    employment     就业回访（recognize gate → analyze 就业卡 → 写回）           → capabilities.analyze.employment
+    friends-sync   好友刷新建行（sync+audit+merge 三步合一）                    → recipes.friends_sync
+    group-order    群序号同步（resolve → 写回）                                → recipes.group_order
+    payment        付款金额（acquire 解图 + analyze 视觉卡 → 写回）             → recipes.payment
+    health-check   客户表数据体检/订正闭环（吸收死脚本，scan→plan→apply→archive） → recipes.health_check
 
-注（P2）：本 stub 把已迁移的原子命令直接转发到对应模块；尚未编排的配方
-（gather / intake / friends-sync / health-check）打印 "P4 待建" 提示并退出，
-不静默失败。
+写回安全（红线）:
+    gather / health-check 默认只读 / dry-run；employment 默认 --auto（真写），其余写回类
+    （intake/friends-sync/group-order/payment 写回/health-check）均以 --apply 为授权门。
+    各命令的具体 flag 见其 --help。
 """
 
 from __future__ import annotations
@@ -32,15 +32,15 @@ ENGINE_ROOT = Path(__file__).resolve().parent
 if str(ENGINE_ROOT) not in sys.path:
     sys.path.insert(0, str(ENGINE_ROOT))
 
-# command -> 已迁移模块（None 表示配方尚未编排，P4 建）
-_DISPATCH: dict[str, str | None] = {
-    "gather": None,            # P4: recipes/gather facade
-    "intake": None,            # P4: recipes/intake (现有 outputs.intake_writer 是其写回器)
+# command -> 目标模块（全部已接线到真实配方）
+_DISPATCH: dict[str, str] = {
+    "gather": "recipes.gather",
+    "intake": "recipes.intake",
     "employment": "capabilities.analyze.employment",
-    "friends-sync": None,      # P4: recipes/friends_sync = sync+audit+merge 合一
-    "group-order": "outputs.sync_group_order",
+    "friends-sync": "recipes.friends_sync",
+    "group-order": "recipes.group_order",
     "payment": "recipes.payment",
-    "health-check": None,      # P4: recipes/health_check 吸收死脚本
+    "health-check": "recipes.health_check",
 }
 
 
@@ -56,13 +56,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     target = _DISPATCH[cmd]
-    if target is None:
-        print(f"[customer-management] 命令 '{cmd}' 的配方将在 P4 编排，P2 尚未实现。", file=sys.stderr)
-        return 3
-
     # 把剩余参数交给目标模块的 argparse；以 engine 根为 sys.path 锚点跑 -m。
     sys.argv = [target] + rest
-    runpy.run_module(target, run_name="__main__", alter_sys=True)
+    try:
+        runpy.run_module(target, run_name="__main__", alter_sys=True)
+    except SystemExit as e:
+        return int(e.code or 0)
     return 0
 
 

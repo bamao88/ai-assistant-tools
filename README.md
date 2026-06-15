@@ -72,6 +72,60 @@ tools/
 
 ---
 
+## 视频剪辑套件：四引擎「能力 + 组合」架构
+
+> 把张和口播 → 框架页竖版切片成片这条业务，按「**原子能力 + 可选组合**」组织成四个引擎。
+> 组织原则**不是引擎边界，而是能力组合**：能力是积木，配方是把积木串起来的预设，AI 按视频选配方或自由组合。
+> 想动它先看这节，再看决策全文 `doc/video-tools-migration-plan.md`。
+
+**四层模型**（catalog 能力 → recipes 配方 → select 选择 → engines 布局）：
+
+```
+engines/
+├── video-compose/            ★ 组合层 · 唯一对外入口（只指挥，不产原子）
+│   ├── catalog.json          总能力表（真源·跨引擎汇总，build_catalog.py 重建）
+│   ├── recipes.json          命名配方：zh_business（线上主路径）/ raw_quickcut / simple_concat …
+│   ├── selector.py           AI 读视频 → 选配方 / 自由组合
+│   └── run.py                按配方解析能力链 → 跨引擎调原子
+│
+├── video-slicer/             积木厂 · 剪辑策略 + 内容决策
+│   ├── capabilities.json     声明：cut_sentence(句级·线上) / cut_word(词级·方案B) 共存
+│   ├── pages_gen / srt_fix   逐字稿→分页 / 字幕纠错（LLM，纯 urllib）
+│   ├── personas/ profiles/zh_main/   账号定制（选题 persona + 分页/纠错 prompt）
+│   └── baselines/            方案A 选段基准（对照用）
+│
+├── video-framework-render/   积木厂 · 框架页竖版渲染（独立 .venv: pillow+opencv）
+│   ├── video_framework_render/render.py   6 阶段原子（locate/assets/pages/subs/compose/accelerate）
+│   ├── capabilities.json     声明：framework_reframe / compose / accelerate / subtitles / raw
+│   └── profiles/zh_main/     账号定制（fixes.json 术语表；GEOM/版式=引擎内置默认）
+│
+└── video-clip/               积木厂 · 通用叠加原子（独立 .venv）
+    ├── atoms/                concat / progress_bar / endcard / name_mask / subtitle_* / …
+    └── capabilities.json     声明 9 个叠加原子
+```
+
+- **依赖单向**：`video-compose → 各引擎`；三个积木厂**互不调用**、只声明能力。改一处不牵动骨架。
+- **多租户定制集中、不散回项目**：账号特定的 prompt/术语/几何全在 `engines/<engine>/profiles/<account>/`，调用方只「选 profile」。
+- **产物落点**：工具直出默认 `var/<account>/`（gitignored），`--out` / `--out-root` 可改；项目在产物之上的加工（发布版/定稿）归项目自管。
+- **业务侧只剩薄胶水**：`assistant_zh/workflow/video_framework_slicer/` = `run_pipeline.py`（选 profile + 落点）+ ③项目加工；渲染/选段/叠加全在 tools。
+
+**常用命令（入口都在 video-compose）**：
+
+```bash
+python engines/video-compose/selector.py --list                 # 看所有能力原子 + 配方
+python engines/video-compose/run.py --plan zh_business           # 审一条配方的能力链（每步原子→引擎→entry）
+python engines/video-compose/run.py --run zh_business \
+       --selection sel.json --profile zh_main                    # 端到端跑一条切片
+```
+
+**想加新能力（管线骨架不动）**：① 在所属积木厂 `engines/<engine>/` 写原子代码 → ② 在该引擎 `capabilities.json` 声明 → ③ 跑 `python engines/video-compose/build_catalog.py` 重建总表 → ④ 在 `recipes.json` 里引用（或让 AI 自由组合）。
+
+**想改定制（不碰代码）**：改对应 `engines/<engine>/profiles/<account>/`（选题 prompt / 术语表 / 几何版式）。新账号就新建一个 `profiles/<account>/`，调用时 `--profile <account>`。
+
+**改完怎么验证不回归（G4）**：`var/zh_main/baseline/` 存了冻结基线（`primaries/` 含可重放的 `job.json`）。改渲染后用引擎 venv 重放该 job.json，与基线逐帧/逐字节比对——方法与上次结果见 `var/zh_main/baseline/{STAGE0-baseline.md,G4-result.md}`。
+
+---
+
 ## 日常怎么用
 
 校验目录结构、技能安装状态是否正常：

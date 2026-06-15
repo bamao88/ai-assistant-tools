@@ -26,7 +26,7 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/customer-management && python3
 |---|---|
 | `python3 -m student_manage.run --dry-run` / `--skip-llm` | `python3 -m customer-management gather` （读取侧 Facade，默认只读）/ 周更编排见 `recipes/run.py` |
 | `python3 -m workflow.student_employment_tracking.analyze --auto/--dry-run/--wxid/--sample/--bootstrap/--rerun-not-followed-up` | `python3 -m customer-management employment --auto/--dry-run/--wxid/--sample/--bootstrap/--rerun-not-followed-up` |
-| `python3 -m workflow.student_employment_tracking.sync_to_feishu [--apply]` | 由 `employment` 配方内的 outputs 写回承接（就业字段 append/skip-if-marked/overwrite） |
+| `python3 -m workflow.student_employment_tracking.sync_to_feishu [--apply]` | `python3 -m customer-management.outputs.sync_to_feishu [--apply]`（就业字段 append/skip-if-marked/overwrite，独立一步）|
 | `python3 -m workflow.student_employment_tracking.sync_friends_to_feishu --role zh2 [--apply]` + `audit_duplicate_creates` + `merge_duplicate_creates` | `python3 -m customer-management friends-sync --role zh2 [--apply]`（sync+audit+merge **三步合一**） |
 | `python3 -m workflow.student_employment_tracking.sync_group_order [--apply]` | `python3 -m customer-management group-order [--apply]` |
 | `student_manage/intake/intake_writer.py <worksheet.json> [--apply]` | `python3 -m customer-management intake <worksheet.json> [--apply]` |

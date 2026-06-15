@@ -329,16 +329,16 @@ tools/engines/
 
 ## 6. 验证清单（Definition of Done）
 
-- [ ] G1：`assistant_zh/workflow/` 下无可复用引擎代码（grep 确认）。
-- [ ] G2：各账号定制（视觉/术语/选题/文案-标题规则）全集中在 `engines/<engine>/profiles/<account>/`，引擎代码无账号硬编码，定制未散回任何项目。
-- [ ] G2b：工具直出产物默认落 `tools/var/<account>/` 且 `--out` 可改落点；③项目加工归项目自管。
-- [ ] G2c（能力组合，见 §3.4）：能力在 `video-compose/catalog.json` 注册；`zh_business` recipe 复刻线上业务流；句级/词级作两个共存 `cut_*` 能力可切换；至少一条非业务 recipe 验证组合可换；依赖单向 compose→各引擎。
-- [ ] G3：`registry.yaml` 引擎清单与目录一致（含 `video-framework-render` + `video-compose`）；`scripts/check-tools.py` 通过。
-- [ ] G4（replay-based，见 §1.2 / 阶段0 基线）：渲染层用冻结 `job.json`+`clip.mp4`+`clip.fixed.srt` 重放迁移后渲染引擎，`accel.mp4` 与阶段0 基线逐帧/逐字节一致（或差异可解释）；LLM 决策层（pages_gen/srt_fix）同输入比结构等价。
-- [ ] G4b（集成缝隙，见 §3.3）：选段产物经统一 job schema 能直接驱动渲染管线，方案B 端到端跑通一条 clip。
-- [ ] G5：`tmp/` 实验脚本已固化或归档，无遗留散落脚本。
-- [ ] G6（配置源，见 §3.2）：`video-slicer/.env` 不再反向依赖 `assistant_zh`，真源归位且各引擎 LLM 调用正常。
-- [ ] 文档：`CLAUDE.md`/`README.md`/各 engine README 已更新，无失效指引。
+- [x] 🟡 G1：`assistant_zh/workflow/` 下 pages_gen/srt_fix/slicer/render_page **已迁出删除**；run_pipeline/rerender/make_publish 退为③薄胶水（允许）。⏸ 残留：`video_vertical/` 原件已复制入引擎但未删（parked，删前确认无独立 runner）。
+- [x] G2：术语表(fixes.json)/分页·纠错 prompt 已集中 `profiles/zh_main/`，引擎无账号硬编码；视觉值=引擎内置默认(§3.1)，值外置 parked（待 G4 帧验证）。定制未散回项目。
+- [x] G2b：`--out-root`(D5) 可改落点；默认 `var/zh_main/`；③项目加工归项目自管。
+- [x] G2c：17 原子注册 `video-compose/catalog.json`；`zh_business` recipe 建模线上流；句级/词级 `cut_sentence`/`cut_word` 共存可切；`raw_quickcut` 验证组合可换（`run.py --plan` 实测）；依赖单向 compose→各引擎。
+- [x] G3：`registry.yaml` 含 `video-framework-render` + `video-compose` 且与目录一致；`scripts/check-tools.py` = **53 ok, 0 errors**。
+- [ ] ⏸ **G4（replay-based）= BLOCKED_NEEDS_LOCAL_VALIDATION**：结构迁移已证（compile/import/字节一致/路径解析）；逐帧 `accel.mp4` 比对需装引擎 venv(pillow+opencv)+puppeteer+字体，用 `var/zh_main/baseline/primaries/` 冻结 job.json 实跑。
+- [ ] ⏸ G4b：job schema(job.json) 已是渲染稳定契约；方案B `keep_sids/spans → segments` 适配层 + 端到端跑通待建（数值秒 spans 已定 D6）。
+- [x] 🟡 G5：方案A 基准 `select_clips.py` 已固化进 `video-slicer/baselines/`；⏸ `tmp/` 一次性脚本归档 parked（业务项目内·破坏性·待用户定归档落点）。
+- [ ] ⏸ G6（配置源）= parked：`video-slicer/.env` 仍符号链 → `assistant_zh`；涉密钥搬运(Hard-stop 类)，建议复制真源到 `var/credentials/` 并反转符号链，待用户确认。
+- [x] 文档：`README.md`(tools 引擎表) / 各 engine README / assistant_zh README 已更新无失效指引；`CLAUDE.md` 不列清单(真源在 registry，无需改)。
 
 ---
 

@@ -293,7 +293,9 @@ tools/engines/
 - `assistant_zh` 侧退化为薄胶水：选 `profile=zh_main`、选产物落点、管自己的③（发布版/定稿文案）。
 - 验证 G4：同一份选段清单端到端跑通，成片与基线一致。
 
-### 阶段 5b · 组合层 video-compose（中风险，架构主轴落地）
+### 阶段 5b · 组合层 video-compose（中风险，架构主轴落地）✅ 结构完成（2026-06-15）
+> 已做：新建 `engines/video-compose/`——`build_catalog.py`(从各引擎 capabilities.json 汇总) → `catalog.json`(17 原子/3 引擎，cut_sentence/cut_word 共存) + `recipes.json`(zh_business[delegate] / raw_quickcut[chain·cut_word+raw+subtitle_burn] / simple_concat / chaptered_growth) + `selector.py`(AI 选配方，路由验证) + `run.py`(recipe 解析+跨引擎 dispatch，依赖单向 compose→各引擎)。三积木厂各加 `capabilities.json`（video-slicer: cut_sentence/cut_word + pages_gen/srt_fix；video-clip: 9 叠加原子；video-framework-render: 阶段3 已建）。验证：build_catalog ✅ / `run.py --plan zh_business` 与 `raw_quickcut` 均正确解析（组合可换 = G2c）✅ / 修复 select.py 遮蔽 stdlib `select` 的 bug（→ selector.py）。
+> ⏸ parked：① `zh_business` 现为 **delegate**（委派薄化后的 run_pipeline）；升级为 atom 级 chain 待 G4 帧验证。② `video-clip` 旧 `catalog.json`/`recipes.json` 内容已上移 video-compose（真源唯一），但**原文件暂留**（`skills/video-clip/SKILL.md` 仍引用；删除需同步repoint SKILL.md，parked）。
 - 新建薄引擎 `engines/video-compose/`：`catalog.json`(总能力表，从各引擎 `capabilities.json` 汇总) + `recipes.json`(命名预设) + `select.py`(AI 选组合) + `run.py`(跨引擎编排)。见 §3.4。
 - 三个积木厂引擎各加 `capabilities.json` 声明自己提供的原子；`video-clip` 现有 `catalog/recipes` 内容**上移**到 video-compose（真源唯一）。
 - 把当前业务流固化为 `zh_business` recipe（cut_sentence + framework_reframe + subtitle_ai_fix + progress_bar + endcard）；句级/词级作 `cut_sentence`/`cut_word` 两个共存能力。

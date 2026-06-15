@@ -259,7 +259,10 @@ tools/engines/
 - ✅ 方案A 基准 `tmp/slice_prompt_iter/select_clips.py` 已固化进 `engines/video-slicer/baselines/`（去跨项目硬编码绝对路径，改可移植解析；py_compile 通过；附 `baselines/README.md`）。
 - ⏸ **清理/归档 `tmp/` 一次性脚本 — 已 PARK，待用户批准**：这些文件在**业务项目 `assistant_zh/tmp/`**（tools 仓之外），删/移属破坏性动作，不自动执行。视频相关候选（计划 §2.2）：`tmp/camp4_render_clips.py`、`migrate_v1_slices.py`、`mint_video_items.py`、`slicer_backstop_validation.py`（一次性脚本→归档）、`tmp/slice_copy_test/`（文案多LLM对比→评估后弃/归档）、`tmp/semester3_slicing/` 等期次素材（留业务或归 var）。建议**归档（移入 `tmp/_archive/` 或 `var/`）而非删除**，待用户确认落点后执行。
 
-### 阶段 2 · 迁移「LLM 内容决策」能力（⚠️ 动线上，非"低风险"）
+### 阶段 2 · 迁移「LLM 内容决策」能力（⚠️ 动线上，非"低风险"）✅ 结构完成（2026-06-15）
+> 已做：`pages_gen.py`/`srt_fix.py` 迁入 `video_slicer` 包（sys.path 反向依赖 → 包内相对导入 `.llm`/`.cli`）；张和分页/纠错 prompt 抽到 `profiles/zh_main/{pages,srt_fix}_system_prompt.txt`（**byte-identical**，加载默认 profile=zh_main，行为不变）；线上 `run_pipeline.py` + `rerender_subs.py` import 重定向到新包并**运行期解析验证**；原文件已从 assistant_zh 删除（G1）。
+> ⏸ 剩余 G4 gate（BLOCKED_NEEDS_LOCAL_VALIDATION）：实跑 LLM 验"同 clip.srt → pages/fixed.srt 结构等价" + 端到端出片，需 LLM 凭证 + 渲染环境（阶段3 修）。结构正确性已由 py_compile + 运行期 import + prompt 字节一致证明。
+
 - `pages_gen.py`、`srt_fix.py` 迁入 `video-slicer`。这两个本就 `sys.path` 反向依赖 video-slicer 引擎，迁入后改为正常包内导入，**消除跨项目硬路径**。
 - **⚠️ 线上耦合（必读，否则一搬就断线上）**：线上正在出片的 `run_pipeline.py` 用 **同目录 import** 这两个文件（`import pages_gen` / `import srt_fix`）。一旦移动文件，`run_pipeline.py` 立即 ImportError、出不了片。所以本阶段**必然改到线上**：搬文件的**同一批**里，必须把 `run_pipeline.py` 的 import 重定向到 `video-slicer` 新位置（首选；改完跑 G4 回归），**或**临时留 shim（不推荐，留两份代码）。
 - 张和术语表 / 分页 prompt 风格抽到定制层 `profiles/zh_main/`（`personas/zh_main.md` 扩展或并列文件）。

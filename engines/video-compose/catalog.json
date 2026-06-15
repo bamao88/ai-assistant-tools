@@ -1,0 +1,148 @@
+{
+  "_schema": "video-catalog/v1",
+  "_doc": "总能力表（真源·跨引擎聚合，从各引擎 capabilities.json 汇总）。video-compose 是唯一对外入口，只指挥不产原子。重建：python build_catalog.py。",
+  "engines": {
+    "video-slicer": {
+      "role": "积木厂：提供「剪辑策略」原子（AI 读文字选段 → 切点）。只产原子，不指挥。",
+      "atoms": [
+        "cut_sentence",
+        "cut_word"
+      ],
+      "also_provides": [
+        "pages_gen",
+        "srt_fix"
+      ]
+    },
+    "video-framework-render": {
+      "role": "积木厂：提供「改造/渲染」类原子（手写框架页化竖版成片）。只产原子，不指挥（指挥权在 video-compose）。",
+      "atoms": [
+        "framework_reframe",
+        "compose",
+        "accelerate",
+        "subtitles",
+        "reframe_locate",
+        "raw"
+      ],
+      "also_provides": []
+    },
+    "video-clip": {
+      "role": "积木厂：提供「叠加/通用剪辑」原子。只产原子，不指挥。原 catalog.json/recipes.json 的总表+配方已上移到 video-compose（真源唯一）。",
+      "atoms": [
+        "concat",
+        "progress_bar",
+        "endcard",
+        "speed_adapt",
+        "subtitle_burn",
+        "subtitle_ai_fix",
+        "face_locate",
+        "name_mask",
+        "cover_frame"
+      ],
+      "also_provides": []
+    }
+  },
+  "atoms_index": {
+    "cut_sentence": {
+      "engine": "video-slicer",
+      "kind": "剪辑策略",
+      "tier": "句级·线上稳定",
+      "desc": "单阶段：一次 LLM 读整场逐字稿同时定选题 + 句级时间段（腾讯 minutes 句时间）。线上生产范式，不依赖字级。"
+    },
+    "cut_word": {
+      "engine": "video-slicer",
+      "kind": "剪辑策略",
+      "tier": "词级·方案B·调试中",
+      "desc": "两阶段（选题→定脚本）+ paraformer 字级时间戳，支持句中精剪/跳接。与 cut_sentence 共存，AI 按视频选用。"
+    },
+    "framework_reframe": {
+      "engine": "video-framework-render",
+      "kind": "改造",
+      "tier": null,
+      "desc": "口播 clip + pages spec → 手写框架图翻页 + 人像圆形PIP + 纠错字幕 + 自适应变速 竖版成片(720x1280)。当前 zh_business 主路径。"
+    },
+    "compose": {
+      "engine": "video-framework-render",
+      "kind": "改造·原子",
+      "tier": null,
+      "desc": "ffmpeg：PPT层翻页(slide) + 静态白环 + 人像圆形PIP + 字幕 → paginated.mp4。"
+    },
+    "accelerate": {
+      "engine": "video-framework-render",
+      "kind": "改造·原子",
+      "tier": null,
+      "desc": "按逐字稿语速对成片整体自适应变速 → accel.mp4。"
+    },
+    "subtitles": {
+      "engine": "video-framework-render",
+      "kind": "叠加·原子",
+      "tier": null,
+      "desc": "srt → 账号术语纠错(profiles/<p>/fixes.json) → 标定字宽居中药丸 ASS。"
+    },
+    "reframe_locate": {
+      "engine": "video-framework-render",
+      "kind": "改造·原子",
+      "tier": null,
+      "desc": "Haar 人脸重心定位(通用CV)，人像圆形水平居中。"
+    },
+    "raw": {
+      "engine": "video-framework-render",
+      "kind": "改造",
+      "tier": null,
+      "desc": "不改造直出（占位：未来 raw_quickcut recipe 用，不走框架页化）。"
+    },
+    "concat": {
+      "engine": "video-clip",
+      "kind": "叠加",
+      "tier": null,
+      "desc": "concat.py OUT --inputs a.mp4 b.mp4 ... [--target WxH] [--fps 25] [--reencode]"
+    },
+    "progress_bar": {
+      "engine": "video-clip",
+      "kind": "叠加",
+      "tier": null,
+      "desc": "progress_bar.py IN OUT --chapters N --index k [--label 文字] [--h 12] [--color FF6B5C]"
+    },
+    "endcard": {
+      "engine": "video-clip",
+      "kind": "叠加",
+      "tier": null,
+      "desc": "endcard.py IN OUT --card PATH(.png/.jpg/.html) [--seconds 3] [--fade 0.5]"
+    },
+    "speed_adapt": {
+      "engine": "video-clip",
+      "kind": "叠加",
+      "tier": null,
+      "desc": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0]"
+    },
+    "subtitle_burn": {
+      "engine": "video-clip",
+      "kind": "叠加",
+      "tier": null,
+      "desc": "subtitle_burn.py IN OUT --srt x.srt [--fs 36] [--y h-130]"
+    },
+    "subtitle_ai_fix": {
+      "engine": "video-clip",
+      "kind": "叠加",
+      "tier": null,
+      "desc": "subtitle_ai_fix.py IN.srt OUT.srt [--hint ...]"
+    },
+    "face_locate": {
+      "engine": "video-clip",
+      "kind": "改造",
+      "tier": null,
+      "desc": "face_locate.py IN [--target WxH] [--samples 40] -> JSON(face_cx/crop)"
+    },
+    "name_mask": {
+      "engine": "video-clip",
+      "kind": "叠加",
+      "tier": null,
+      "desc": "name_mask.py IN OUT --region WxH+X+Y [--fill img] [--mask alpha.png] [--trim 0]"
+    },
+    "cover_frame": {
+      "engine": "video-clip",
+      "kind": "叠加",
+      "tier": null,
+      "desc": "cover_frame.py IN OUT.png [--at 0] [--overlay title.png]"
+    }
+  }
+}

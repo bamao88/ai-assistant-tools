@@ -14,9 +14,13 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
+from pathlib import Path
+
+# engine 根（capabilities/acquire/ → up 2）入 sys.path，imgkey/imgxor 落点经 config 收口。
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+import config
 
 CFG = os.path.expanduser("~/Library/Application Support/weflow/WeFlow-config.json")
-HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def main():

@@ -161,7 +161,7 @@ def main():
         "records": records,
     }
     MIRROR_FILE.write_text(json.dumps(mirror, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[pull] 已写 {MIRROR_FILE.relative_to(BASE_DIR.parent)}", file=sys.stderr)
+    print(f"[pull] 已写 {MIRROR_FILE.relative_to(config.DATA_ROOT)}", file=sys.stderr)
 
     if not args.quiet:
         print_summary(records)

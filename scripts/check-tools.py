@@ -37,6 +37,11 @@ def main():
             errors.append(f"skill {name}: source missing {src}"); continue
         if kind == "dir" and not (src / "SKILL.md").exists():
             errors.append(f"skill {name}: no SKILL.md in {src}"); continue
+        # scope-gated skills (e.g. scope: assistant_zh) are project-local: verify the
+        # source exists (above) but do NOT expect them in the global ~/.claude/skills.
+        scope = s.get("scope")
+        if scope and scope != "global":
+            oks.append(f"skill {name} (scope={scope}, project-local)"); continue
         if kind == "dir":
             inst, want = CLAUDE_SKILLS / name, src.resolve()
         else:

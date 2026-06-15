@@ -111,13 +111,13 @@ def main():
     try:
         # 1. 规则抽取
         run_step("Step 1: extract_students",
-                 ["python3", str(BASE_DIR / "extract_students.py")])
+                 ["python3", "-m", "capabilities.extract_students"])
 
         # 2. LLM 富化(可选跳过/dry-run)
         if args.skip_llm:
             log("Step 3: llm_enrich SKIPPED (--skip-llm)")
         else:
-            llm_cmd = ["python3", "-m", "student_manage.llm_enrich"]
+            llm_cmd = ["python3", "-m", "capabilities.analyze.llm_enrich"]
             if args.bootstrap:
                 llm_cmd.append("--bootstrap")
             if args.dry_run:
@@ -126,11 +126,11 @@ def main():
 
         # 4. 规则 enrich (xlsx self-intro + semester)
         run_step("Step 4a: enrich_students (rules)",
-                 ["python3", str(BASE_DIR / "enrich_students.py")])
+                 ["python3", "-m", "capabilities.enrich_students"])
 
         # 4b. CSV 导出 + summary
         run_step("Step 4b: update_and_notify (CSV + summary)",
-                 ["python3", str(BASE_DIR / "update_and_notify.py")])
+                 ["python3", "-m", "recipes.update_and_notify"])
 
         # 5. ❌ DEPRECATED: 旧学员表 sync 已停用。写飞书走客户管理表 sync。
         log("Step 5: sync_to_feishu SKIPPED (DEPRECATED — 旧学员表不再维护)")

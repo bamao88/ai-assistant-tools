@@ -301,7 +301,8 @@ tools/engines/
 - 把当前业务流固化为 `zh_business` recipe（cut_sentence + framework_reframe + subtitle_ai_fix + progress_bar + endcard）；句级/词级作 `cut_sentence`/`cut_word` 两个共存能力。
 - 验证：经 `video-compose` 选 `zh_business` 跑通，成片与 G4 基线一致；另选一条最小 recipe(如 raw + subtitle_burn)验证组合可换。
 
-### 阶段 6 · 登记与文档收口（零风险）
+### 阶段 6 · 登记与文档收口（零风险）✅ 完成（2026-06-15）
+> 已做：`registry.yaml` 新增 `video-framework-render` + `video-compose`，更新 `video-slicer`/`video-clip` purpose（积木厂角色 + capabilities.json）；`scripts/check-tools.py` = **53 ok, 0 errors**；`tools/README.md` 引擎表补全四个视频引擎；`assistant_zh/workflow/video_framework_slicer/README.md` 改为「③薄胶水·迁移后」并删除 slicer.py 失效指引；各新引擎自带 README。
 - 更新 `registry.yaml`：新增 `video-framework-render` + `video-compose`，更新各引擎 `purpose` 与依赖（compose→各引擎单向）。
 - 跑 `scripts/check-tools.py`（必要时 `sync-skills.py`）。
 - 更新本仓库 `CLAUDE.md` / `README.md` 与 engine 内 README，删除 `assistant_zh` 侧失效指引。

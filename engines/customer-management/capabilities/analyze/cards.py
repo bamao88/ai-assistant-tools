@@ -132,8 +132,9 @@ def load_card(name: str) -> Card:
     raw = path.read_text(encoding="utf-8")
     meta, body = _parse_front_matter(raw)
     blocks = _parse_sections(body)
+    ordered = [m.group(1) for m in _FENCE_BLOCK_RE.finditer(body)]
     meta.setdefault("name", name)
-    return Card(name=name, path=path, meta=meta, blocks=blocks, raw=raw)
+    return Card(name=name, path=path, meta=meta, blocks=blocks, raw=raw, ordered_blocks=ordered)
 
 
 def list_cards() -> list[str]:

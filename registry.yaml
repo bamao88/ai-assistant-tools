@@ -303,6 +303,10 @@ engines:
     path: engines/calendar-task
     runtime: "sh — calendar-task.sh"
     purpose: Apple 日历提醒脚本
+  - id: customer-management
+    path: engines/customer-management
+    runtime: "python — `cd engines && python3 -m customer-management <cmd>`（或 engine 根 `python3 __main__.py <cmd>`）；数据经 config.py 锚 assistant_zh（CUSTOMER_MGMT_DATA_ROOT 可覆盖）"
+    purpose: "客户管理引擎：7 命令 gather/intake/employment/friends-sync/group-order/payment/health-check；4 能力 acquire/recognize/analyze(任务卡 cards/)/resolve + write_policy + recipes。被 scope:assistant_zh 的 customer-management skill 调用，业务数据留 assistant_zh"
 
 vendor:
   - id: wechatsync

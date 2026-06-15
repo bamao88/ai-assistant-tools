@@ -8,10 +8,10 @@ llm_enrich.py — Kimi per-student 增量富化
 state/enrich_progress.json 记 per-student 断点,下次只扫新消息。
 
 用法:
-    python3 -m student_manage.llm_enrich           # 增量,只跑有新消息的学员
-    python3 -m student_manage.llm_enrich --bootstrap  # 全量 LLM (首次或 state 损坏)
-    python3 -m student_manage.llm_enrich --limit 5    # 只跑前 5 个有新消息的(测试用)
-    python3 -m student_manage.llm_enrich --wxid X     # 只跑指定 wxid (调试)
+    python3 -m capabilities.analyze.llm_enrich           # 增量,只跑有新消息的学员
+    python3 -m capabilities.analyze.llm_enrich --bootstrap  # 全量 LLM (首次或 state 损坏)
+    python3 -m capabilities.analyze.llm_enrich --limit 5    # 只跑前 5 个有新消息的(测试用)
+    python3 -m capabilities.analyze.llm_enrich --wxid X     # 只跑指定 wxid (调试)
 """
 
 from __future__ import annotations
@@ -27,20 +27,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-# 复用 knowledge_base/ingest 的 Kimi client
-sys.path.insert(0, "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh")
+# engine 根（capabilities/analyze/ → up 2）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+import config
+
+# 复用 assistant_zh 的 knowledge_ingest Kimi client（依赖留 assistant_zh，经 config.DATA_ROOT 解析）
+sys.path.insert(0, str(config.DATA_ROOT))
 from workflow.knowledge_ingest.core import call_kimi, load_env, default_paths, KimiError
 
-BASE_DIR = Path("/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/student_manage")
-DATA_DIR = Path("/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/knowledge_base/client/raw/chat")
+BASE_DIR = config.BASE_DIR
+DATA_DIR = config.DATA_DIR
 
-STUDENT_FILE     = BASE_DIR / "all_student.json"
-SPEC_FILE        = BASE_DIR / "FIELD_SPEC.md"
-CONFIG_FILE      = BASE_DIR / "feishu_config.json"
-PROGRESS_FILE    = BASE_DIR / "state" / "enrich_progress.json"
-PENDING_FILE     = BASE_DIR / "pending" / "decisions.json"
-PARSE_FAIL_FILE  = BASE_DIR / "pending" / "parse_failures.json"
-LOG_DIR          = BASE_DIR / "logs"
+STUDENT_FILE     = config.STUDENT_FILE
+SPEC_FILE        = config.FIELD_SPEC_FILE
+CONFIG_FILE      = config.FEISHU_CONFIG_FILE
+PROGRESS_FILE    = config.ENRICH_PROGRESS_FILE
+PENDING_FILE     = config.DECISIONS_FILE
+PARSE_FAIL_FILE  = config.PARSE_FAILURES_FILE
+LOG_DIR          = config.LOG_DIR
 
 # 字段允许的 action(超出此范围的 LLM 建议会被拒绝)
 FIELD_ACTIONS = {

@@ -30,14 +30,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from workflow.student_employment_tracking.friend_index import load_friend_index, ROLE_PRESETS
+# engine 根（capabilities/resolve/ → up 2）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+import config
+from capabilities.resolve.friend_index import load_friend_index, ROLE_PRESETS
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-FIX_DIR = PROJECT_ROOT / "analytics" / "friends_index" / "column_fixes"
+PROJECT_ROOT = config.PROJECT_ROOT
+FIX_DIR = config.FRIENDS_COLUMN_FIX_DIR
 
 ROLE_PLAN_FILES = {
-    "zh2": PROJECT_ROOT / "analytics" / "friends_index" / "sync_runs" / "20260526_175515_zh2_apply" / "plan.json",
-    "assistant": PROJECT_ROOT / "analytics" / "friends_index" / "sync_runs" / "20260519_160713_apply" / "plan.json",
+    "zh2": config.FRIENDS_SYNC_RUNS_DIR / "20260526_175515_zh2_apply" / "plan.json",
+    "assistant": config.FRIENDS_SYNC_RUNS_DIR / "20260519_160713_apply" / "plan.json",
 }
 
 APP_TOKEN = "YTcFbyGS4arILPseQJscA6J7nqb"

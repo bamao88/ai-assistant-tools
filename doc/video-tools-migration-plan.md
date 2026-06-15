@@ -130,30 +130,32 @@
 
 ## 3. 目标架构（迁移后）
 
-### 3.1 引擎边界（清晰三分）
+> **主轴是 §3.4 的「能力 + 组合」，不是引擎边界。** 本节(§3.1)只回答「原子代码物理住哪个引擎」——是布局，不是组织原则。对外暴露的是一张能力表 + 配方，不是三个引擎。
 
-按「**做什么决策**」切分，而不是「都跟视频有关」：
+### 3.1 引擎布局（原子的物理归属）
+
+每个引擎是一座「积木厂」，只**提供**它那类能力原子并在 `capabilities.json` 里声明；**不互相调用、不当指挥**（指挥权在 §3.4 的 `video-compose`）。
 
 ```
 tools/engines/
-├── video-slicer/          内容决策：读逐字稿，AI 决定「要哪几段话 / 怎么分页 / 字幕怎么纠」
-│   ├── video_slicer/      （现有 planner + twostage）
-│   │   ├── twostage/      方案B 两阶段选段
-│   │   ├── pages_gen.py   ← 从 framework_slicer 迁入（分页器）
-│   │   └── srt_fix.py     ← 从 framework_slicer 迁入（字幕纠错）
-│   └── profiles/<account>/ ★ 定制层（见 §3.2）：编辑判断 persona + 术语表 + 文案/标题规则
+├── video-slicer/             提供「剪辑策略」原子：cut_sentence(句级) · cut_word(词级·方案B)
+│   ├── video_slicer/         planner + twostage + pages_gen + srt_fix（迁入）
+│   ├── capabilities.json     声明本引擎提供的原子
+│   └── profiles/<account>/   定制层①（见 §3.2）：persona + 术语表 + 文案/标题规则
 │
-├── video-framework-render/   新引擎 · 像素渲染：把 spec + video 渲染成竖版成片
-│   ├── render.py          ← slicer.py 渲染管线（compose/accelerate/subs）
-│   ├── reframe_locate.py  ← video_vertical 人脸定位
-│   ├── render_page.js     ← puppeteer
-│   ├── pipeline.py        ← run_pipeline.py 薄编排（--profile 参数化，--out 可配置产物地址）
-│   └── profiles/<account>/ ★ 定制层：GEOM/PAGE_CSS/HTML 模板（张和为内置默认）
+├── video-framework-render/   提供「改造/渲染」原子：framework_reframe(PPT页化) · raw(不改造)
+│   ├── render.py             ← slicer.py 渲染核心，拆成可被组合的原子（compose/accelerate/subs）
+│   ├── reframe_locate.py     ← video_vertical 人脸定位
+│   ├── render_page.js        ← puppeteer
+│   ├── capabilities.json     声明本引擎提供的原子
+│   └── profiles/<account>/   定制层①：GEOM/PAGE_CSS/HTML 模板（张和为内置默认）
 │
-└── video-clip/            原子操作：拼接/进度条/片尾/变速/遮名/封面（现有 + 吸收 make_publish 遮名）
+└── video-clip/               提供「叠加」原子（现有）：progress_bar · endcard · subtitle_ai_fix ·
+    ├── atoms/                  subtitle_burn · speed_adapt · name_mask · concat · cover_frame …
+    └── capabilities.json     声明本引擎提供的原子
 ```
 
-> 备选方案（**已定，D1**）：`pages_gen` / `srt_fix` 归 `video-slicer` 而非 render 引擎——「读逐字稿做 LLM 决策」≈ slicer 家族，且已复用 slicer 的 llm 客户端，最内聚。见 §7.1。
+> D1（已定）：`pages_gen` / `srt_fix` 归 `video-slicer`——「读逐字稿做 LLM 决策」≈ slicer 家族，已复用其 llm 客户端，最内聚。见 §7.1。
 
 ### 3.2 多租户 + 定制化：定制集中在工具，不散回各项目
 

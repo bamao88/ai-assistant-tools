@@ -36,7 +36,7 @@ if str(ENGINE_ROOT) not in sys.path:
 _DISPATCH: dict[str, str | None] = {
     "gather": None,            # P4: recipes/gather facade
     "intake": None,            # P4: recipes/intake (现有 outputs.intake_writer 是其写回器)
-    "employment": "capabilities.analyze.analyze",
+    "employment": "capabilities.analyze.employment",
     "friends-sync": None,      # P4: recipes/friends_sync = sync+audit+merge 合一
     "group-order": "outputs.sync_group_order",
     "payment": "recipes.payment",

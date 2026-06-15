@@ -179,9 +179,9 @@ def _chunk(text, MAX=13.0):
         else: merged.append(p)
     return merged or [text]
 
-def make_subtitles(srt: Path, out: Path):
+def make_subtitles(srt: Path, out: Path, profile="zh_main"):
     FS,CY,PAD,H,R=SUB["FS"],SUB["CY"],SUB["PAD"],SUB["H"],SUB["R"]
-    fixes=load_fixes(); ev=[]
+    fixes=load_fixes(profile); ev=[]
     for b in srt.read_text(encoding="utf-8").strip().split("\n\n"):
         L=b.split("\n")
         if len(L)<3: continue

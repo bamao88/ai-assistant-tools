@@ -57,7 +57,10 @@ tools/
 | `markdown-to-cards` | Node — `cli.js` |
 | `platform-draft-direct` | Node — `src/cli.js`（知乎 / 掘金 / CSDN / 百家号 / 51CTO / 博客园 / 思否 / 开源中国 / B站专栏 / 搜狐号无插件草稿直传） |
 | `video-research` | Python `.venv` — `scripts/cli.py` |
-| `video-slicer` | Python 包（暂无独立技能） |
+| `video-slicer` | Python 包 — 积木厂·剪辑策略原子 cut_sentence/cut_word + 内容决策 pages_gen/srt_fix（暂无独立技能） |
+| `video-framework-render` | Python 独立 `.venv`(pillow+opencv) — `video_framework_render.render`；积木厂·框架页竖版渲染原子（ffmpeg+puppeteer） |
+| `video-clip` | Python `.venv` — `atoms/*.py`；积木厂·叠加/通用剪辑原子库 |
+| `video-compose` | Python — `selector.py`/`run.py`；组合层·唯一对外入口（catalog+recipes，指挥各引擎） |
 | `tencent-meeting` | Python — 官方 MCP 桥接 `scripts/mcp_cli.py`（legacy 下载脚本保留） |
 | `screenshot` | Node — `screenshot.js` |
 | `route-bypass` | Zsh — 小红书发布网络分流 |

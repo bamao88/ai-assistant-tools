@@ -32,8 +32,13 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-BASE_DIR = Path("/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/student_manage")
-LOG_DIR  = BASE_DIR / "logs"
+# engine 根（recipes/ → up 1）：子进程 `-m` 调用以此为 cwd/PYTHONPATH 锚点。
+ENGINE_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ENGINE_ROOT))
+import config
+
+BASE_DIR = config.BASE_DIR
+LOG_DIR  = config.LOG_DIR
 
 
 def log(text: str) -> None:

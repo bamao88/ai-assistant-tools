@@ -275,7 +275,7 @@ def accelerate(job, out: Path):
         "-c:a","aac","-movflags","+faststart",str(out/"accel.mp4")],check=True)
 
 # ======================================================================
-def run(job_path: str, out_root: str|None, skip_accel: bool):
+def run(job_path: str, out_root: str|None, skip_accel: bool, profile="zh_main"):
     job=json.loads(Path(job_path).read_text(encoding="utf-8"))
     name=job.get("name", Path(job_path).stem)
     out=Path(out_root or HERE/"out")/name; out.mkdir(parents=True, exist_ok=True)

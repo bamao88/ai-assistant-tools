@@ -18,12 +18,17 @@ from __future__ import annotations
 
 import glob
 import json
+import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RAW_CHAT = PROJECT_ROOT / "knowledge_base" / "client" / "raw" / "chat"
-FRIENDS_INDEX = PROJECT_ROOT / "analytics" / "friends_index" / "friends.json"
+# engine 根（capabilities/resolve/ → up 2）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+import config
+
+PROJECT_ROOT = config.PROJECT_ROOT
+RAW_CHAT = config.DATA_DIR
+FRIENDS_INDEX = config.FRIENDS_INDEX_FILE
 TZ_CN = timezone(timedelta(hours=8))
 
 # role → (默认 friend 源, 飞书"添加微信"选项名)

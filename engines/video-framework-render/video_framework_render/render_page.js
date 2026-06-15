@@ -1,7 +1,19 @@
 // 框架图页 HTML → 720x1280 PNG（白底，2x 清晰）
 // usage: node render_page.js <in.html> <out.png>
-const puppeteer = require('/Users/xpw/.npm/_npx/7d92d9a2d2ccc630/node_modules/puppeteer');
+// 迁移阶段3：puppeteer 解析去硬编码——优先 PUPPETEER_PATH 环境变量，再引擎本地
+// node_modules / 全局，最后回退旧 npx 缓存。任一可用即可（渲染输出与来源无关）。
 const path = require('path');
+function loadPuppeteer() {
+  const candidates = [
+    process.env.PUPPETEER_PATH,
+    'puppeteer',                                  // 引擎本地 node_modules / NODE_PATH / 全局
+    path.join(__dirname, 'node_modules', 'puppeteer'),
+    '/Users/xpw/.npm/_npx/7d92d9a2d2ccc630/node_modules/puppeteer',  // 旧 npx 缓存兜底
+  ].filter(Boolean);
+  for (const c of candidates) { try { return require(c); } catch (_) {} }
+  throw new Error('puppeteer 未找到：设 PUPPETEER_PATH 或在引擎内 npm i puppeteer（见 README）');
+}
+const puppeteer = loadPuppeteer();
 (async () => {
   const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
   const page = await browser.newPage();

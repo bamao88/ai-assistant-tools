@@ -274,12 +274,18 @@ tools/engines/
 
 ### 阶段 5 · 定制层归集 + 编排薄化（中风险，动线上入口）
 - 建 `engines/<engine>/profiles/zh_main/`，把 persona / 术语表 / GEOM-模板 / 文案-标题 prompt 参数**集中迁入定制层**（不散回项目）。
-- `run_pipeline.py` 改造为 `video-framework-render/pipeline.py`，`--profile` + `--out`（可配置产物地址）参数化。
+- `run_pipeline.py` 的编排逻辑改造为组合层可调的形态，`--profile` + `--out`（可配置产物地址）参数化。
 - `assistant_zh` 侧退化为薄胶水：选 `profile=zh_main`、选产物落点、管自己的③（发布版/定稿文案）。
 - 验证 G4：同一份选段清单端到端跑通，成片与基线一致。
 
+### 阶段 5b · 组合层 video-compose（中风险，架构主轴落地）
+- 新建薄引擎 `engines/video-compose/`：`catalog.json`(总能力表，从各引擎 `capabilities.json` 汇总) + `recipes.json`(命名预设) + `select.py`(AI 选组合) + `run.py`(跨引擎编排)。见 §3.4。
+- 三个积木厂引擎各加 `capabilities.json` 声明自己提供的原子；`video-clip` 现有 `catalog/recipes` 内容**上移**到 video-compose（真源唯一）。
+- 把当前业务流固化为 `zh_business` recipe（cut_sentence + framework_reframe + subtitle_ai_fix + progress_bar + endcard）；句级/词级作 `cut_sentence`/`cut_word` 两个共存能力。
+- 验证：经 `video-compose` 选 `zh_business` 跑通，成片与 G4 基线一致；另选一条最小 recipe(如 raw + subtitle_burn)验证组合可换。
+
 ### 阶段 6 · 登记与文档收口（零风险）
-- 更新 `registry.yaml`：新增 `video-framework-render`，更新各引擎 `purpose` 与依赖。
+- 更新 `registry.yaml`：新增 `video-framework-render` + `video-compose`，更新各引擎 `purpose` 与依赖（compose→各引擎单向）。
 - 跑 `scripts/check-tools.py`（必要时 `sync-skills.py`）。
 - 更新本仓库 `CLAUDE.md` / `README.md` 与 engine 内 README，删除 `assistant_zh` 侧失效指引。
 

@@ -26,10 +26,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-FRIENDS_FILE = PROJECT_ROOT / "analytics" / "friends_index" / "friends.json"
-SYNC_RUNS_DIR = PROJECT_ROOT / "analytics" / "friends_index" / "sync_runs"
-FIX_DIR = PROJECT_ROOT / "analytics" / "friends_index" / "column_fixes"
+# engine 根（capabilities/resolve/ → up 2）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+import config
+
+PROJECT_ROOT = config.PROJECT_ROOT
+FRIENDS_FILE = config.FRIENDS_INDEX_FILE
+SYNC_RUNS_DIR = config.FRIENDS_SYNC_RUNS_DIR
+FIX_DIR = config.FRIENDS_COLUMN_FIX_DIR
 
 APP_TOKEN = "YTcFbyGS4arILPseQJscA6J7nqb"
 TABLE_ID = "tblfCYoeornDw0XF"

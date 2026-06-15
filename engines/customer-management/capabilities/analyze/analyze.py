@@ -7,13 +7,13 @@
 
 详细工作流见 README.md。
 
-用法：
-  python3 -m workflow.student_employment_tracking.analyze --dry-run
-  python3 -m workflow.student_employment_tracking.analyze --wxid <wxid>
-  python3 -m workflow.student_employment_tracking.analyze --sample 10
-  python3 -m workflow.student_employment_tracking.analyze --auto
-  python3 -m workflow.student_employment_tracking.analyze --bootstrap
-  python3 -m workflow.student_employment_tracking.analyze --force-rerun-all
+用法（迁移后从 engine 根跑）：
+  python3 -m capabilities.analyze.analyze --dry-run
+  python3 -m capabilities.analyze.analyze --wxid <wxid>
+  python3 -m capabilities.analyze.analyze --sample 10
+  python3 -m capabilities.analyze.analyze --auto
+  python3 -m capabilities.analyze.analyze --bootstrap
+  python3 -m capabilities.analyze.analyze --force-rerun-all
 """
 
 from __future__ import annotations
@@ -31,24 +31,29 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
-# 项目根：workflow/student_employment_tracking/ → up 2 levels
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(PROJECT_ROOT))
+# engine 根（capabilities/analyze/ → up 2）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+import config
+
+PROJECT_ROOT = config.PROJECT_ROOT
+# 复用 assistant_zh 的 knowledge_ingest LLM client（依赖留 assistant_zh）
+sys.path.insert(0, str(config.DATA_ROOT))
 
 from workflow.knowledge_ingest.core import call_llm, load_env, default_paths, LLMError
 
-# --- 路径 ---------------------------------------------------------------
+# --- 路径（经 config 收口）-------------------------------------------------
 
-CHAT_DIR = PROJECT_ROOT / "knowledge_base" / "client" / "raw" / "chat"
-STUDENT_FILE = PROJECT_ROOT / "student_manage" / "all_student.json"
-STAFF_FILE = PROJECT_ROOT / "student_manage" / "staff_exclude.json"
-STATE_DIR = PROJECT_ROOT / "student_manage" / "state"
-PROGRESS_FILE = STATE_DIR / "student_employment_tracking_progress.json"
-LATEST_FILE = STATE_DIR / "student_employment_tracking_latest.json"
-ANALYTICS_DIR = PROJECT_ROOT / "analytics" / "student_employment_tracking"
-PER_STUDENT_DIR = ANALYTICS_DIR / "per_student"
-RUNS_DIR = ANALYTICS_DIR / "runs"
-PROMPT_FILE = Path(__file__).resolve().parent / "prompt.md"
+CHAT_DIR = config.CHAT_DIR
+STUDENT_FILE = config.STUDENT_FILE
+STAFF_FILE = config.STAFF_EXCLUDE_FILE
+STATE_DIR = config.STATE_DIR
+PROGRESS_FILE = config.EMPLOYMENT_PROGRESS_FILE
+LATEST_FILE = config.EMPLOYMENT_LATEST_FILE
+ANALYTICS_DIR = config.EMPLOYMENT_ANALYTICS_DIR
+PER_STUDENT_DIR = config.EMPLOYMENT_PER_STUDENT_DIR
+RUNS_DIR = config.EMPLOYMENT_RUNS_DIR
+# 就业回访任务卡（§6: workflow/.../prompt.md → cards/employment.md）
+PROMPT_FILE = Path(__file__).resolve().parents[2] / "cards" / "employment.md"
 
 
 # --- 配置 ---------------------------------------------------------------

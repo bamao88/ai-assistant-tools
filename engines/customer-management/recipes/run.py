@@ -111,27 +111,23 @@ def main():
     log(f"═══════════════════════════════════════")
 
     try:
-        # 1. 规则抽取
-        run_step("Step 1: extract_students",
-                 ["python3", "-m", "capabilities.extract_students"])
+        # 1. 确定性认（群成员/wxid/手机号/学期；含原 enrich 的学期推断）
+        run_step("Step 1: recognize",
+                 ["python3", "-m", "capabilities.recognize"])
 
-        # 2. LLM 富化(可选跳过/dry-run)
+        # 2. LLM 画像富化(可选跳过/dry-run)
         if args.skip_llm:
-            log("Step 3: llm_enrich SKIPPED (--skip-llm)")
+            log("Step 2: analyze.profile SKIPPED (--skip-llm)")
         else:
-            llm_cmd = ["python3", "-m", "capabilities.analyze.llm_enrich"]
+            llm_cmd = ["python3", "-m", "capabilities.analyze.profile"]
             if args.bootstrap:
                 llm_cmd.append("--bootstrap")
             if args.dry_run:
                 llm_cmd.append("--dry-run")
-            run_step("Step 3: llm_enrich", llm_cmd)
+            run_step("Step 2: analyze.profile", llm_cmd)
 
-        # 4. 规则 enrich (xlsx self-intro + semester)
-        run_step("Step 4a: enrich_students (rules)",
-                 ["python3", "-m", "capabilities.enrich_students"])
-
-        # 4b. CSV 导出 + summary
-        run_step("Step 4b: update_and_notify (CSV + summary)",
+        # 3. CSV 导出 + summary
+        run_step("Step 3: update_and_notify (CSV + summary)",
                  ["python3", "-m", "recipes.update_and_notify"])
 
         # 5. ❌ DEPRECATED: 旧学员表 sync 已停用。写飞书走客户管理表 sync。

@@ -1,0 +1,35 @@
+{
+  "_schema": "video-recipes/v1",
+  "_doc": "命名预设（真源）。一条 recipe = catalog 能力的有序组合。kind: chain=原子链本层编排 | delegate=委派现有装配流程（帧验证就绪前过渡）。AI 也可不走预设、按视频自由组合 catalog 原子。",
+  "recipes": {
+    "zh_business": {
+      "label": "张和业务流·框架页竖版口播切片（线上主路径）",
+      "kind": "delegate",
+      "steps": ["cut_sentence", "srt_fix(=subtitle_ai_fix)", "pages_gen", "framework_reframe(含 subtitle_burn + speed_adapt)"],
+      "post_optional": ["name_mask", "endcard"],
+      "profile": "zh_main",
+      "delegate": "assistant_zh/workflow/video_framework_slicer/run_pipeline.py (已薄化：--profile + --out-root)",
+      "note": "§3.4：当前业务流 = 这条 recipe。渲染核心已拆原子入 video-framework-render（framework_reframe）；端到端 atom 级编排待 G4 逐帧回归（BLOCKED_NEEDS_LOCAL_VALIDATION）就绪后由 run.py 接管，过渡期委派已装配好的 run_pipeline。"
+    },
+    "raw_quickcut": {
+      "label": "极简型·词级快剪 + 烧字幕（不框架页化）",
+      "kind": "chain",
+      "chain": ["cut_word", "raw", "subtitle_burn"],
+      "out": "quickcut.mp4",
+      "note": "§3.4 示例：句级/词级共存——本条用 cut_word(词级·方案B)；raw=不改造直出；验证组合可换。"
+    },
+    "simple_concat": {
+      "label": "简单型·直接拼接",
+      "kind": "chain",
+      "chain": ["concat"],
+      "out": "merged.mp4"
+    },
+    "chaptered_growth": {
+      "label": "成长片型·章节拼接+进度条",
+      "kind": "chain",
+      "chain": ["per 幕: progress_bar(--chapters N --index k)", "concat 全部幕"],
+      "ref_truth": "/Volumes/ExtSSD2601/media/tencent/_camp4_chen_growth/",
+      "out": "growth.mp4"
+    }
+  }
+}

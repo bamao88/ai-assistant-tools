@@ -257,10 +257,11 @@ tools/engines/
 - 把方案A 基准 `tmp/slice_prompt_iter/select_clips.py` 复制进 tools（如 `engines/video-slicer/baselines/`）做方案对照。
 - 清理 / 归档 `tmp/` 下确认无用的一次性脚本。
 
-### 阶段 2 · 迁移「LLM 内容决策」能力（低风险）
+### 阶段 2 · 迁移「LLM 内容决策」能力（⚠️ 动线上，非"低风险"）
 - `pages_gen.py`、`srt_fix.py` 迁入 `video-slicer`。这两个本就 `sys.path` 反向依赖 video-slicer 引擎，迁入后改为正常包内导入，**消除跨项目硬路径**。
+- **⚠️ 线上耦合（必读，否则一搬就断线上）**：线上正在出片的 `run_pipeline.py` 用 **同目录 import** 这两个文件（`import pages_gen` / `import srt_fix`）。一旦移动文件，`run_pipeline.py` 立即 ImportError、出不了片。所以本阶段**必然改到线上**：搬文件的**同一批**里，必须把 `run_pipeline.py` 的 import 重定向到 `video-slicer` 新位置（首选；改完跑 G4 回归），**或**临时留 shim（不推荐，留两份代码）。
 - 张和术语表 / 分页 prompt 风格抽到定制层 `profiles/zh_main/`（`personas/zh_main.md` 扩展或并列文件）。
-- 验证：同一 clip.srt 跑迁移后 `pages_gen`/`srt_fix`，输出与基线一致。
+- 验证：同一 clip.srt 跑迁移后 `pages_gen`/`srt_fix`，输出与基线一致；**且线上 `run_pipeline.py` 端到端仍能出片（G4）**。
 
 ### 阶段 3 · 迁移「像素渲染」能力，新建 video-framework-render（中风险）
 - 新建 `engines/video-framework-render/`，迁入 `slicer.py`（渲染部分）、`render_page.js`、`reframe_locate.py`、渲染 js、HTML 模板。

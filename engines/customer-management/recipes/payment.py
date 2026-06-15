@@ -89,7 +89,7 @@ def main():
     ap.add_argument("--term", default="5期")
     ap.add_argument("--wxid", nargs="*")
     args = ap.parse_args()
-    keyf = os.path.join(HERE, "imgkey.txt")
+    keyf = str(config.PAYMENT_IMGKEY_FILE)
     if not os.path.exists(keyf):
         sys.exit("缺 imgkey.txt，先跑 get_img_key.py")
     raw = open(keyf).read().strip()

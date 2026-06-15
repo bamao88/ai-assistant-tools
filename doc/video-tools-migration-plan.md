@@ -202,6 +202,47 @@ assistant_zh（调用方）                            退化成「选 profile=z
 3. **粒度（已定，D6）**：适配层与切片入口走**数值秒 spans**（粒度中立，毫秒可塞入同一接口），不中转回 MM:SS 字符串。见 §7.2。
 4. **统一 job schema**：定义一份「选段 → 渲染」的稳定中间契约 JSON，两个引擎按它对接，业务薄胶水只负责串联。
 
+### 3.4 架构主轴：能力 → 配方 → 选择 → 引擎（四层）
+
+整套视频剪辑的根本组织原则**不是引擎边界，而是「原子能力 + 可选组合」**。`video-clip` 现有的 `catalog.json`(能力表) + `recipes.json`(配方) 已是此模型的雏形（`framework_slice` 配方已把当前业务流建模为 `delegate`）。本计划把它**提升为整条管线的主轴**，并按**方案A：独立薄组合层**落地。
+
+```
+① 能力层 catalog（真源·跨引擎聚合）  原子，AI 可单选/组合：
+     剪辑策略:  cut_sentence(句级·线上) │ cut_word(词级·方案B)   ← 共存，AI 按视频选
+     改造:      framework_reframe(PPT页化) │ raw(不改造直出)
+     叠加:      progress_bar │ endcard │ subtitle_ai_fix │ subtitle_burn │ speed_adapt │ name_mask
+     (未来):    字幕加粗/变色 │ 画面多排布 …  ← 往这层丢一个原子即接入
+
+② 配方层 recipes（真源·命名预设）   一条配方 = 能力的有序组合：
+     zh_business = cut_sentence + framework_reframe + subtitle_ai_fix(默认开) + progress_bar + endcard
+     raw_quickcut = cut_word + raw + subtitle_burn
+     (AI 也可不走预设，按视频临时组合)
+
+③ 选择层 select                     AI 读视频 → 选 recipe，或自由组合 capabilities
+
+④ 引擎层（§3.1，代码住哪）           原子物理分布在三个"积木厂"引擎
+```
+
+**落地结构（方案A · 独立薄组合层 `video-compose`）**：
+
+```
+tools/engines/
+├── video-compose/            ★ 组合层(新·薄)：唯一对外入口，只指挥不产原子
+│   ├── catalog.json          总能力表（从各引擎 capabilities.json 汇总）
+│   ├── recipes.json          命名预设（zh_business / raw_quickcut …）
+│   ├── select.py             AI 读视频 → 选配方 / 自由组合
+│   └── run.py                按组合编排，跨引擎调原子
+│
+├── video-slicer/             积木厂：剪辑策略原子（capabilities.json 声明）
+├── video-framework-render/   积木厂：改造/渲染原子
+└── video-clip/               积木厂：叠加原子（现有 catalog/recipes 内容上移到 video-compose）
+```
+
+- **依赖单向**：`video-compose → 各引擎`；各引擎互不依赖、不当指挥。每个引擎一个角色（只产积木）。
+- **扩展即插**：新能力做好（如你正调的 `endcard`、未来字幕加粗变色、画面多排布）→ 在所属积木厂加原子 + 在 `capabilities.json` 声明 + 在 recipe 引用，**管线骨架不动**。
+- **当前业务流 = `zh_business` 这条 recipe**：今天是 `recipes.json` 里的 `framework_slice`(delegate 到 assistant_zh)；迁移目标是把渲染核心拆原子后，它变成 `video-compose` 里一条 `chain` 配方。
+- `video-clip` 现有的 `catalog.json`/`recipes.json` 内容**上移**到 `video-compose`（真源唯一）；`video-clip` 退回纯积木厂，只留 `capabilities.json` 声明自己的原子。
+
 ---
 
 ## 4. 迁移分期（按风险递增，可分批停下）

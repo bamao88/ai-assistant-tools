@@ -17,10 +17,10 @@ run.py — 学员主数据周更新顶层入口
     注: 旧 merge_refer (合并 refer/*.xlsx 推广员/消费) 已于 2026-06-15 删除。
         手机号/推广员/消费改飞书侧人工维护;自我介绍/客户画像改走 LLM analyze。
 
-用法:
-    python3 -m student_manage.run --dry-run     # 1/2/3-dry/4 本地预览
-    python3 -m student_manage.run --skip-llm    # 跳过 LLM 只跑规则 pipeline
-    python3 -m student_manage.run --auto        # ⚠️ DEPRECATED：会拒绝执行
+用法（迁移后从 engine 根跑）:
+    python3 -m recipes.run --dry-run     # 1/2/3-dry/4 本地预览
+    python3 -m recipes.run --skip-llm    # 跳过 LLM 只跑规则 pipeline
+    python3 -m recipes.run --auto        # ⚠️ DEPRECATED：会拒绝执行
 """
 
 from __future__ import annotations

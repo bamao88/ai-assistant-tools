@@ -11,7 +11,7 @@
 命令:
     gather         读取侧 Facade（acquire+recognize+resolve 对账）— P4 新建
     intake         新学员入表（gather → 判断 → 写回）           — recipes/intake (P4)
-    employment     就业回访（recognize gate → analyze → 写回）  → capabilities.analyze.analyze
+    employment     就业回访（recognize gate → analyze → 写回）  → capabilities.analyze.employment
     friends-sync   好友刷新建行（sync+audit+merge 三步合一）     — recipes/friends_sync (P4)
     group-order    群序号同步                                   → outputs.sync_group_order
     payment        付款金额（acquire 解图 + analyze 视觉读）     → recipes.payment

@@ -8,14 +8,16 @@ run.py — 学员主数据周更新顶层入口
     这个脚本只保留 1/2/3/4 步本地主数据维护；--auto 模式禁用。
 
 执行序列:
-    1. extract_students.py    群成员/wxid/手机号(规则)
-    2. llm_enrich.py          ★ Kimi per-student 增量富化(只扫上次之后的新消息)
-    3. update_csv.py          (复用 update_and_notify.py 的 CSV+summary 逻辑)
-    4. ❌ sync_to_feishu.py   DEPRECATED — 不再执行
-    5. notify.py              成功摘要发飞书（可选）
+    1. capabilities.recognize       群成员/wxid/手机号/学期(确定性规则,含原 enrich 学期推断)
+    2. capabilities.analyze.profile ★ Kimi per-student 增量富化(只扫上次之后的新消息)
+    3. update_csv.py                (复用 update_and_notify.py 的 CSV+summary 逻辑)
+    4. ❌ sync_to_feishu.py         DEPRECATED — 不再执行
+    5. notify.py                    成功摘要发飞书（可选）
 
     注: 旧 merge_refer (合并 refer/*.xlsx 推广员/消费) 已于 2026-06-15 删除。
         手机号/推广员/消费改飞书侧人工维护;自我介绍/客户画像改走 LLM analyze。
+        P3: extract_students + enrich_students → capabilities.recognize（确定性合一）;
+            llm_enrich → capabilities.analyze.profile（任务卡 cards/profile.md）。
 
 用法（迁移后从 engine 根跑）:
     python3 -m recipes.run --dry-run     # 1/2/3-dry/4 本地预览

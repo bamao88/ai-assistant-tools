@@ -249,9 +249,11 @@ tools/engines/
 
 > **执行须知（本计划由后续 AI 执行，非本会话）**：本文档只产出蓝图；执行交给后续 AI。范围 = **全量阶段 0–6**（对整个视频剪辑 skill 的重新升级，含动线上的阶段 2–5）。执行铁律：① 严格按阶段顺序、风险递增；② 阶段 0 必须先锁基线，之后每个动线上的阶段都跑 **G4 逐帧/逐字回归**；③ 真正零线上触碰的只有阶段 0–1，**阶段 2 起即会改到线上文件**（见各阶段「⚠️ 线上耦合」）；④ 每批独立可验证、可回退（配合本计划提交的 git 检查点）。
 
-### 阶段 0 · 准备与基线锁定（零风险，先做）
-1. 在迁移前，用现有线上流程跑 1–2 条代表 clip，保存成片 + 中间产物（pages JSON / fixed.srt / accel.mp4）作为 **G4 回归基线**。
-2. 记录线上流程当前的精确调用方式与依赖（venv / node puppeteer / ffmpeg / .env）。
+### 阶段 0 · 准备与基线锁定（零风险，先做）✅ 已完成（2026-06-15）
+1. **冻结 G4 回归基线（replay-based）**：把现有参照成片的中间产物（`job.json` 含 pages / `clip.fixed.srt` / `clip.srt`）+ 成片（`accel.mp4`/`paginated.mp4`）冻结，使迁移后能用同一份中间产物重放比对（解耦 LLM 不确定性）。
+   - 已落 `tools/var/zh_main/baseline/`：`stage0_out_v2_manifest.json`（out_v2 全 32 clip sha256 冻结）+ `primaries/`（2 条主 clip 完整重放集，自洽免受后续搬动）。
+2. 记录线上流程当前的精确调用方式与依赖（venv / node puppeteer / ffmpeg / .env）→ 见 `var/zh_main/baseline/STAGE0-baseline.md`。
+   - ⚠️ 实测：渲染 venv（`assistant_zh/venv`）当前缺 `PIL`/`cv2`（阶段3 首跑前需修）；`render_page.js` puppeteer 路径硬编码 npx 缓存（阶段3 须正规 vendor）；`.env` 反向符号链 = G6 待修。
 
 ### 阶段 1 · 固化基准与实验脚本（零风险，不碰线上）
 - 把方案A 基准 `tmp/slice_prompt_iter/select_clips.py` 复制进 tools（如 `engines/video-slicer/baselines/`）做方案对照。

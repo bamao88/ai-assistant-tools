@@ -18,7 +18,9 @@ from __future__ import annotations
 import argparse, json, sys
 from pathlib import Path
 
-_ENGINE = "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/video-slicer"
+# 固化进 video-slicer 后：从 baselines/ 上溯到引擎根（含 video_slicer 包），
+# 去掉原 tmp 版的跨项目硬编码绝对路径（迁移 G1 目标）。
+_ENGINE = str(Path(__file__).resolve().parent.parent)
 if _ENGINE not in sys.path:
     sys.path.insert(0, _ENGINE)
 from video_slicer.llm import OpenAICompatibleClient  # noqa: E402

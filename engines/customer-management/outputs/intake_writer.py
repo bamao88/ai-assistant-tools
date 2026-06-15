@@ -16,11 +16,15 @@ worksheet schema (wxid -> {}):
 import json, subprocess, sys, time, os
 from pathlib import Path
 
+# engine 根（outputs/ → up 1）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import config
+
 APP="YTcFbyGS4arILPseQJscA6J7nqb"; TBL="tblfCYoeornDw0XF"
 F_WX="wxid"; F_ZIWO="自我介绍"; F_QUDAO="渠道"; F_JIQI="几期学员"
 F_HUODONG="活动标签"; F_PHONE="手机号"; F_SHIFU="实付"; F_FANGSHI="付款方式"; F_PINGZHENG="提成截图凭证"
-REPO=Path(__file__).resolve().parents[2]
-SM=REPO/"student_manage"
+REPO=config.DATA_ROOT
+SM=config.STUDENT_MANAGE_DIR
 
 def lark(args,timeout=120):
     r=subprocess.run(["lark-cli","--as","bot","--profile","zhanghe"]+args,capture_output=True,text=True,timeout=timeout)

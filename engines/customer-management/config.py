@@ -63,6 +63,13 @@ PARSE_FAILURES_FILE = PENDING_DIR / "parse_failures.json"
 DATA_DIR = DATA_ROOT / "knowledge_base" / "client" / "raw" / "chat"
 CHAT_DIR = DATA_DIR  # analyze.py 旧名
 
+# --- 付款凭证图（§6：out/montage 原地留 assistant_zh，gitignore）-------------
+PAYMENT_PROOF_DIR = STUDENT_MANAGE_DIR / "payment_proof"
+PAYMENT_IMGKEY_FILE = PAYMENT_PROOF_DIR / "imgkey.txt"
+PAYMENT_IMGXOR_FILE = PAYMENT_PROOF_DIR / "imgxor.txt"
+PAYMENT_OUT_DIR = PAYMENT_PROOF_DIR / "out"
+PAYMENT_MONTAGE_DIR = PAYMENT_PROOF_DIR / "montage"
+
 # --- 仓外微信上游（acquire 的上游，可能不存在 / gitignore）-------------------
 WECHAT_STATE_DIR = DATA_ROOT / "mac" / "wechat" / "state"
 DASHBOARD_PATH = WECHAT_STATE_DIR / "dashboard.json"

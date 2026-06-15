@@ -1,7 +1,26 @@
-# 学员就业情况追踪 — LLM Prompt
+---
+name: employment
+flow: employment
+gate: follow_up_exact_match
+write_back:
+  拿到offer: overwrite
+  客户画像: skip-if-marked
+  备注: skip-if-marked
+---
 
-> 此文件是 `analyze.py` 在运行时读取的 LLM 提示词。编辑后立刻生效，不需要改 Python。
+# 学员就业情况追踪 — 任务卡（三要素）
+
+> 任务卡 = 怎么读（下方提示词段）+ 要什么（## SYSTEM_PROMPT 的输出契约 JSON）+ 写回规矩（顶部 front-matter `write_back`）。
+> 此文件是 analyze 引擎运行时读取的提示词。编辑后立刻生效，不需要改 Python。
 > 占位符：`{ANALYZED_AT}` 会被脚本替换成 `YYYY-MM-DD`。
+>
+> **先过滤（gate=follow_up_exact_match）**：analyze 在调 LLM 前，先确定性检测助理是否
+> 对该学员发过开场白「同学，回访一下，最近面试和求职情况怎么样呢？」（全文 exact substring）。
+> 未发过 → 不调 LLM，直接写「未回访」stub（见 employment flow 的 build_not_followed_up_result）。
+>
+> **写回规矩（front-matter write_back）**：拿到offer=overwrite（直接覆盖）；
+> 客户画像/备注=skip-if-marked（飞书该字段已含「AI回访分析」标记则跳过，否则 append；保留手填）。
+> rerun 修复路径（--rerun-not-followed-up）走 reset 策略，直接覆盖 latest entry（见 write_policy.reset）。
 
 ## SYSTEM_PROMPT
 

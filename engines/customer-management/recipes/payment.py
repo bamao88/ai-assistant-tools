@@ -12,21 +12,22 @@
 前置: 先跑 get_img_key.py 生成 imgkey.txt。
 """
 import sys, os, glob, json, hashlib, math, argparse
+from pathlib import Path
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-from decrypt_dat import dat2img  # noqa
+# engine 根（recipes/ → up 1）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import config
+from capabilities.acquire.decrypt_dat import dat2img  # noqa
 
-REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 LIVE = os.path.expanduser(
     "~/Library/Containers/com.tencent.xinWeChat/Data/Documents/xwechat_files/wxid_vre3jz2a7vwb22_c26a")
 ATT = f"{LIVE}/msg/attach"
-OUT = os.path.join(HERE, "out")
-MON = os.path.join(HERE, "montage")
+OUT = str(config.PAYMENT_OUT_DIR)
+MON = str(config.PAYMENT_MONTAGE_DIR)
 
 
 def load_students(term, wxids):
-    recs = json.load(open(os.path.join(REPO, "student_manage/all_student.json")))
+    recs = json.load(open(config.STUDENT_FILE))
     if wxids:
         return [r for r in recs if r.get("wxid") in set(wxids)]
     return [r for r in recs if r.get("学期") == term and r.get("wxid")]

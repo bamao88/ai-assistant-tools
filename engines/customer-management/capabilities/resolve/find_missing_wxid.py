@@ -31,11 +31,15 @@ import time
 from pathlib import Path
 from typing import Any
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-BY_WXID_FILE = PROJECT_ROOT / "analytics" / "group_member_order" / "by_wxid.json"
-ALL_STUDENT_FILE = PROJECT_ROOT / "student_manage" / "all_student.json"
-STAFF_EXCLUDE_FILE = PROJECT_ROOT / "student_manage" / "staff_exclude.json"
-OUTPUT_DIR = PROJECT_ROOT / "analytics" / "group_member_order"
+# engine 根（capabilities/resolve/ → up 2）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+import config
+
+PROJECT_ROOT = config.PROJECT_ROOT
+BY_WXID_FILE = config.BY_WXID_FILE
+ALL_STUDENT_FILE = config.STUDENT_FILE
+STAFF_EXCLUDE_FILE = config.STAFF_EXCLUDE_FILE
+OUTPUT_DIR = config.GROUP_MEMBER_ORDER_DIR
 
 APP_TOKEN = "YTcFbyGS4arILPseQJscA6J7nqb"
 TABLE_ID = "tblfCYoeornDw0XF"

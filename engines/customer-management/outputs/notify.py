@@ -17,11 +17,15 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-BASE_DIR = Path("/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/student_manage")
-CONFIG_FILE  = BASE_DIR / "feishu_config.json"
-SUMMARY_FILE = BASE_DIR / "last_update_summary.json"
-DIFF_FILE    = BASE_DIR / "incremental_changes.json"
-LOG_DIR      = BASE_DIR / "logs"
+# engine 根（outputs/ → up 1）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import config
+
+BASE_DIR = config.BASE_DIR
+CONFIG_FILE  = config.FEISHU_CONFIG_FILE
+SUMMARY_FILE = config.SUMMARY_FILE
+DIFF_FILE    = config.DIFF_FILE
+LOG_DIR      = config.LOG_DIR
 
 
 def load_config() -> dict:

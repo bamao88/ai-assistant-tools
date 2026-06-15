@@ -1,0 +1,18 @@
+{
+  "_schema": "video-capabilities/v1",
+  "engine": "video-clip",
+  "role": "积木厂：提供「叠加/通用剪辑」原子。只产原子，不指挥。原 catalog.json/recipes.json 的总表+配方已上移到 video-compose（真源唯一）。",
+  "deps": ["ffmpeg(libass)", "python: opencv-python(face-locate)"],
+  "atoms": {
+    "concat":         {"kind": "叠加", "file": "atoms/concat.py",         "sig": "concat.py OUT --inputs a.mp4 b.mp4 ... [--target WxH] [--fps 25] [--reencode]"},
+    "progress_bar":   {"kind": "叠加", "file": "atoms/progress_bar.py",   "sig": "progress_bar.py IN OUT --chapters N --index k [--label 文字] [--h 12] [--color FF6B5C]"},
+    "endcard":        {"kind": "叠加", "file": "atoms/endcard.py",        "sig": "endcard.py IN OUT --card PATH(.png/.jpg/.html) [--seconds 3] [--fade 0.5]"},
+    "speed_adapt":    {"kind": "叠加", "file": "atoms/speed_adapt.py",    "sig": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0]", "ported_from": "slicer.py::accelerate"},
+    "subtitle_burn":  {"kind": "叠加", "file": "atoms/subtitle_burn.py",  "sig": "subtitle_burn.py IN OUT --srt x.srt [--fs 36] [--y h-130]", "ported_from": "slicer.py::make_subtitles"},
+    "subtitle_ai_fix":{"kind": "叠加", "file": "atoms/subtitle_ai_fix.py","sig": "subtitle_ai_fix.py IN.srt OUT.srt [--hint ...]", "note": "走 video-slicer LLM，需 .env", "ported_from": "srt_fix.py"},
+    "face_locate":    {"kind": "改造", "file": "atoms/face_locate.py",    "sig": "face_locate.py IN [--target WxH] [--samples 40] -> JSON(face_cx/crop)", "ported_from": "slicer.py::locate_face_cx + reframe_locate.py"},
+    "name_mask":      {"kind": "叠加", "file": "atoms/name_mask.py",      "sig": "name_mask.py IN OUT --region WxH+X+Y [--fill img] [--mask alpha.png] [--trim 0]", "ported_from": "make_publish.py"},
+    "cover_frame":    {"kind": "叠加", "file": "atoms/cover_frame.py",    "sig": "cover_frame.py IN OUT.png [--at 0] [--overlay title.png]"}
+  },
+  "note": "命名规则见原 catalog；总能力表+配方在 video-compose/catalog.json + recipes.json。"
+}

@@ -1,0 +1,28 @@
+{
+  "_schema": "video-capabilities/v1",
+  "engine": "video-slicer",
+  "role": "积木厂：提供「剪辑策略」原子（AI 读文字选段 → 切点）。只产原子，不指挥。",
+  "deps": ["python", "LLM via .env (Kimi/MiniMax)", "ffmpeg(切片)", "paraformer-v2 + 阿里云 OSS (词级，可选)"],
+  "atoms": {
+    "cut_sentence": {
+      "kind": "剪辑策略", "tier": "句级·线上稳定",
+      "desc": "单阶段：一次 LLM 读整场逐字稿同时定选题 + 句级时间段（腾讯 minutes 句时间）。线上生产范式，不依赖字级。",
+      "entry": "video_slicer.planner",
+      "baseline": "baselines/select_clips.py (方案A 基准·只出选题层候选)",
+      "out": "选段清单 segments(句级秒/MM:SS)"
+    },
+    "cut_word": {
+      "kind": "剪辑策略", "tier": "词级·方案B·调试中",
+      "desc": "两阶段（选题→定脚本）+ paraformer 字级时间戳，支持句中精剪/跳接。与 cut_sentence 共存，AI 按视频选用。",
+      "entry": "video_slicer.twostage.pipeline",
+      "persona": "personas/zh_main.md",
+      "status": "built-not-fully-validated",
+      "out": "keep_sids / sentence_time_spans（数值秒 spans，D6）"
+    }
+  },
+  "also_provides": {
+    "pages_gen": {"desc": "逐字稿 → 框架页 pages JSON（LLM）", "entry": "video_slicer.pages_gen", "profile": "profiles/zh_main/pages_system_prompt.txt"},
+    "srt_fix": {"desc": "clip 字幕 LLM 纠错（术语+口语，1:1 保时间轴）", "entry": "video_slicer.srt_fix", "profile": "profiles/zh_main/srt_fix_system_prompt.txt"}
+  },
+  "note": "cut_sentence/cut_word 共存（迁移计划 §3.4 / D6）；pages_gen/srt_fix 为内容决策（D1，阶段2 迁入）。catalog 汇总在 video-compose。"
+}

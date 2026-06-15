@@ -276,7 +276,7 @@ def _compute_diff(local: dict | None, feishu_row: dict | None,
         local_to_feishu: dict[str, Any] = {
             F_WXID: (local.get("wxid") or "").strip(),
             F_WEIXIN_NAME: (local.get("微信昵称") or "").strip(),
-            F_BEIZHU: (local.get("其他名称") or "").strip(),
+            F_BEIZHU_OTHER: (local.get("其他名称") or "").strip(),
             F_HUAXIANG: (local.get("自我介绍") or "").strip(),
             F_ADD_BY: sorted(set(local.get("添加微信") or [])),
             # 加好友日期 本地不持有 → 永远不建议（由 friends_sync 负责）

@@ -148,8 +148,9 @@ def _secs(ts):
 def _asst(t):
     h=int(t//3600); m=int(t%3600//60); s=t%60; return f"{h}:{m:02d}:{s:05.2f}"
 
-def load_fixes():
-    p=HERE/"fixes.json"
+def load_fixes(profile="zh_main"):
+    # 迁移阶段3：张和 ASR 纠错映射 = 账号数据，抽到定制层 profiles/<profile>/fixes.json
+    p=_ENGINE_ROOT/"profiles"/profile/"fixes.json"
     if not p.exists(): return []
     raw=json.loads(p.read_text(encoding="utf-8"))
     out=[]

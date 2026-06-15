@@ -263,11 +263,19 @@ engines:
   - id: video-slicer
     path: engines/video-slicer
     runtime: "python — video_slicer 包"
-    purpose: 视频切片/裁剪 AI 选段规划（无独立触发 skill；按需被调用）
+    purpose: "积木厂·剪辑策略原子：cut_sentence(句级·线上)/cut_word(词级·方案B twostage) 共存 + 内容决策 pages_gen/srt_fix(阶段2 迁入) + 选段 planner；定制层 personas/zh_main.md + profiles/zh_main/{pages,srt_fix}_system_prompt.txt + baselines/(方案A基准)；capabilities.json 声明。无独立触发 skill"
   - id: video-clip
     path: engines/video-clip
     runtime: "python (.venv: pillow+opencv) — atoms/*.py（ffmpeg；endcard 渲 html 卡需 node/puppeteer；首次跑 requirements.txt）"
-    purpose: 视频剪辑/合成原子库 + 编辑类型配方（拼接/进度条/片尾/变速/字幕/遮名）；真源 catalog.json + recipes.json；回归测试 test_atoms.sh（24用例全绿）
+    purpose: "积木厂·叠加/通用剪辑原子库（拼接/进度条/片尾/变速/字幕/遮名/封面/人脸）；capabilities.json 声明 9 原子；总能力表+配方已上移 video-compose（真源唯一）；回归测试 test_atoms.sh"
+  - id: video-framework-render
+    path: engines/video-framework-render
+    runtime: "python (独立 .venv: pillow+opencv-python-headless) — video_framework_render.render 模块（ffmpeg+libass；node puppeteer 经 PUPPETEER_PATH；字体 Hannotate/PingFang SC）"
+    purpose: "积木厂·改造/渲染原子：手写框架页翻页+人像圆形PIP+纠错字幕+自适应变速 竖版成片(framework_reframe/compose/accelerate/subtitles/reframe_locate/raw)；张和锁定几何=内置默认，账号 fixes.json 在 profiles/zh_main/；capabilities.json 声明。阶段3 由 assistant_zh slicer.py 迁入"
+  - id: video-compose
+    path: engines/video-compose
+    runtime: "python — selector.py/run.py/build_catalog.py（无重依赖；调度各引擎）"
+    purpose: "组合层（薄·唯一对外入口，只指挥不产原子）：catalog.json(跨引擎汇总17原子) + recipes.json(zh_business/raw_quickcut…) + selector(选配方) + run(跨引擎编排)；依赖单向 compose→各引擎。架构主轴 §3.4/D7"
   - id: tencent-meeting
     path: engines/tencent-meeting
     runtime: "python — scripts/mcp_cli.py（官方 MCP 桥接；legacy 下载脚本保留）"

@@ -77,15 +77,16 @@ def load_sync_summary():
 
 
 def run_pipeline():
-    """依次运行三个 pipeline 脚本。"""
-    for script in PIPELINE_SCRIPTS:
-        name = os.path.basename(script)
+    """依次运行 pipeline 模块（engine 模块形式，cwd=ENGINE_ROOT）。"""
+    for mod in PIPELINE_MODULES:
+        name = mod
         print(f"\n{'='*50}")
         print(f"运行: {name}")
         print('='*50)
         result = subprocess.run(
-            [sys.executable, script],
+            [sys.executable, "-m", mod],
             capture_output=False,  # 直接打印到终端
+            cwd=str(ENGINE_ROOT),
         )
         if result.returncode != 0:
             print(f"[ERROR] {name} 返回码 {result.returncode}，终止")

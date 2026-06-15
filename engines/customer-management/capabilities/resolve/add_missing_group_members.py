@@ -21,15 +21,20 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-BY_WXID_FILE = PROJECT_ROOT / "analytics" / "group_member_order" / "by_wxid.json"
-STAFF_EXCLUDE_FILE = PROJECT_ROOT / "student_manage" / "staff_exclude.json"
-RUN_DIR_BASE = PROJECT_ROOT / "analytics" / "group_member_order" / "add_runs"
+# engine 根（capabilities/resolve/ → up 2）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+import config
+
+PROJECT_ROOT = config.PROJECT_ROOT
+BY_WXID_FILE = config.BY_WXID_FILE
+STAFF_EXCLUDE_FILE = config.STAFF_EXCLUDE_FILE
+RUN_DIR_BASE = config.GROUP_ORDER_ADD_RUNS_DIR
 
 APP_TOKEN = "YTcFbyGS4arILPseQJscA6J7nqb"
 TABLE_ID = "tblfCYoeornDw0XF"

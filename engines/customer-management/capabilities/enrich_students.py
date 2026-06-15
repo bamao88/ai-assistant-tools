@@ -9,12 +9,17 @@ Enrich all_student.json with:
     未来自我介绍/客户画像走 LLM analyze (cards/profile.md)。
 """
 
-import json, os, re, glob
+import json, os, re, glob, sys
+from pathlib import Path
 
-BASE_DIR = "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/student_manage"
-DATA_DIR = "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/knowledge_base/client/raw/chat"
-STUDENT_FILE = os.path.join(BASE_DIR, "all_student.json")
-STAFF_EXCLUDE_PATH = os.path.join(BASE_DIR, "staff_exclude.json")
+# engine 根（capabilities/ → up 1）入 sys.path，统一经 config 读路径。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import config
+
+BASE_DIR = str(config.BASE_DIR)
+DATA_DIR = str(config.DATA_DIR)
+STUDENT_FILE = str(config.STUDENT_FILE)
+STAFF_EXCLUDE_PATH = str(config.STAFF_EXCLUDE_FILE)
 
 # Self-intro detection patterns (applied to student's own messages, isSelf=0)
 INTRO_RE = re.compile(

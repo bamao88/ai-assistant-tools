@@ -334,7 +334,7 @@ tools/engines/
 
 ## 6. 验证清单（Definition of Done）
 
-- [x] 🟡 G1：`assistant_zh/workflow/` 下 pages_gen/srt_fix/slicer/render_page **已迁出删除**；run_pipeline/rerender/make_publish 退为③薄胶水（允许）。⏸ 残留：`video_vertical/` 原件已复制入引擎但未删（parked，删前确认无独立 runner）。
+- [x] G1：`assistant_zh/workflow/` 下 pages_gen/srt_fix/slicer/render_page **已迁出删除**；`video_vertical/` 已删（无独立 runner，全迁入引擎）；run_pipeline/rerender/make_publish 退为③薄胶水（允许）。grep 复核无可复用引擎代码残留 ✅。
 - [x] G2：术语表(fixes.json)/分页·纠错 prompt 已集中 `profiles/zh_main/`，引擎无账号硬编码；视觉值=引擎内置默认(§3.1)，值外置 parked（待 G4 帧验证）。定制未散回项目。
 - [x] G2b：`--out-root`(D5) 可改落点；默认 `var/zh_main/`；③项目加工归项目自管。
 - [x] G2c：17 原子注册 `video-compose/catalog.json`；`zh_business` recipe 建模线上流；句级/词级 `cut_sentence`/`cut_word` 共存可切；`raw_quickcut` 验证组合可换（`run.py --plan` 实测）；依赖单向 compose→各引擎。

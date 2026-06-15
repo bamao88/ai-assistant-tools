@@ -255,9 +255,9 @@ tools/engines/
 2. 记录线上流程当前的精确调用方式与依赖（venv / node puppeteer / ffmpeg / .env）→ 见 `var/zh_main/baseline/STAGE0-baseline.md`。
    - ⚠️ 实测：渲染 venv（`assistant_zh/venv`）当前缺 `PIL`/`cv2`（阶段3 首跑前需修）；`render_page.js` puppeteer 路径硬编码 npx 缓存（阶段3 须正规 vendor）；`.env` 反向符号链 = G6 待修。
 
-### 阶段 1 · 固化基准与实验脚本（零风险，不碰线上）
-- 把方案A 基准 `tmp/slice_prompt_iter/select_clips.py` 复制进 tools（如 `engines/video-slicer/baselines/`）做方案对照。
-- 清理 / 归档 `tmp/` 下确认无用的一次性脚本。
+### 阶段 1 · 固化基准与实验脚本（零风险，不碰线上）🟡 部分完成（2026-06-15）
+- ✅ 方案A 基准 `tmp/slice_prompt_iter/select_clips.py` 已固化进 `engines/video-slicer/baselines/`（去跨项目硬编码绝对路径，改可移植解析；py_compile 通过；附 `baselines/README.md`）。
+- ⏸ **清理/归档 `tmp/` 一次性脚本 — 已 PARK，待用户批准**：这些文件在**业务项目 `assistant_zh/tmp/`**（tools 仓之外），删/移属破坏性动作，不自动执行。视频相关候选（计划 §2.2）：`tmp/camp4_render_clips.py`、`migrate_v1_slices.py`、`mint_video_items.py`、`slicer_backstop_validation.py`（一次性脚本→归档）、`tmp/slice_copy_test/`（文案多LLM对比→评估后弃/归档）、`tmp/semester3_slicing/` 等期次素材（留业务或归 var）。建议**归档（移入 `tmp/_archive/` 或 `var/`）而非删除**，待用户确认落点后执行。
 
 ### 阶段 2 · 迁移「LLM 内容决策」能力（⚠️ 动线上，非"低风险"）
 - `pages_gen.py`、`srt_fix.py` 迁入 `video-slicer`。这两个本就 `sys.path` 反向依赖 video-slicer 引擎，迁入后改为正常包内导入，**消除跨项目硬路径**。

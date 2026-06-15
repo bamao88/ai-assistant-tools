@@ -1,0 +1,40 @@
+{
+  "_schema": "video-capabilities/v1",
+  "engine": "video-framework-render",
+  "role": "积木厂：提供「改造/渲染」类原子（手写框架页化竖版成片）。只产原子，不指挥（指挥权在 video-compose）。",
+  "deps": ["ffmpeg(libass)", "node+puppeteer", "python: pillow, opencv-python-headless", "fonts: Hannotate SC, PingFang SC"],
+  "atoms": {
+    "framework_reframe": {
+      "kind": "改造",
+      "desc": "口播 clip + pages spec → 手写框架图翻页 + 人像圆形PIP + 纠错字幕 + 自适应变速 竖版成片(720x1280)。当前 zh_business 主路径。",
+      "entry": "video_framework_render.render:run",
+      "input": "job.json {video, srt, pages:[{start,title,blocks}], params, subtitle_strip_px}",
+      "output": "out/<name>/{paginated.mp4, accel.mp4, page_*.png, zh.ass}",
+      "stages": ["locate", "assets", "render_pages", "subtitles", "compose", "accelerate"]
+    },
+    "compose": {
+      "kind": "改造·原子", "desc": "ffmpeg：PPT层翻页(slide) + 静态白环 + 人像圆形PIP + 字幕 → paginated.mp4。",
+      "entry": "video_framework_render.render:compose"
+    },
+    "accelerate": {
+      "kind": "改造·原子", "desc": "按逐字稿语速对成片整体自适应变速 → accel.mp4。",
+      "entry": "video_framework_render.render:accelerate"
+    },
+    "subtitles": {
+      "kind": "叠加·原子", "desc": "srt → 账号术语纠错(profiles/<p>/fixes.json) → 标定字宽居中药丸 ASS。",
+      "entry": "video_framework_render.render:make_subtitles"
+    },
+    "reframe_locate": {
+      "kind": "改造·原子", "desc": "Haar 人脸重心定位(通用CV)，人像圆形水平居中。",
+      "entry": "video_framework_render.render:locate_face_cx"
+    },
+    "raw": {
+      "kind": "改造", "desc": "不改造直出（占位：未来 raw_quickcut recipe 用，不走框架页化）。",
+      "entry": null, "status": "declared"
+    }
+  },
+  "profiles": {
+    "zh_main": "张和：锁定几何 GEOM/SUB/ACCEL + PAGE_CSS 为 render.py 内置默认(§3.1)；账号 fixes.json 在 profiles/zh_main/；阶段5 进一步把视觉常量外置为 profile 文件。"
+  },
+  "note": "原子物理分布说明见迁移计划 §3.1；catalog 汇总到 video-compose（阶段5b）。"
+}

@@ -98,8 +98,11 @@ F_FANGSHI = "付款方式"
 F_PINGZHENG = "截图附件"
 F_JIQI = "几期学员"
 
-# suggested_fill 的 7 字段（§10）。映射：飞书字段 → 取本地哪个字段（None=非本地源）
-SUGGESTED_FILL_FIELDS = [F_WXID, F_WEIXIN_NAME, F_BEIZHU, F_HUAXIANG, F_OFFER, F_ADD_BY, F_JIA_DATE]
+# suggested_fill 的 7 字段（§10）。映射：飞书字段 → 取本地哪个字段（None=非本地源）。
+# 注：§10 口径写「备注」；飞书表里「备注」是 AI 回访分析的 append 目标（见 sync_to_feishu），
+# 而姓名/昵称类备注的真实落点是「备注及其他名称」（见 sync_friends）。本地「其他名称」是
+# 姓名元数据，故回填到「备注及其他名称」，不污染 AI 分析的「备注」列。
+SUGGESTED_FILL_FIELDS = [F_WXID, F_WEIXIN_NAME, F_BEIZHU_OTHER, F_HUAXIANG, F_OFFER, F_ADD_BY, F_JIA_DATE]
 
 
 # --- 字段值规约（飞书各类字段值 → 可读字符串）-------------------------------

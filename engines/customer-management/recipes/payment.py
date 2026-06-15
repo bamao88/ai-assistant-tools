@@ -95,7 +95,7 @@ def main():
     raw = open(keyf).read().strip()
     key = bytes.fromhex(raw) if len(raw) == 32 and all(c in "0123456789abcdefABCDEF" for c in raw) else raw.encode("latin-1")
     xk = 0x7F
-    xf = os.path.join(HERE, "imgxor.txt")
+    xf = str(config.PAYMENT_IMGXOR_FILE)
     if os.path.exists(xf):
         v = open(xf).read().strip()
         if v.isdigit():

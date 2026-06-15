@@ -10,10 +10,11 @@ description: |
 # video-clip — 视频剪辑/合成
 
 把已有视频片段，按一种**编辑类型**、用一组**原子能力**组合成成片。
-能力与类型的真源是引擎里的两个 JSON，不在本文展开清单：
+能力与类型的真源（迁移后）：原子在本引擎 `capabilities.json`，配方上移到组合层（真源唯一）：
 
-- 原子目录：`engines/video-clip/catalog.json`
-- 编辑类型：`engines/video-clip/recipes.json`
+- 原子目录：`engines/video-clip/capabilities.json`（本引擎 9 个叠加原子）
+- 编辑类型：`engines/video-compose/recipes.json`（`simple_concat`/`chaptered_growth`/`raw_quickcut`；框架页竖版切片现名 `zh_business`）
+- 总能力表（跨引擎汇总）：`engines/video-compose/catalog.json`
 
 引擎绝对路径：`/Volumes/ExtSSD2601/AI_Assistant/tools/engines/video-clip/`
 

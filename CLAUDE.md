@@ -42,6 +42,10 @@ var/      runtime: state, output, data, logs, drafts, review (gitignored)
 
 Trigger competition is fixed only by "super-skill + remove lower triggers" (changing descriptions does not work). Do not re-create deprecated triggers (see `registry.yaml: deprecated`): the publish skills `xhs-publish` / `gzh-publish` / `wechatsync` were folded into `platform-publish`; the fetch skills `xhs-fetch` / `gzh-scraper` / `tencent-meeting-downloader` / `content-research-hub` into `platform-fetch`.
 
+## Video editing skill (口播切片成片)
+
+To update or iterate the video editing skill — the 口播 → 框架页竖版切片成片 line, built as four engines (`video-compose` 组合层 + `video-slicer` / `video-framework-render` / `video-clip` 积木厂) — **read [`doc/video-skill-architecture.md`](doc/video-skill-architecture.md) first**. It is the maintenance runbook: where files live, how to add a capability / change per-account customization (`profiles/`) / onboard a new account / change visual layout, the entry commands (`engines/video-compose/{selector,run}.py`), and how to verify no-regression (G4 baseline in `var/zh_main/baseline/`). Design decisions and migration history: `doc/video-tools-migration-plan.md`.
+
 ## Maintenance workflow
 
 1. Read pending reports under `feedback/`.

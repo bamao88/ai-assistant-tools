@@ -4,7 +4,7 @@ update_and_notify.py
 
 执行学员数据更新 pipeline 并输出结构化摘要：
 1. 读取 last_sync_summary.json（最新微信同步增量）
-2. 依次运行 extract_students.py → enrich_students.py
+2. 运行 capabilities.recognize（确定性认：群成员/wxid/手机号/学期；含原 enrich 学期推断）
 3. 统计总学员数、各期分布
 4. 导出 all_student.csv（飞书多选字段用逗号，utf-8-sig）
 5. 输出结构化摘要 JSON（供 Claude 后续同步飞书用）

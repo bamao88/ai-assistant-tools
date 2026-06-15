@@ -299,4 +299,5 @@ if __name__=="__main__":
     ap=argparse.ArgumentParser()
     ap.add_argument("job"); ap.add_argument("--out", default=None)
     ap.add_argument("--skip-accel", action="store_true")
-    a=ap.parse_args(); run(a.job, a.out, a.skip_accel)
+    ap.add_argument("--profile", default="zh_main")
+    a=ap.parse_args(); run(a.job, a.out, a.skip_accel, a.profile)

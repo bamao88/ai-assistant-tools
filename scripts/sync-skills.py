@@ -35,6 +35,13 @@ def points_into_root(link: Path) -> bool:
 
 def install_skill(skill: dict, dry: bool, log: list):
     name = skill["name"]
+    # scope-gated skills are project-local (e.g. scope: assistant_zh) and must NOT
+    # be linked into the shared global ~/.claude/skills. They install via their own
+    # project-local symlinks (see the skill's install-symlinks.sh / references).
+    scope = skill.get("scope")
+    if scope and scope != "global":
+        log.append(f"  ~ {name}: scope={scope} (project-local) — skipped, not in global ~/.claude/skills")
+        return True
     source = (ROOT / skill["source"]).resolve()
     kind = skill.get("install_kind", "dir")
     if not source.exists():

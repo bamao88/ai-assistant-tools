@@ -2,7 +2,11 @@
 
 > 文档位置：`tools/doc/video-tools-migration-plan.md`
 > 起草日期：2026-06-14
-> 状态：**定稿 · 交后续 AI 执行**（§7 决策已定；本会话只产出计划、不执行；范围=全量 §4 阶段 0–6，含动线上，由后续 AI 按本蓝图分批实施）
+> 状态：**结构迁移已执行完成（2026-06-15，intuitive-flow）· 余一个本地验证门 + 少量 parked**
+> 阶段 0–6 全部结构落地并逐片验证（compile/import/字节一致/路径解析/check-tools 53 ok/组合可换）。
+> 唯一阻断完整收口的是 **G4 逐帧成片回归 = BLOCKED_NEEDS_LOCAL_VALIDATION**（需装引擎 venv+puppeteer+字体实跑比对 `var/zh_main/baseline/primaries/` 冻结 job.json）。
+> Parked（待用户）：G5 tmp 归档落点、G6 .env 反向符号链(涉密钥)、视觉值外置(待帧验证)、video_vertical 原件删除、video-clip 旧 catalog 删除+repoint SKILL.md、zh_business 升级为 atom 级 chain。
+> 原始定稿见 git 历史。
 
 ---
 

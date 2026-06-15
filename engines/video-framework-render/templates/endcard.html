@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  /* 背景透明：作为叠层盖在正片最后几秒上，靠 scrim 压暗画面让文字可读 */
+  html,body { width:720px; height:1280px; background:transparent; }
+  .stage { position:relative; width:720px; height:1280px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .scrim { position:absolute; inset:0; background:rgba(0,0,0,0.82); }
+  .stage > *:not(.scrim) { position:relative; z-index:1; }
+
+  /* 钩子文案：宋体，和标题层同一套 */
+  .hook { text-align:center; color:#fff;
+    font-family:"Songti SC","STSong",Georgia,serif; }
+  .hook .l1 { font-size:40px; font-weight:700; letter-spacing:1px; line-height:1.4; opacity:0.92; }
+  .hook .l2 { font-size:44px; font-weight:700; letter-spacing:0.5px; line-height:1.4; margin-top:12px; }
+  .hook .l2 .em { color:#FF6B5C; }
+
+  .accent { width:80px; height:4px; border-radius:2px; background:#FF6B5C; margin:34px 0; }
+
+  /* 两天课表 */
+  .days { width:624px; text-align:center;
+    font-family:"PingFang SC","STHeiti",sans-serif; }
+  .days .day { font-size:30px; line-height:1.7; color:rgba(255,255,255,0.9); letter-spacing:0.5px; }
+  .days .day .d { color:#FF6B5C; font-weight:700; margin-right:10px; }
+
+  /* 微信水印：淡、细、低调，靠形状传达 */
+  .wm { display:flex; align-items:center; gap:8px; margin-top:54px; opacity:0.34; }
+  .wm svg { width:22px; height:22px; flex:none; }
+  .wm .id { color:#fff; font-family:"SF Mono","PingFang SC",monospace;
+    font-size:26px; font-weight:300; letter-spacing:2.5px; }
+</style></head><body>
+  <div class="stage">
+    <div class="scrim"></div>
+    <div class="hook">
+      <div class="l1">想做 AI 产品，却不知从何下手</div>
+      <div class="l2"><span class="em">2 天免费试听课</span>，帮你答疑解惑</div>
+    </div>
+    <div class="accent"></div>
+    <div class="days">
+      <div class="day"><span class="d">DAY1</span>超越 99% 身边人的 AI 信息优势课</div>
+      <div class="day"><span class="d">DAY2</span>如何带飞没做过 AI 的产研团队</div>
+    </div>
+    <div class="wm">
+      <!-- 微信气泡图标：白色，水印态低透明 -->
+      <svg viewBox="0 0 1024 1024" fill="#FFFFFF" xmlns="http://www.w3.org/2000/svg">
+        <path d="M690 333c-150 0-272 100-272 235 0 76 41 142 105 188l-26 79 92-50c33 9 67 14 101 14 9 0 18 0 27-1-6-19-9-39-9-60 0-129 117-231 261-231 9 0 18 0 27 1-23-105-150-184-306-184zM602 451c19 0 34 15 34 33s-15 33-34 33-34-15-34-33 15-33 34-33zm176 0c19 0 34 15 34 33s-15 33-34 33-34-15-34-33 15-33 34-33z"/>
+        <path d="M1024 689c0-113-110-205-245-205s-245 92-245 205 110 205 245 205c28 0 56-4 82-12l75 41-21-64c52-39 84-95 84-170zm-318-37c-15 0-28-12-28-27s13-27 28-27 28 12 28 27-13 27-28 27zm146 0c-15 0-28-12-28-27s13-27 28-27 28 12 28 27-13 27-28 27z"/>
+      </svg>
+      <span class="id">henrygpt2024</span>
+    </div>
+  </div>
+</body></html>

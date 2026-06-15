@@ -1,0 +1,19 @@
+[
+  ["2526", "2026"],
+  ["claude\\s*codebuddy", "Claude Code"],
+  ["cloud\\s*code", "Claude Code"],
+  ["blood\\s*code", "Claude Code"],
+  ["codebuddy", "Code"],
+  ["ai\\s*coding", "AI coding"],
+  ["encoding", "AI coding"],
+  ["chat\\s*gpt", "ChatGPT"],
+  ["cpt", "GPT"],
+  ["gpt", "GPT"],
+  ["claude\\s*code", "Claude Code"],
+  ["codex", "Codex"],
+  ["cursor", "Cursor"],
+  ["builder", "Builder"],
+  ["saas", "SaaS"],
+  ["demo", "Demo"],
+  ["ai", "AI"]
+]

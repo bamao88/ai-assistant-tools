@@ -63,7 +63,35 @@ def segment_to_sentences(words: list[dict], gap_sec: float = 0.5, host: str = "�
     return sents
 
 
+def segment_native(words: list[dict], sentences_raw: list[dict], host: str = "张和") -> list[Sentence]:
+    """用转写返回的**原生语义句**（火山 utterances / 阿里 sentences）建 Sentence 列表。
+    每句的词索引范围 wi/wj 按时间落入句区间推算（供字级去口水/切片）。比按停顿切句更贴语义。"""
+    sents: list[Sentence] = []
+    j = 0
+    for sr in sentences_raw:
+        s0 = sr["begin_time"] / 1000.0
+        s1 = sr["end_time"] / 1000.0
+        while j < len(words) and words[j]["end"] <= s0:     # 跳过句首之前的词
+            j += 1
+        wi = j if j < len(words) else -1
+        wj = -1
+        while j < len(words) and words[j]["start"] < s1:    # 收集落在 [s0,s1) 的词
+            wj = j
+            j += 1
+        if wi == -1 or wj == -1:
+            wi = wj = -1
+        sents.append(Sentence(sid=len(sents), start=s0, end=s1, speaker=host,
+                              text=sr.get("text", ""), is_host=True, wi=wi, wj=wj))
+    return sents
+
+
 def sentences_from_wordfile(path: str | Path, gap_sec: float = 0.5, host: str = "张和"):
-    """便捷：字级词表文件 → (words 归一化列表, Sentence 列表)。字级线端到端入口用。"""
+    """便捷：转写文件 → (words 归一化列表, Sentence 列表)。字级线端到端入口用。
+
+    **优先用转写自带的原生语义句**（words.json 里有 "sentences" 字段）；没有才降级按停顿切句。
+    """
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
     words = load_words(path)
+    if isinstance(data, dict) and data.get("sentences"):
+        return words, segment_native(words, data["sentences"], host=host)
     return words, segment_to_sentences(words, gap_sec=gap_sec, host=host)

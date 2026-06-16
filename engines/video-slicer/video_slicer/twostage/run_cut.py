@@ -29,6 +29,31 @@ def _slug(s: str, n: int = 20) -> str:
     return keep.replace(" ", "_") or "clip"
 
 
+def dump_process_files(out: Path, words_json, words, sents, result) -> None:
+    """把各阶段中间产物落成直观文件，便于人工逐阶段查看。"""
+    d = out / "_过程文件"; d.mkdir(exist_ok=True)
+    (d / "0_字级词表_说明.txt").write_text(
+        f"阶段0 转写产物（本流程的输入）\n字级词表文件：{words_json}\n共 {len(words)} 个字（带毫秒级时间戳）\n", encoding="utf-8")
+    # 1 分句
+    (d / "1_分句.txt").write_text(
+        "\n".join(f"{s.sid}|{s.start:.2f}-{s.end:.2f}|{s.text}" for s in sents) + "\n", encoding="utf-8")
+    # 2 选题（可读）
+    md = ["# 阶段2 选题（stage1 选出的所有选题）", ""]
+    for i, c in enumerate(result["clips"], 1):
+        md += [f"## {i:02d}. {c.get('title','')}",
+               f"- 钩子原话：{c.get('hook_line','')}",
+               f"- 论点：{c.get('one_argument','')}",
+               f"- 受众：{c.get('audience','')} ｜ 流量潜力：{c.get('mainstream','')}",
+               f"- 句号区间（在 1_分句.txt 里的句号）：{c.get('keep_sids','')}",
+               f"- 句级时间段（秒）：{c.get('sentence_time_spans','')}", ""]
+    (d / "2_选题.md").write_text("\n".join(md), encoding="utf-8")
+    # 3 文字片段（去口水前）
+    sd = d / "3_文字片段_去口水前"; sd.mkdir(exist_ok=True)
+    for i, c in enumerate(result["clips"], 1):
+        (sd / f"clip_{i:02d}_{_slug(c.get('title',''))}.txt").write_text(
+            f"# {c.get('title','')}\n（阶段3 文字片段·去口水前·原始拼接）\n\n{c.get('script','')}\n", encoding="utf-8")
+
+
 def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
             providers=None, limit=None, crop=None, snap=False) -> dict:
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)

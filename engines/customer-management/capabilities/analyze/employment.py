@@ -562,15 +562,15 @@ def handle_rerun_not_followed_up(
     """--rerun-not-followed-up 专用：判断是否走 reset 路径（write_policy.reset）。"""
     student_wxid = (student or {}).get("wxid") or wxid
     raw_msgs = msg_data.get("messages") or []
-    norm = normalize_messages(raw_msgs, student_wxid, staff_wxids)
-    followed_up, _ = detect_follow_up_sent(norm)
+    txt = core.text_layer(normalize_messages(raw_msgs, student_wxid, staff_wxids))
+    followed_up, _ = detect_follow_up_sent(txt)
     if followed_up:
         return None, SkipRecord(wxid=wxid, reason="already_followed_up")
     if (last_result or {}).get("transition_outcome") == "未回访":
         return None, SkipRecord(wxid=wxid, reason="already_marked_not_followed_up")
     display_name = msg_data.get("userName") or (student or {}).get("微信昵称") or wxid
     result = build_not_followed_up_result(
-        wxid=wxid, display_name=display_name, msg_count=len(norm),
+        wxid=wxid, display_name=display_name, msg_count=len(txt),
         student=student, prev_outcome=None,
         run_id=run_id, analyzed_at=analyzed_at,
     )

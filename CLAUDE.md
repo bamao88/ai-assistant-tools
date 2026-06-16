@@ -68,7 +68,14 @@ The owner of this repo builds with AI but does **not** read code. Docs under `do
 1. Read pending reports under `feedback/`.
 2. Reproduce against the owning engine/skill.
 3. Patch only the relevant tool + its docs; update `registry.yaml` if structure changes.
-4. Run `scripts/check-tools.py` (and `sync-skills.py` if skill links changed).
-5. Record the outcome in the feedback file.
+4. **Update the skill's architecture doc in the same change** — see "Keep architecture docs current" below. A skill/engine change is not done until its `doc/*-architecture.md` reflects the new structure or behavior.
+5. Run `scripts/check-tools.py` (and `sync-skills.py` if skill links changed).
+6. Record the outcome in the feedback file.
 
 Do not modify unrelated tools or other agents' `CLAUDE.md` files while maintaining this directory.
+
+## Keep architecture docs current
+
+Each skill/engine line has an architecture runbook under `doc/` (e.g. `doc/video-skill-architecture.md`, `doc/customer-management-architecture.md`). **Whenever you change a skill's architecture or functionality, update its architecture doc in the same change — never as a "later" follow-up.** "Done" for any structural or behavioral change includes the doc edit.
+
+What counts as a trigger: adding/removing/renaming a capability, engine, command, or recipe; changing how pieces fit together, the entry commands, per-account customization, write-back/safety policy, or acceptance gates. Pure bug-fixes that don't change structure or behavior don't need a doc edit. If a line has no architecture doc yet and the change is non-trivial, create one under `doc/` and follow the non-developer writing style above. After editing, sanity-check that the doc's file paths, command names, and counts still match reality.

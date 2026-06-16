@@ -1,0 +1,13 @@
+{
+  "_schema": "video-framework-layout/v1",
+  "name": "landscape",
+  "desc": "横版 1280×720（16:9）。视觉=我们的配色/手写字/药丸字幕/圆形人像窗；版式=吸收 videocut-zh 适合横屏的方框骨架。人像窗挪到右下安全区。",
+  "template": "landscape",
+  "canvas": {"w": 1280, "h": 720},
+  "geom": {
+    "circle_d": 220, "circle_x": 1020, "circle_y": 460,
+    "ring_d": 232, "ring_cx": 1130, "ring_cy": 570,
+    "transition": 0.5
+  },
+  "sub": {"FS": 32, "CY": 662, "PAD": 20, "H": 54, "R": 20}
+}

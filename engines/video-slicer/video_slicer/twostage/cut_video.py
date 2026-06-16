@@ -15,7 +15,7 @@ def _ass_t(sec: float) -> str:
 
 
 def cut_clip(video: str | Path, keep_spans: list[list[float]], out_mp4: str | Path,
-             crop: str | None = None, crf: int = 18) -> Path:
+             crop: str | None = None, crf: int = 20, preset: str = "veryfast") -> Path:
     """源视频 + keep_spans → clip.mp4（trim 每段 + concat）。crop 如 'crop=1080:800:0:1120' 裁下半。"""
     keep = [(float(s), float(e)) for s, e in keep_spans if float(e) - float(s) > 0.05]
     if not keep:

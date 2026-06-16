@@ -34,8 +34,9 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import config
 
-# 统一机器核（增量窗口/消息规范化/staff 判定/call_llm/围栏剥离）
+# 统一机器核（增量窗口/消息规范化/staff 判定/call_llm/围栏剥离 + 通用 JSON IO）
 from capabilities.analyze import core
+from capabilities.analyze.core import load_json, save_json
 from capabilities.analyze.cards import load_card
 
 PROJECT_ROOT = config.PROJECT_ROOT

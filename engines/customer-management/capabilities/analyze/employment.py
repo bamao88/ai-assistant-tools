@@ -430,26 +430,29 @@ def analyze_one(
     """单人分析。返回 (result, error_msg)。dry_run 时不调 LLM，返回 None + "dry_run"。"""
     student_wxid = (student or {}).get("wxid") or wxid
     raw_msgs = msg_data.get("messages") or []
-    norm = normalize_messages(raw_msgs, student_wxid, staff_wxids)
+    norm = normalize_messages(raw_msgs, student_wxid, staff_wxids)  # 无损分层
+    txt = core.text_layer(norm)  # L0 文字层：判断/transcript 仍只看文字（保留旧行为）
     display_name = msg_data.get("userName") or (student or {}).get("微信昵称") or wxid
 
     # 先过滤门：未发过回访开场白 → 不调 LLM，直接 stub
-    followed_up, follow_up_date = detect_follow_up_sent(norm)
+    followed_up, follow_up_date = detect_follow_up_sent(txt)
     if not followed_up:
         prev_outcome = (last_result or {}).get("transition_outcome")
         if dry_run:
-            logger.log("INFO", "DRY_PLAN_NOT_FOLLOWED_UP", wxid=wxid, msg_count=len(norm))
+            logger.log("INFO", "DRY_PLAN_NOT_FOLLOWED_UP", wxid=wxid, msg_count=len(txt))
             return None, "dry_run"
         result = build_not_followed_up_result(
-            wxid=wxid, display_name=display_name, msg_count=len(norm),
+            wxid=wxid, display_name=display_name, msg_count=len(txt),
             student=student, prev_outcome=prev_outcome,
             run_id=run_id, analyzed_at=analyzed_at,
         )
-        logger.log("INFO", "NOT_FOLLOWED_UP", wxid=wxid, msg_count=len(norm),
+        logger.log("INFO", "NOT_FOLLOWED_UP", wxid=wxid, msg_count=len(txt),
                    prev_outcome=prev_outcome or "(none)")
         return result, ""
 
-    transcript, truncated, ev_count = build_transcript(norm)
+    transcript, truncated, ev_count = build_transcript(txt)
+    # 自描述信息地图：让 LLM 知道还有图片/语音/系统事件等可调取（默认只喂了文字）
+    transcript = core.build_info_map(norm) + "\n\n---\n\n" + transcript
 
     if dry_run:
         logger.log("INFO", "DRY_PLAN", wxid=wxid, msg_count=len(norm),

@@ -151,6 +151,54 @@ def is_staff_sender(msg: dict, student_wxid: str, staff_wxids: set[str]) -> bool
     return any(k in sname for k in STAFF_NAME_KEYWORDS)
 
 
+# --- 消息分层/分类（无损：一条都不删，按层标注）-----------------------------
+# 设计真源见 doc/plan/customer-management-media-visibility-plan.md（无损分层 + 信息地图）。
+# 没有"垃圾"，只有"当前用不上的层"：取舍发生在消费端（喂哪一层 + 信息地图），不在入库端。
+#   L0 = text   默认喂 LLM 初判（旧 analyze 行为）
+#   L1 = 媒体/链接/系统事件  默认只在 info_map 里"列出存在"，不灌正文
+#   L2 = 重解析（图片内容/语音转录）  按需取（图片走现成读图；语音不提供工具，AI 自行处理）
+
+# 加好友 / 入群等系统事件（有业务价值，单列；"你已添加了X"≈加好友日期）
+_FRIEND_EVENT_PAT = ("你已添加了", "通过了你的朋友验证", "现在我们可以开始聊天", "现在可以开始聊天")
+_GROUP_EVENT_PAT = ("邀请你加入群聊", "加入了群聊", "你邀请")
+
+
+def classify_message(msg: dict, decoded_content: str) -> tuple[str, str, str | None]:
+    """无损分类：所有消息都给出 (kind, layer, handle)，由消费端按 layer 决定默认看不看。
+
+    kind: text / image / voice / video / link / system_event / sticker / control / system
+    layer: L0(默认看) / L1(元信息,默认只在地图列出) / L2 内容(按需,这里不在入库阶段解析)
+    handle: 图片等可定位句柄（供按需读图），无则 None。
+    """
+    c = decoded_content or ""
+    msg_type = str(msg.get("type", "1"))
+    # 系统事件（加好友/入群）——优先于通用系统提示，因为它有业务价值
+    if any(p in c for p in _FRIEND_EVENT_PAT) or any(p in c for p in _GROUP_EVENT_PAT):
+        return "system_event", "L1", None
+    # 图片：保留 [图片 后的引用串作为 handle（供 L2 按需读图）
+    if c.startswith("[图片") or msg_type == "3":
+        h = c[len("[图片"):].strip(" ]").strip() or None
+        return "image", "L1", h
+    if c.startswith("[语音]") or msg_type == "34":
+        return "voice", "L1", None
+    if c.startswith("[视频]") or msg_type == "43":
+        return "video", "L1", None
+    if c.startswith("[表情"):
+        return "sticker", "L1", None
+    if "拍了拍" in c:
+        return "system", "L1", None
+    if c.startswith("[链接]") or c.startswith("[文件]") or c.startswith("[名片]"):
+        return "link", "L1", None
+    # zstd/二进制控制载荷（hex 解不出文本，纯 hex 残留）→ 最低层，不喂正文但不丢
+    if re.match(r"^[0-9a-fA-F]{20,}$", c):
+        return "control", "L1", None
+    # 纯系统提示（打招呼汇总等）
+    if msg_type == "10000":
+        return "system", "L1", None
+    # 其余皆为文字（含引用回复等被旧逻辑误删的真文本）
+    return "text", "L0", None
+
+
 def normalize_messages(
     raw: list[dict],
     student_wxid: str,
@@ -160,34 +208,28 @@ def normalize_messages(
     max_chars_per_msg: int | None = None,
     media_placeholder_max_len: int | None = None,
 ) -> list[dict]:
-    """过滤系统消息/媒体占位、hex 解码、按 createTime 升序、识别是否 staff。
+    """无损规范化：保留每条消息（不再按 type 丢弃、不再删媒体占位），按 layer 分层标注。
 
-    统一两套旧实现：
     - `min_ts`：硬截断老消息（llm_enrich 的 since 下限）；0 = 不限。
-    - `max_chars_per_msg`：单条截断（llm_enrich 用 800；None = 不截）。
-    - `media_placeholder_max_len`：`[...]` 媒体占位的剔除阈值。
-      None → 任意 `[...]` 都剔（llm_enrich 行为）；
-      int  → 仅 `[...]` 且长度 < 阈值时剔（analyze 行为，保留长内容）。
+    - `max_chars_per_msg`：单条截断（仅作用于 L0 文字；None = 不截）。
+    - `media_placeholder_max_len`：**已退役**（旧"媒体占位剔除"阈值）。保留入参仅为兼容旧调用，
+      其值被忽略——媒体不再删除，改由 layer 标注 + 消费端 text_layer/info_map 取舍。
 
-    返回每条：{createTime, ts_str, is_staff, sender_name, content}。
+    返回每条：{createTime, ts_str, is_staff, sender_name, content, kind, layer, handle}。
     """
     out: list[dict] = []
     for m in raw or []:
         ts = m.get("createTime", 0)
         if not isinstance(ts, (int, float)) or ts <= 0 or ts <= min_ts:
             continue
-        msg_type = str(m.get("type", "1"))
-        if msg_type != "1":  # 只保留文本
-            continue
         content = m.get("content", "")
         if not content or not isinstance(content, str) or not content.strip():
             continue
-        # 媒体占位剔除
-        if content.startswith("[") and content.endswith("]"):
-            if media_placeholder_max_len is None or len(content) < media_placeholder_max_len:
-                continue
         content = try_decode_hex(content).strip()
-        if max_chars_per_msg is not None and len(content) > max_chars_per_msg:
+        if not content:
+            continue
+        kind, layer, handle = classify_message(m, content)
+        if layer == "L0" and max_chars_per_msg is not None and len(content) > max_chars_per_msg:
             content = content[:max_chars_per_msg] + "...[截断]"
         out.append({
             "createTime": int(ts),
@@ -195,9 +237,77 @@ def normalize_messages(
             "is_staff": is_staff_sender(m, student_wxid, staff_wxids),
             "sender_name": m.get("senderName", "") or "",
             "content": content,
+            "kind": kind,
+            "layer": layer,
+            "handle": handle,
         })
     out.sort(key=lambda x: x["createTime"])
     return out
+
+
+def text_layer(normalized: list[dict]) -> list[dict]:
+    """默认喂 LLM 的 L0 文字层（保留旧 analyze 行为：只读文字做初判）。"""
+    return [m for m in normalized if m.get("layer") == "L0"]
+
+
+# kind → (中文名, 用途/取法提示)。决定 info_map 怎么向 AI 描述每一层。
+_KIND_DESC = {
+    "image": ("图片", "内容未读；要看用读图工具按 handle 取（已有解密+视觉能力）"),
+    "voice": ("语音", "本系统不提供转录，需要时请自行处理"),
+    "video": ("视频", "未解析；需要时自行处理"),
+    "link": ("链接/文件/名片", "标签已在对话中"),
+    "system_event": ("系统事件", "加好友/入群等，含可派生的加好友日期"),
+    "sticker": ("表情", "通常无判断价值"),
+    "control": ("控制消息", "二进制/不可读，已忽略正文"),
+    "system": ("系统提示", "打招呼等"),
+}
+
+
+def friend_add_date(normalized: list[dict]) -> str | None:
+    """从系统事件（你已添加了X / 通过好友验证）派生加好友日期；回退最早一条消息日期。
+
+    返回 'YYYY-MM-DD' 或 None。确定性派生，无需 LLM（recognize 能力复用本函数）。
+    """
+    import datetime as _dt
+    for m in normalized:
+        if m.get("kind") == "system_event" and any(p in m.get("content", "") for p in _FRIEND_EVENT_PAT):
+            ts = m.get("createTime")
+            if ts:
+                return _dt.datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
+    if normalized:
+        ts = normalized[0].get("createTime")
+        if ts:
+            return _dt.datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
+    return None
+
+
+def build_info_map(normalized: list[dict]) -> str:
+    """自描述信息地图：告诉 AI ①有哪些信息 ②现在看的是哪部分 ③其他能做什么用、怎么取。
+
+    这是"无损分层"对外的灵魂：默认只把 L0 文字喂给 LLM，但用这张地图让它知道全貌，
+    卡住时能自主回头挖（图片读图、其余自行处理）。
+    """
+    from collections import Counter
+    if not normalized:
+        return "【本段对话信息清单】无可用消息"
+    kinds = Counter(m.get("kind") for m in normalized)
+    n_text = kinds.get("text", 0)
+    total = len(normalized)
+    lines = [f"【本段对话信息清单】共 {total} 条消息"]
+    lines.append(f"  · 文字 {n_text} 条        ← 你现在看的就是这部分（L0）")
+    for kind, n in kinds.most_common():
+        if kind == "text" or n == 0:
+            continue
+        zh, use = _KIND_DESC.get(kind, (kind, ""))
+        extra = ""
+        if kind == "system_event":
+            d = friend_add_date(normalized)
+            if d:
+                extra = f"；加好友日期：{d}"
+        lines.append(f"  · {zh} {n} 条        ← {use}{extra}")
+    lines.append(f"【你当前看到的】L0 文字层（共 {n_text} 条文字）")
+    lines.append("【卡住时】图片可读图取证；语音/其它无工具，自行处理；其余 L1 仅在上方清单列出")
+    return "\n".join(lines)
 
 
 # --- 增量窗口（analyze 调用契约的单一来源，§2 横切）------------------------

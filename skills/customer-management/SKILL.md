@@ -77,6 +77,27 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/customer-management && python3
 
 各命令具体 flag 见 `<命令> --help`。
 
+## 读聊天 / 找人（ad-hoc 私聊检索，先读这节再动手）
+
+要回答「谁私聊我领回放」「谁要退差价」这类问题,**先用下面两个只读 / 0-LLM 命令,别直接啃 raw `messages_user_*.json`**(直接读会撞上压缩 hex、误判"加密"):
+
+```bash
+cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines
+# 跨全部人找候选 + 解码片段（两个示例 query 就是这种跨人检索）
+python3 -m customer-management search-chat --any 退差价 差价 退款 --side from-them --layer all
+# 读某一个人解码+分层的聊天 + 信息地图
+python3 -m customer-management read-chat --wxid <wxid> --layer all
+```
+
+**数据现实(避免重蹈覆辙):**
+- `content` 默认是**明文**(约 9 成),直接可读。
+- `28b52ffd…` 开头的 hex 是 **zstd 压缩,不是加密、不是垃圾**——绝大多数是真人对话(群发课程/回放链接、学员反馈)。`core.normalize_messages` 已自动解压;搜索/阅读用 `--layer all` 才包含它们。只有解压出 `<…>` XML 的才是系统消息可忽略。
+- **`isSelf` 永远是 0,不可信**;判断谁发的靠 staff 名单(`core.is_staff_sender` 已实现,命令里已用)。
+- **图片按需解**:`python3 -m customer-management read-chat --wxid X` 的信息地图会列出有几张图;要看图内容跑 `python3 -m capabilities.acquire.resolve_images --wxid X`(本机解密)。
+- **默认账号 = 八毛/小助理**(`wxid_vre3jz2a7vwb22`);raw 数据湖与图片容器都来自这个采集号。
+
+细节与两个示例 query 的端到端见 `references/ad-hoc-chat-read.md`。
+
 ## 🚨 红线（操作前必读）
 
 1. **gather / health-check 默认只读**：飞书读本地镜像（`customer_management_mirror.json`），

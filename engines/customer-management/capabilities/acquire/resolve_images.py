@@ -78,7 +78,7 @@ def resolve_person_images(
         except Exception:
             counts["err"] = counts.get("err", 0) + 1
             continue
-        if ext in ("jpg", "png", "gif", "bmp"):
+        if ext in ("jpg", "png", "gif", "bmp") and data:
             p = out / (os.path.basename(f).replace(".dat", "") + "." + ext)
             p.write_bytes(data)
             result["images"].append(str(p))

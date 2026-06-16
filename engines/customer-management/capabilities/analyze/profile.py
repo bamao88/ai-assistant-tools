@@ -102,21 +102,7 @@ MAX_CHARS_PER_MSG = 800
 DEFAULT_SINCE = "2026-04-01"
 
 
-# --- I/O 工具 -----------------------------------------------------------
-
-def load_json(path: Path, default: Any) -> Any:
-    if not path.exists():
-        return default
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return default
-
-
-def save_json(path: Path, data: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-
+# --- I/O 工具（load_json/save_json 已收口到 core，见 import）----------------
 
 def append_log(text: str) -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)

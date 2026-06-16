@@ -35,7 +35,7 @@
     }
   },
   "profiles": {
-    "zh_main": "张和：锁定几何 GEOM/SUB/ACCEL + PAGE_CSS 为 render.py 内置默认(§3.1)；账号 fixes.json 在 profiles/zh_main/；阶段5 进一步把视觉常量外置为 profile 文件。"
+    "zh_main": "张和：账号 ASR 术语纠错 fixes.json 在 profiles/zh_main/。视觉几何(CANVAS/GEOM/SUB)已外置到 layouts/<vertical|landscape>.json（videocut-zh 集成 WS-3）；PAGE_CSS 版式在 render.py 按 template 选（vertical 框架页 / landscape 方框）。"
   },
   "note": "原子物理分布说明见迁移计划 §3.1；catalog 汇总到 video-compose（阶段5b）。"
 }

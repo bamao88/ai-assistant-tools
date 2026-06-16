@@ -9,6 +9,7 @@
         "cut_word"
       ],
       "also_provides": [
+        "transcribe",
         "pages_gen",
         "srt_fix"
       ]
@@ -58,7 +59,7 @@
       "engine": "video-framework-render",
       "kind": "改造",
       "tier": null,
-      "desc": "口播 clip + pages spec → 手写框架图翻页 + 人像圆形PIP + 纠错字幕 + 自适应变速 竖版成片(720x1280)。当前 zh_business 主路径。"
+      "desc": "口播 clip + pages spec → 手写框架页翻页 + 人像圆形PIP + 纠错字幕 + 自适应变速成片。同一份 pages 可出竖版(720×1280 框架页)或横版(1280×720 方框版式)，视觉 DNA 同源（配色/手写字/药丸字幕/圆窗）。"
     },
     "compose": {
       "engine": "video-framework-render",

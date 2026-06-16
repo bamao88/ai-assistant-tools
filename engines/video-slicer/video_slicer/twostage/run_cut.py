@@ -35,8 +35,14 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
     words, sents = segment.sentences_from_wordfile(words_json, host=host)
     print(f"[adapt] 转录 → {len(words)} 字 / {len(sents)} 句", file=sys.stderr)
 
-    result = pipeline.run_from_sentences(sents, persona=persona, host=host,
-                                         providers=providers, limit=limit, source=str(words_json))
+    sel_path = out / "_selection.json"                  # 选题缓存：复用则可断点续切（避免重跑 stage1/2、避免选题漂移）
+    if sel_path.exists():
+        result = json.loads(sel_path.read_text(encoding="utf-8"))
+        print(f"[resume] 复用已存选题 {len(result['clips'])} 条", file=sys.stderr)
+    else:
+        result = pipeline.run_from_sentences(sents, persona=persona, host=host,
+                                             providers=providers, limit=limit, source=str(words_json))
+        sel_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     clips_out = []
     for i, clip in enumerate(result["clips"], 1):
         title = clip.get("title", f"clip{i}")

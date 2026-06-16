@@ -67,27 +67,38 @@ def clean_script(
 # ====== 字级去口水（返回删词区间 → keep 时间区间，给切片用）======
 
 CLEAN_KEEP_TASK = """\
-【你的任务 · 字级去口水（输出删后纯文本）】
+【你的任务 · 字级去口水（只输出删后的纯文本）】
 下面是【主讲人张和】一条切片的逐字稿。按上面的规则删掉【机械口水】：多余语气词、连续语气词、卡顿重复词（那个那个/真的真的真的）、句间/句内重复、残句。
 🚨**承接句保护**：四类高危承接句（段间设问引子 / 对比转折 / 解释上文概念 / 数据结论前的主语铺垫）**不许删**，最多只删其中的语气词。**删前保后**，**拿不准就不删**（宁可多留，不要剪秃）。
 
 ⚠️**硬性约束（为了能精确对齐时间轴）**：
-- 只**删字**，**不许改字 / 纠错 / 调换顺序 / 补字**——保留下来的字必须和原文**一字不差**（ASR 错字也照原样留着，纠错是另一步的事）。
-- "kept_text" 就是把口水字删掉后、剩下的字**原样拼接**（可不带标点）。
+- 只**删字**，**不许改字 / 纠错 / 调换顺序 / 补字**——保留下来的字必须和原文**一字不差**（ASR 错字也照原样留着）。
 
-【输出严格 JSON，无 markdown】
-{
-  "kept_text": "<删口水后剩下的字，原样拼接、一字不差>",
-  "removed": ["<删了啥的简述，如 '卡顿:真的真的真的→真的'>"],
-  "protected": ["<识别为承接句、特意保留的句子>"]
-}
-只输出这个 JSON 对象。"""
+【输出】只输出**删口水后剩下的字**（原样拼接成一段，可加自然标点）。
+**不要 JSON、不要解释、不要任何前后缀**，直接给删后的文本。"""
 
 # 对齐用：抹掉标点/空白，只留可比对的字
 import re as _re
 
 def _bare(s: str) -> str:
     return _re.sub(r"[\s，。！？、；：…—·“”‘’（）()\"']", "", s or "")
+
+
+def _diff_removed(seg_words: list[dict], kept_words: list[dict]) -> list[str]:
+    """从保留集反推被删的字，按连续段汇总成简述。"""
+    kept_ids = {id(w) for w in kept_words}
+    out: list[str] = []
+    run: list[str] = []
+    for w in seg_words:
+        if id(w) in kept_ids:
+            if run:
+                out.append("".join(run))
+                run = []
+        else:
+            run.append(w["text"])
+    if run:
+        out.append("".join(run))
+    return [r for r in out if _bare(r)]
 
 
 def _merge_keep(kept: list[dict], pad_s: float, pad_e: float, gap_max: float) -> list[list[float]]:

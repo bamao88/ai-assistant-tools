@@ -29,12 +29,10 @@ def _slug(s: str, n: int = 20) -> str:
 
 
 def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
-            providers=None, limit=None, crop=None, snap=True) -> dict:
+            providers=None, limit=None, crop=None, snap=False) -> dict:
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     words, sents = segment.sentences_from_wordfile(words_json, host=host)
     print(f"[adapt] 转录 → {len(words)} 字 / {len(sents)} 句", file=sys.stderr)
-    word_list = [{"text": w["text"], "begin_time": int(w["start"] * 1000), "end_time": int(w["end"] * 1000)}
-                 for w in words]  # resolve.load 用 ms schema
 
     result = pipeline.run_from_sentences(sents, persona=persona, host=host,
                                          providers=providers, limit=limit, source=str(words_json))

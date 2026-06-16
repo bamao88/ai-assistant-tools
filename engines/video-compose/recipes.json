@@ -11,6 +11,16 @@
       "delegate": "assistant_zh/workflow/video_framework_slicer/run_pipeline.py (已薄化：--profile + --out-root)",
       "note": "§3.4：当前业务流 = 这条 recipe。渲染核心已拆原子入 video-framework-render（framework_reframe）；端到端 atom 级编排待 G4 逐帧回归（BLOCKED_NEEDS_LOCAL_VALIDATION）就绪后由 run.py 接管，过渡期委派已装配好的 run_pipeline。"
     },
+    "landscape_business": {
+      "label": "张和业务流·横屏方框版式口播切片（视觉=我们的，版式=横屏方框）",
+      "kind": "delegate",
+      "steps": ["cut_sentence", "srt_fix(=subtitle_ai_fix)", "pages_gen", "framework_reframe(layout=landscape)"],
+      "post_optional": ["name_mask", "endcard"],
+      "profile": "zh_main",
+      "layout": "landscape",
+      "delegate": "assistant_zh/workflow/video_framework_slicer/run_pipeline.py --layout landscape",
+      "note": "videocut-zh 集成 WS-4/5：与 zh_business 同前段（选片/去口水/pages），只把 framework_reframe 渲成 1280×720 方框版式（视觉 DNA 同源）。同一份 pages 既出竖版(zh_business)又出横版。字级线(火山转写→twostage)接通后可换 cut_word 前段；当前共用句级选段流。"
+    },
     "raw_quickcut": {
       "label": "极简型·词级快剪 + 烧字幕（不框架页化）",
       "kind": "chain",

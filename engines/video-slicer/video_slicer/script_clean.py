@@ -64,6 +64,88 @@ def clean_script(
     return data
 
 
+# ====== 字级去口水（返回删词区间 → keep 时间区间，给切片用）======
+
+CLEAN_KEEP_TASK = """\
+【你的任务 · 字级去口水（返回要删的字编号区间）】
+下面是【主讲人张和】一条切片的逐字稿，每个字带编号：`#编号 字`。
+按上面的规则，标出要删的【机械口水】字：多余语气词、连续语气词、卡顿重复词（那个那个/真的真的真的）、句间/句内重复、残句。
+🚨**承接句保护**：四类高危承接句（段间设问引子 / 对比转折 / 解释上文概念 / 数据结论前的主语铺垫）**不许删**，最多只删其中的语气词。
+**删前保后**：重复/残句删前面那次。**拿不准就不删**（宁可多留，不要剪秃）。
+
+【输出严格 JSON，无 markdown】
+{
+  "delete": [[起编号, 止编号], ...],   // 每个闭区间=要删掉的一段连续口水字（含两端）；单字口水写 [n,n]
+  "removed": ["<简述，如 '卡顿 #12-#15 真的真的真的'>"],
+  "protected": ["<识别为承接句、特意保留的句子>"]
+}
+只删口水，不删正常内容。只输出这个 JSON 对象。"""
+
+
+def _merge_keep(kept: list[dict], pad_s: float, pad_e: float, gap_max: float) -> list[list[float]]:
+    """保留字（按时间序）→ 合并成 keep 时间区间（字间停顿>gap_max 断开，两端加 PAD）。搬 cut_build ivs。"""
+    ivs: list[list[float]] = []
+    for w in kept:
+        if ivs and w["start"] - ivs[-1][1] <= gap_max:
+            ivs[-1][1] = w["end"]
+        else:
+            ivs.append([w["start"], w["end"]])
+    return [[round(a - pad_s, 3), round(b + pad_e, 3)] for a, b in ivs]
+
+
+def clean_to_keep(
+    seg_words: list[dict],
+    hint: str | None = None,
+    profile: str = "zh_main",
+    providers: list[str] | None = None,
+    pad_s: float = 0.06,
+    pad_e: float = 0.12,
+    gap_max: float = 0.6,
+    temperature: float = 0.2,
+) -> dict:
+    """选段字级词表 → 去口水后的 keep 时间区间。
+
+    seg_words: [{text,start,end}]（秒，选段的逐字）。LLM 返回要删的字编号区间，
+    代码删之 → 保留字 → 合并成 keep 时间区间（可直接喂 ffmpeg 切片）。
+    返回 {keep_spans, kept_words, kept_text, removed, protected, deleted_idx}。
+    """
+    load_env_file(_discover_env_file())
+    rules = _load_rules()
+    system = (rules + "\n\n" + CLEAN_KEEP_TASK) if rules else CLEAN_KEEP_TASK
+    numbered = "".join(f"#{i} {w['text']}" for i, w in enumerate(seg_words))
+    brief = (f"切片主旨（hint）：{hint}\n\n" if hint else "") + f"【逐字稿】\n{numbered}"
+    client = OpenAICompatibleClient(providers=providers)
+    data = client.chat_json(
+        [{"role": "system", "content": system}, {"role": "user", "content": brief}],
+        temperature=temperature,
+    )
+
+    n = len(seg_words)
+    drop: set[int] = set()
+    for rng in data.get("delete", []):                  # 校验：丢非法/越界区间（LLM 数错的保底）
+        if not isinstance(rng, list) or len(rng) < 2:
+            continue
+        a, b = int(rng[0]), int(rng[-1])
+        if a > b:
+            a, b = b, a
+        a, b = max(a, 0), min(b, n - 1)
+        if a <= b:
+            drop.update(range(a, b + 1))
+    kept = [w for i, w in enumerate(seg_words) if i not in drop]
+    if not kept:                                        # 全删=异常，回退不删（只删整段不删字内的保底）
+        kept = list(seg_words)
+        drop = set()
+
+    return {
+        "keep_spans": _merge_keep(kept, pad_s, pad_e, gap_max),
+        "kept_words": kept,
+        "kept_text": "".join(w["text"] for w in kept),
+        "removed": data.get("removed", []),
+        "protected": data.get("protected", []),
+        "deleted_idx": sorted(drop),
+    }
+
+
 def main() -> int:
     import argparse
     import json

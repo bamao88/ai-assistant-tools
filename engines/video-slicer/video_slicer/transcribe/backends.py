@@ -172,7 +172,12 @@ def transcribe_aliyun(url: str, *, model: str = "paraformer-v2", langs: tuple[st
         raise BackendError("阿里结果无 transcripts")
     t0 = transcripts[0]
     words: list[dict] = []
+    sentences: list[dict] = []
     for sent in t0.get("sentences", []):
+        sb, se = sent.get("begin_time"), sent.get("end_time")
+        stext = (sent.get("text") or "").strip()             # 句子文本（paraformer 句级，含标点）
+        if stext and sb is not None and se is not None:
+            sentences.append({"text": stext, "begin_time": int(sb), "end_time": int(se)})
         for w in sent.get("words", []):
             b, e = w.get("begin_time"), w.get("end_time")
             txt = (w.get("text") or "").strip()
@@ -182,8 +187,9 @@ def transcribe_aliyun(url: str, *, model: str = "paraformer-v2", langs: tuple[st
     if not words:
         raise BackendError("阿里结果无字级词")
     full_text = t0.get("text") or "".join(w["text"] for w in words)
-    _log(f"[aliyun] 完成：{len(words)} 字")
-    return {"model": model, "source_url": url, "full_text": full_text, "words": words}
+    _log(f"[aliyun] 完成：{len(words)} 字 / {len(sentences)} 句(原生语义)")
+    return {"model": model, "source_url": url, "full_text": full_text,
+            "words": words, "sentences": sentences}
 
 
 def resolve_backend(name: str):

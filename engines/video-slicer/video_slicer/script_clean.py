@@ -69,18 +69,18 @@ def clean_script(
 import re as _re
 
 CLEAN_KEEP_TASK = """\
-【你的任务 · 字级去口水（返回要删的字编号区间）】
-下面是【主讲人张和】一小段逐字稿，每个字带编号：`#编号 字`。
-标出要删的【机械口水】字：多余语气词（嗯/啊/呃，保留适量"嗯"过渡）、连续语气词、卡顿重复词（那个那个/真的真的真的→只留一个）、句间/句内重复（删前留后）、残句。
-🚨**承接句保护**：表转折/设问引子/铺垫主语/解释概念的句子**不许删**，最多删其中语气词。**拿不准就不删**（宁可多留，不要剪秃）。
+【你的任务 · 字级去口水（只输出删后的纯文本）】
+下面是【主讲人张和】一条切片的逐字稿。**整体通读后**，删掉【机械口水】：多余语气词（嗯/啊/呃，保留适量"嗯"过渡）、连续语气词、卡顿重复词（那个那个/真的真的真的→只留一次）、句间/句内重复（删前留后）、残句。
+🚨**承接句保护**：表转折 / 设问引子 / 铺垫主语 / 解释概念的句子**不许删**，最多删其中语气词。
+⚠️**只删口水，绝不删有信息量的正常内容**（如"完全干不过""真实企业"这种是观点/铺垫，不是口水）。**删前保后**，**拿不准就不删**（宁可多留，不要剪秃）。
 
-【输出严格 JSON，无 markdown】
-{"delete": [[起编号, 止编号], ...]}
-每个闭区间=要删掉的一段连续口水字（含两端）；单字口水写 [n,n]；没有要删的就给 {"delete": []}。
-只删口水、不删正常内容。只输出这个 JSON 对象。"""
+⚠️**硬性约束（要对齐时间轴）**：只**删字**，**不许改字 / 纠错 / 调序 / 补字**——保留的字必须和原文**一字不差**（ASR 错字如"低发""爱马仕"也照原样留着）。
+
+【输出】只输出**删口水后剩下的字**（原样拼接，可加自然标点）。不要 JSON、不要解释、不要任何前后缀。"""
 
 
 def _bare(s: str) -> str:
+    # 抹掉标点/空白 + 统一小写：对齐只看"是哪个字"，不受 LLM 擅自改大小写/加空格影响
     return _re.sub(r"[\s，。！？、；：…—·“”‘’（）()\"']", "", (s or "")).lower()
 
 
@@ -95,46 +95,37 @@ def _merge_keep(kept: list[dict], pad_s: float, pad_e: float, gap_max: float) ->
     return [[round(a - pad_s, 3), round(b + pad_e, 3)] for a, b in ivs]
 
 
-def _chunk_words(seg_words: list[dict], max_chars: int) -> list[tuple[int, list[dict]]]:
-    """把选段切成 ~max_chars 字的小块（优先在字间停顿处断），返回 [(全局起始idx, 块词表)]。"""
-    chunks: list[tuple[int, list[dict]]] = []
-    start = 0
-    cur = 0
-    for i in range(1, len(seg_words) + 1):
-        cur += len(seg_words[i - 1]["text"])
-        at_pause = i < len(seg_words) and seg_words[i]["start"] - seg_words[i - 1]["end"] >= 0.3
-        if i == len(seg_words) or (cur >= max_chars and at_pause) or cur >= max_chars * 1.6:
-            chunks.append((start, seg_words[start:i]))
-            start = i
-            cur = 0
-    return chunks
-
-
-def _dehesitate_chunk(chunk_words: list[dict], hint: str | None, client, temperature: float) -> set[int]:
-    """一小块 → LLM 返回删词区间 → 块内要删的字索引集合（校验越界/非法）。"""
-    numbered = "".join(f"#{i} {w['text']}" for i, w in enumerate(chunk_words))
-    rules = _load_rules()
-    system = (rules + "\n\n" + CLEAN_KEEP_TASK) if rules else CLEAN_KEEP_TASK
-    brief = (f"主旨：{hint}\n\n" if hint else "") + f"【逐字稿】\n{numbered}"
-    try:
-        data = client.chat_json(
-            [{"role": "system", "content": system}, {"role": "user", "content": brief}],
-            temperature=temperature,
-        )
-    except Exception:  # noqa: BLE001  本块解析失败 → 该块不删（保底）
-        return set()
-    n = len(chunk_words)
-    drop: set[int] = set()
-    for rng in data.get("delete", []):
-        if not isinstance(rng, list) or len(rng) < 1:
+def _align_kept(seg_words: list[dict], cleaned: str) -> list[dict]:
+    """把"删后纯文本"贪心对齐回原字 → 保留的字（含时间）。删后文本是原字的子序列（忽略大小写/标点）。"""
+    cl = _bare(cleaned)
+    ci = 0
+    kept: list[dict] = []
+    for w in seg_words:
+        t = _bare(w["text"])
+        if not t:                       # 纯标点/空 token：跟随保留
+            kept.append(w)
             continue
-        a = int(rng[0]); b = int(rng[-1])
-        if a > b:
-            a, b = b, a
-        a, b = max(a, 0), min(b, n - 1)
-        if a <= b and (b - a) < n:          # 不允许一次删光整块（防误删）
-            drop.update(range(a, b + 1))
-    return drop
+        if cl[ci:ci + len(t)] == t:     # 与删后文本下一段吻合 → 保留这个字
+            kept.append(w)
+            ci += len(t)
+        # 否则该字被删，跳过（不前移 ci）
+    return kept
+
+
+def _diff_removed(seg_words: list[dict], kept_words: list[dict]) -> list[str]:
+    """从保留集反推被删的字，按连续段汇总成简述。"""
+    kept_ids = {id(w) for w in kept_words}
+    out: list[str] = []
+    run: list[str] = []
+    for w in seg_words:
+        if id(w) in kept_ids:
+            if run:
+                out.append("".join(run)); run = []
+        else:
+            run.append(w["text"])
+    if run:
+        out.append("".join(run))
+    return [r for r in out if _bare(r)]
 
 
 def clean_to_keep(
@@ -145,40 +136,36 @@ def clean_to_keep(
     pad_s: float = 0.06,
     pad_e: float = 0.12,
     gap_max: float = 0.6,
-    max_chars: int = 90,
     temperature: float = 0.2,
 ) -> dict:
     """选段字级词表 → 去口水后的 keep 时间区间。
 
-    分块（~max_chars 字）逐块走索引法去口水（小块 → JSON 短、删得准），聚合删词索引 →
-    保留字 → 合并成 keep 时间区间（直接喂 ffmpeg 切片）。
-    返回 {keep_spans, kept_words, kept_text, removed, deleted_idx}。
+    整段单次通读去口水（上下文完整、不误删核心内容），LLM 输出"只删不改"的纯文本，
+    代码忽略大小写对齐回原字 → 保留字 → 合并成 keep 时间区间（直接喂 ffmpeg 切片）。
+    返回 {keep_spans, kept_words, kept_text, removed}。
     """
-    from concurrent.futures import ThreadPoolExecutor
-
     load_env_file(_discover_env_file())
+    rules = _load_rules()
+    system = (rules + "\n\n" + CLEAN_KEEP_TASK) if rules else CLEAN_KEEP_TASK
+    raw_text = "".join(w["text"] for w in seg_words)
+    brief = (f"切片主旨（hint）：{hint}\n\n" if hint else "") + f"【逐字稿】\n{raw_text}"
     client = OpenAICompatibleClient(providers=providers)
-    chunks = _chunk_words(seg_words, max_chars)
-    with ThreadPoolExecutor(max_workers=min(6, len(chunks)) or 1) as ex:   # 分块并行：N块≈1次延迟
-        locals_ = list(ex.map(lambda c: _dehesitate_chunk(c[1], hint, client, temperature), chunks))
-    drop: set[int] = set()
-    removed: list[str] = []
-    for (offset, chunk), local in zip(chunks, locals_):
-        for i in sorted(local):
-            removed.append(chunk[i]["text"])
-        drop.update(offset + i for i in local)
+    cleaned = client.chat(                              # 纯文本输出，绕开 JSON 脆弱性
+        [{"role": "system", "content": system}, {"role": "user", "content": brief}],
+        temperature=temperature,
+    )
+    cleaned = _re.sub(r"^```[a-z]*\s*|\s*```$", "", (cleaned or "").strip())
 
-    kept = [w for i, w in enumerate(seg_words) if i not in drop]
-    if not kept:                                        # 异常全删 → 回退不删
+    kept = _align_kept(seg_words, cleaned)
+    # 保底：对齐保留 < 50% 删后文本字数（LLM 改字/漂移/没好好删）→ 回退不删、整段切
+    if not kept or len(_bare("".join(w["text"] for w in kept))) < 0.5 * len(_bare(cleaned)):
         kept = list(seg_words)
-        drop = set()
 
     return {
         "keep_spans": _merge_keep(kept, pad_s, pad_e, gap_max),
         "kept_words": kept,
         "kept_text": "".join(w["text"] for w in kept),
-        "removed": removed,
-        "deleted_idx": sorted(drop),
+        "removed": _diff_removed(seg_words, kept),
     }
 
 

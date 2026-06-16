@@ -180,22 +180,24 @@ def _chunk(text, MAX=13.0):
         else: merged.append(p)
     return merged or [text]
 
-def make_subtitles(srt: Path, out: Path, profile="zh_main"):
-    FS,CY,PAD,H,R=SUB["FS"],SUB["CY"],SUB["PAD"],SUB["H"],SUB["R"]
+def make_subtitles(srt: Path, out: Path, profile="zh_main", L: dict|None=None):
+    L=L or load_layout()
+    S=L["sub"]; FS,CY,PAD,H,R=S["FS"],S["CY"],S["PAD"],S["H"],S["R"]
+    CW,CH=L["canvas"]["w"],L["canvas"]["h"]; CX=CW//2
     fixes=load_fixes(profile); ev=[]
     for b in srt.read_text(encoding="utf-8").strip().split("\n\n"):
-        L=b.split("\n")
-        if len(L)<3: continue
-        t0,t1=[_secs(x.strip()) for x in L[1].split("-->")]
-        zh=[x for x in L[2:] if re.search(r"[一-鿿]",x)]
-        keep=fix_text((zh[0] if zh else L[2]).strip(), fixes)
+        cuelines=b.split("\n")
+        if len(cuelines)<3: continue
+        t0,t1=[_secs(x.strip()) for x in cuelines[1].split("-->")]
+        zh=[x for x in cuelines[2:] if re.search(r"[一-鿿]",x)]
+        keep=fix_text((zh[0] if zh else cuelines[2]).strip(), fixes)
         pcs=_chunk(keep); tot=sum(len(p) for p in pcs) or 1; cur=t0
         for p in pcs:
             seg=(t1-t0)*len(p)/tot; s,e=_asst(cur),_asst(cur+seg); cur+=seg
-            W=round(_textw(p,FS))+2*PAD; PX=round((720-W)/2); PYt=CY-H//2
+            W=round(_textw(p,FS))+2*PAD; PX=round((CW-W)/2); PYt=CY-H//2
             ev.append(f"Dialogue: 0,{s},{e},Pill,,0,0,0,,{{\\pos({PX},{PYt})\\an7\\p1}}{_pill(W,H,R)}{{\\p0}}")
-            ev.append(f"Dialogue: 1,{s},{e},Cap,,0,0,0,,{{\\pos(360,{CY})\\an5}}{p}")
-    hdr=(f"[Script Info]\nScriptType: v4.00+\nPlayResX: 720\nPlayResY: 1280\nScaledBorderAndShadow: yes\n\n"
+            ev.append(f"Dialogue: 1,{s},{e},Cap,,0,0,0,,{{\\pos({CX},{CY})\\an5}}{p}")
+    hdr=(f"[Script Info]\nScriptType: v4.00+\nPlayResX: {CW}\nPlayResY: {CH}\nScaledBorderAndShadow: yes\n\n"
          "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
          f"Style: Cap,PingFang SC,{FS},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1\n"
          f"Style: Pill,PingFang SC,{FS},&H00141414,&H000000FF,&H00141414,&H00141414,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1\n\n"

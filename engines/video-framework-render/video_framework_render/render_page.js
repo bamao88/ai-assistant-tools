@@ -1,5 +1,5 @@
-// 框架图页 HTML → 720x1280 PNG（白底，2x 清晰）
-// usage: node render_page.js <in.html> <out.png>
+// 框架图页 HTML → PNG（白底，2x 清晰）。画幅由参数给，默认 720x1280（竖版）。
+// usage: node render_page.js <in.html> <out.png> [width=720] [height=1280]
 // 迁移阶段3：puppeteer 解析去硬编码——优先 PUPPETEER_PATH 环境变量，再引擎本地
 // node_modules / 全局，最后回退旧 npx 缓存。任一可用即可（渲染输出与来源无关）。
 const path = require('path');

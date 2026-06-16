@@ -18,6 +18,8 @@ class Sentence:
     speaker: str
     text: str
     is_host: bool
+    wi: int = -1    # 句首字在归一化词表中的索引（字级去口水/切片用；-1=未知）
+    wj: int = -1    # 句尾字索引（含）
 
 
 def load_indexed_sentences(minutes_path: str | Path, host: str = "张和") -> list[Sentence]:

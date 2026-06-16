@@ -70,7 +70,20 @@ def run_from_sentences(
                          ("title", "one_argument", "hook_line", "audience", "mainstream", "why")},
                       "keep_sids": keep, **asm,
                       "备注": ""})  # 留空，供人工审查填写
-    return {"source": minutes_path, "persona": persona, "host": host, "clips": clips}
+    return {"source": source, "persona": persona, "host": host, "clips": clips}
+
+
+def run(
+    minutes_path: str,
+    persona: str,
+    host: str = "张和",
+    providers: list[str] | None = None,
+    limit: int | None = None,
+) -> dict:
+    """腾讯会议 minutes JSON → {选题 + 切片脚本}。"""
+    sentences = load_indexed_sentences(minutes_path, host=host)
+    return run_from_sentences(sentences, persona, host=host, providers=providers,
+                              limit=limit, source=minutes_path)
 
 
 def to_markdown(result: dict) -> str:

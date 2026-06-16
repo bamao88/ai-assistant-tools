@@ -81,7 +81,8 @@ CLEAN_KEEP_TASK = """\
 import re as _re
 
 def _bare(s: str) -> str:
-    return _re.sub(r"[\s，。！？、；：…—·“”‘’（）()\"']", "", s or "")
+    # 抹掉标点/空白 + 统一小写：对齐只看"是哪个字"，不受 LLM 擅自改大小写/加空格影响
+    return _re.sub(r"[\s，。！？、；：…—·“”‘’（）()\"']", "", (s or "")).lower()
 
 
 def _diff_removed(seg_words: list[dict], kept_words: list[dict]) -> list[str]:

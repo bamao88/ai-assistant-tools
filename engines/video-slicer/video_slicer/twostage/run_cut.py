@@ -52,9 +52,9 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
         ck = script_clean.clean_to_keep(seg_words, hint=f"{title}｜{clip.get('one_argument','')}",
                                         providers=providers)
         spans = ck["keep_spans"]
-        # 3) 边界吸字间静音（更自然）
+        # 3) 边界吸字间静音（可选·轻微，默认关；去口水已是字精度）
         if snap and spans:
-            snapped = resolve.snap_segments(spans, resolve.load_paraformer_words.__wrapped__ if False else word_list_to_words(word_list), mode="silence_mid")
+            snapped = resolve.snap_segments(spans, words, mode="silence_mid", gap_search=0.25)
             spans = [s["snapped"] for s in snapped]
         # 4) 切视频 + 相对字幕 + 文案
         base = out / f"clip_{i:02d}_{_slug(title)}"

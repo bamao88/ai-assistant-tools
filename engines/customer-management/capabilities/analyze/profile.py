@@ -349,10 +349,11 @@ def enrich(args: argparse.Namespace) -> int:
         all_msgs = (raw or {}).get("messages") or []
         normalized = core.normalize_messages(
             all_msgs, wxid, staff_wxids,
-            min_ts=min_ts, max_chars_per_msg=MAX_CHARS_PER_MSG, media_placeholder_max_len=None,
+            min_ts=min_ts, max_chars_per_msg=MAX_CHARS_PER_MSG,
         )
+        # L0 文字层做增量窗口/判断（保留旧行为）；信息地图描述全貌（含媒体/系统事件）
         new_msgs = core.select_increment_window(
-            normalized, last_seen_ts=last_seen, max_recent=MAX_MSGS_PER_STUDENT,
+            core.text_layer(normalized), last_seen_ts=last_seen, max_recent=MAX_MSGS_PER_STUDENT,
         )
 
         if not new_msgs:

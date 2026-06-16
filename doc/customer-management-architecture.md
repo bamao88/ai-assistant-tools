@@ -35,13 +35,15 @@ tools/engines/customer-management/
 │   ├── analyze/             ③ 读懂（LLM）：一台机器换卡干活——cards.py(加载) + core.py(规范化) + employment.py / profile.py（按卡跑 flow）
 │   └── resolve/             ④ 对人（无 LLM）：core.py / friend_index.py / add_missing_group_members.py——确认谁是谁、并重、补全、纠错
 │
-├── recipes/                 7 配方（业务编排 = 能力 + 卡 + 写策略 + 出口）
+├── recipes/                 配方（业务编排 = 能力 + 卡 + 写策略 + 出口）
 │   ├── gather.py            ★读取侧 Facade（本地+飞书镜像+微信+付款+diff/回填建议，默认只读 0-LLM）
 │   ├── intake.py            新学员入表：gather → 判断 → 写回
 │   ├── friends_sync.py      好友刷新建行：sync + audit + merge 三步合一
 │   ├── group_order.py       群序号同步：resolve → 写回
 │   ├── payment.py           付款金额：acquire(解图) + analyze(视觉卡读 montage) → 写回
 │   ├── health_check.py      客户表数据体检/订正闭环：scan→plan→dry-run→apply→archive（吸收死脚本）
+│   ├── read_chat.py         ad-hoc 读某人解码+分层聊天 + 信息地图（只读 / 0-LLM）
+│   ├── search_chat.py       跨全部人按关键词/日期/方向找候选 wxid（只读 / 0-LLM）
 │   └── run.py / update_and_notify.py   学员主数据周更新顶层编排
 │       └─ 注：employment 命令直接分发到 capabilities/analyze/employment.py（不经 recipes）
 │

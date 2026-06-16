@@ -1,7 +1,9 @@
 # 学员管理 skill —— 聊天记录「无损分层 + 自描述信息地图」改造计划
 
 > 面向 owner 的计划文档。前面讲**是什么、为什么、改完有什么不一样**;最后一节「技术细节」才是给写代码的 agent 看的。
-> 状态:**阶段1/2/3/4 全部已实现并验证(2026-06-16)**。本文件取代早前的"媒体可见性"版本(那一版只想修图片,范围太窄)。
+> 状态:**阶段1/2/3/4 + 迁移回归修复 全部已实现并验证(2026-06-16)**。本文件取代早前的"媒体可见性"版本(那一版只想修图片,范围太窄)。
+>
+> **迁移回归修复(2026-06-16,见 `~/.claude/plans/sub-agent-skill-bug-functional-ullman.md`)**:干净 sub-agent 测试发现的真问题——① zstd 压缩正文(`28b52ffd…`,~11%,大多真人对话)从未解压、还被我的 `classify_message` 当 control 丢掉 → 已加 `core.try_decode_zstd`,全流程恢复;② 迁移丢了 agent 读解码聊天的入口 → 新增只读命令 `read-chat` / `search-chat`(`recipes/read_chat.py`+`search_chat.py`,接入 `__main__`);③ SKILL.md 加"读聊天须知"+ `references/ad-hoc-chat-read.md`(明文 vs zstd 非加密、isSelf 不可信、默认账号)。实测:`search-chat` 找回 Q3 退差价 3 人(显式)+ Will(隐式"8900");zstd 行恢复进 L0(control→0);check-tools 0 error;数据零写入。
 >
 > **实现进度**
 > - ✅ 阶段1 无损分层:`core.normalize_messages` 改为无损+`kind/layer/handle` 标注(Will 48→48 条不丢,旧逻辑会丢 17 条)。

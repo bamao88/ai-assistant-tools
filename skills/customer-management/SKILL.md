@@ -85,6 +85,8 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/customer-management && python3
 cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines
 # 跨全部人找候选 + 解码片段（两个示例 query 就是这种跨人检索）
 python3 -m customer-management search-chat --any 退差价 差价 退款 --side from-them --layer all
+# 带日期的活动用 --since/--until 收窄（如"6/13 活动"）
+python3 -m customer-management search-chat --any 回放 领回放 录播 --side from-them --since 2026-06-13 --layer all
 # 读某一个人解码+分层的聊天 + 信息地图
 python3 -m customer-management read-chat --wxid <wxid> --layer all
 ```

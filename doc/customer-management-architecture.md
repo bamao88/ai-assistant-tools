@@ -87,7 +87,7 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines && python3 -m customer-managem
 # 形式 B：从 engine 根直接跑
 cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/customer-management && python3 __main__.py <命令> [args]
 
-# 7 命令：gather / intake / employment / friends-sync / group-order / payment / health-check
+# 9 命令：gather / intake / employment / friends-sync / group-order / payment / health-check / read-chat / search-chat
 python3 -m customer-management gather --new --limit 3          # 只读冒烟：读真实学员 + diff/回填建议
 python3 -m customer-management employment --wxid <id>          # 单人核验：走 stdout 不写盘
 python3 -m customer-management health-check --dry-run          # 只读体检出 plan

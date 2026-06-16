@@ -112,11 +112,12 @@ def transcribe_volc(url: str, *, fmt: str = "mp3", poll_secs: int = 5, max_polls
         time.sleep(poll_secs)
         code, payload = _volc_post("query", reqid, {}, key)
         if code == "20000000":
-            full_text, words = _volc_extract(json.loads(payload))
+            full_text, words, sentences = _volc_extract(json.loads(payload))
             if not words:
                 raise BackendError("火山结果无字级词")
-            _log(f"[volc] 完成：{len(words)} 字")
-            return {"model": _VOLC_RESOURCE, "source_url": url, "full_text": full_text, "words": words}
+            _log(f"[volc] 完成：{len(words)} 字 / {len(sentences)} 句(原生语义)")
+            return {"model": _VOLC_RESOURCE, "source_url": url, "full_text": full_text,
+                    "words": words, "sentences": sentences}
         if code in ("20000001", "20000002"):  # 排队/处理中
             if n % 12 == 0:
                 _log(f"[volc] …处理中 {n * poll_secs}s code={code}")

@@ -75,6 +75,16 @@ WECHAT_STATE_DIR = DATA_ROOT / "mac" / "wechat" / "state"
 DASHBOARD_PATH = WECHAT_STATE_DIR / "dashboard.json"
 SYNC_SUMMARY_FILE = WECHAT_STATE_DIR / "last_sync_summary.json"
 
+# 本机微信 v4 容器的附件目录（图片 .dat 真源；按需读图 acquire.resolve_images 用）。
+# ⚠️ 写死到当前采集账号(八毛/小助理备用号)的容器，**仅本机可用**、换账号需改路径；
+#    可被环境变量 CUSTOMER_MGMT_WECHAT_ATTACH 覆盖（多机/换号）。
+WECHAT_ATTACH_DIR = Path(os.environ.get(
+    "CUSTOMER_MGMT_WECHAT_ATTACH",
+    os.path.expanduser(
+        "~/Library/Containers/com.tencent.xinWeChat/Data/Documents/"
+        "xwechat_files/wxid_vre3jz2a7vwb22_c26a/msg/attach"),
+))
+
 # --- analytics 产物（原地留 assistant_zh，§6）-------------------------------
 ANALYTICS_DIR = DATA_ROOT / "analytics"
 EMPLOYMENT_ANALYTICS_DIR = ANALYTICS_DIR / "student_employment_tracking"

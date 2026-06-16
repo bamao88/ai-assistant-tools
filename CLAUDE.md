@@ -58,8 +58,8 @@ All maintenance / iteration plans for any skill or engine live under **`doc/plan
 
 The owner of this repo builds with AI but does **not** read code. Docs under `doc/` and `doc/plan/` are written for them, so:
 
-- **Lead with the "what" and "why", not the "how".** The overall architecture (what the pieces are and how they fit together) and what each feature actually does for the user — that is the point. Implementation mechanics (function names, file paths, code, config keys) go only in a clearly-marked "技术细节 / 给 agent 看" section at the end, never woven through the main narrative.
-- **No unexplained jargon.** Any technical term that survives must be defined in one plain sentence on first use, ideally with an everyday analogy. If a term isn't needed to make a decision, cut it.
+- **Lead with the "what" and "why", not the "how".** The overall architecture (what the pieces are and how they fit together) and what each feature actually does for the user — that is the point.
+- **Technical details may stay inline, but every one carries a plain-language explanation.** Implementation mechanics (function names, file paths, code, config keys) can appear woven through the narrative — the owner does NOT want them segregated to an appendix — but each technical term gets a one-sentence 大白话 explanation (ideally an everyday analogy) right where it appears. If a term isn't needed to make a decision, cut it rather than explain it.
 - **Plain language, Chinese for the user-facing parts.** Prefer concrete everyday wording over precise-but-opaque terms; short bullets and tables over dense paragraphs.
 - This applies to docs **for the owner** (plans, status updates, reports). Agent-facing files (`SKILL.md`, engine READMEs, this `CLAUDE.md`) stay precise and technical.
 

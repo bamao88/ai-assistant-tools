@@ -122,12 +122,13 @@ def make_assets(out: Path, L: dict):
     m.save(out/"mask.png")
 
 # ======================================================================
-def render_pages(pages, out: Path):
-    """page spec → HTML → PNG（node+puppeteer）。"""
+def render_pages(pages, out: Path, L: dict):
+    """page spec → HTML → PNG（node+puppeteer）。画幅由 layout 决定。"""
+    builder=TEMPLATES[L["template"]]; CW,CH=L["canvas"]["w"],L["canvas"]["h"]
     for i,sp in enumerate(pages):
-        (out/f"page_{i}.html").write_text(page_html(sp), encoding="utf-8")
+        (out/f"page_{i}.html").write_text(builder(sp), encoding="utf-8")
         subprocess.run(["node", str(HERE/"render_page.js"), str(out/f"page_{i}.html"),
-                        str(out/f"page_{i}.png")], check=True)
+                        str(out/f"page_{i}.png"), str(CW), str(CH)], check=True)
 
 # ======================================================================
 # 字幕：标定的 libass 真实字宽（PingFang SC 回退渲染，FS=36）

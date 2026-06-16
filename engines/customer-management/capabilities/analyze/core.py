@@ -55,6 +55,8 @@ __all__ = [
     "build_message_index",
     "find_message_file",
     "load_messages_raw",
+    "load_json",
+    "save_json",
     "try_decode_hex",
     "try_decode_zstd",
     "is_staff_sender",

@@ -154,12 +154,16 @@ def clean_to_keep(
     保留字 → 合并成 keep 时间区间（直接喂 ffmpeg 切片）。
     返回 {keep_spans, kept_words, kept_text, removed, deleted_idx}。
     """
+    from concurrent.futures import ThreadPoolExecutor
+
     load_env_file(_discover_env_file())
     client = OpenAICompatibleClient(providers=providers)
+    chunks = _chunk_words(seg_words, max_chars)
+    with ThreadPoolExecutor(max_workers=min(6, len(chunks)) or 1) as ex:   # 分块并行：N块≈1次延迟
+        locals_ = list(ex.map(lambda c: _dehesitate_chunk(c[1], hint, client, temperature), chunks))
     drop: set[int] = set()
     removed: list[str] = []
-    for offset, chunk in _chunk_words(seg_words, max_chars):
-        local = _dehesitate_chunk(chunk, hint, client, temperature)
+    for (offset, chunk), local in zip(chunks, locals_):
         for i in sorted(local):
             removed.append(chunk[i]["text"])
         drop.update(offset + i for i in local)

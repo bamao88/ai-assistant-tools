@@ -222,13 +222,16 @@ def classify_message(msg: dict, decoded_content: str) -> tuple[str, str, str | N
         return "system", "L1", None
     if c.startswith("[链接]") or c.startswith("[文件]") or c.startswith("[名片]"):
         return "link", "L1", None
-    # zstd/二进制控制载荷（hex 解不出文本，纯 hex 残留）→ 最低层，不喂正文但不丢
+    # zstd 解压失败的真二进制残留（仍是纯 hex）→ 控制层，不喂正文但不丢
     if re.match(r"^[0-9a-fA-F]{20,}$", c):
         return "control", "L1", None
+    # 解压出的 XML 系统消息（sysmsg/appmsg 等）→ 系统层
+    if c.startswith("<") and ("</" in c or "/>" in c):
+        return "system", "L1", None
     # 纯系统提示（打招呼汇总等）
     if msg_type == "10000":
         return "system", "L1", None
-    # 其余皆为文字（含引用回复等被旧逻辑误删的真文本）
+    # 其余皆为文字（含引用回复、解压出的真人对话等被旧逻辑误删的真文本）
     return "text", "L0", None
 
 

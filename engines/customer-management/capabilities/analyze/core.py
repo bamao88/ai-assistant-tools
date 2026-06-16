@@ -252,7 +252,7 @@ def text_layer(normalized: list[dict]) -> list[dict]:
 
 # kind → (中文名, 用途/取法提示)。决定 info_map 怎么向 AI 描述每一层。
 _KIND_DESC = {
-    "image": ("图片", "内容未读；要看用读图工具按 handle 取（已有解密+视觉能力）"),
+    "image": ("图片", "内容未读；按需读图：python3 -m capabilities.acquire.resolve_images --wxid <wxid>（本机解密后用视觉看）"),
     "voice": ("语音", "本系统不提供转录，需要时请自行处理"),
     "video": ("视频", "未解析；需要时自行处理"),
     "link": ("链接/文件/名片", "标签已在对话中"),

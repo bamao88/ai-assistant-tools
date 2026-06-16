@@ -209,22 +209,23 @@ def ffprobe_dur(path) -> float:
     return float(subprocess.run(["ffprobe","-v","error","-show_entries","format=duration",
         "-of","csv=p=0",str(path)],capture_output=True,text=True).stdout.strip())
 
-def compose(job, out: Path, face_cx: float, clip_h: int, strip_px: int):
+def compose(job, out: Path, face_cx: float, clip_h: int, strip_px: int, L: dict):
     """ffmpeg：PPT层翻页(slide) + 静态白环 + 人像圆形 + 字幕。输出 paginated.mp4。"""
-    pages=job["pages"]; n=len(pages); D=job.get("params",{}).get("transition",GEOM["transition"])
+    G=L["geom"]; CW,CH=L["canvas"]["w"],L["canvas"]["h"]
+    pages=job["pages"]; n=len(pages); D=job.get("params",{}).get("transition",G["transition"])
     dur=ffprobe_dur(job["video"])
     side=clip_h-strip_px                        # 完整干净高度方裁
     src_w=job.get("src_w",1920)
     x0=int(min(max(face_cx*src_w-side/2,0),src_w-side))
-    cd=GEOM["circle_d"]; cx,cy=GEOM["circle_x"],GEOM["circle_y"]
+    cd=G["circle_d"]; cx,cy=G["circle_x"],G["circle_y"]
     starts=[p["start"] for p in pages]
     F=[]
-    F.append(f"[0:v]scale=720:1280,setsar=1[b0];")
-    for i in range(1,n): F.append(f"[{i}:v]scale=720:1280,setsar=1[p{i}];")
+    F.append(f"[0:v]scale={CW}:{CH},setsar=1[b0];")
+    for i in range(1,n): F.append(f"[{i}:v]scale={CW}:{CH},setsar=1[p{i}];")
     prev="b0"
     for i in range(1,n):
         T=starts[i]
-        sl=(f"x='if(lt(t,{T}),720,if(lt(t,{T}+{D}),720*(1-(t-{T})/{D}),0))':y=0:enable='gte(t,{T})'")
+        sl=(f"x='if(lt(t,{T}),{CW},if(lt(t,{T}+{D}),{CW}*(1-(t-{T})/{D}),0))':y=0:enable='gte(t,{T})'")
         tag=f"s{i}" if i<n-1 else "ppt"
         F.append(f"[{prev}][p{i}]overlay={sl}[{tag}];"); prev=tag
     clip_in=n; ring_in=n+1; mask_in=n+2   # ffmpeg 输入序: pages(0..n-1) → clip(n) → ring(n+1) → mask(n+2)

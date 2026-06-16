@@ -323,6 +323,40 @@ def infer_semester_from_messages(msgs, current_semester):
     return ''
 
 
+_FRIEND_EVENT_PAT = ("你已添加了", "通过了你的朋友验证", "现在我们可以开始聊天", "现在可以开始聊天")
+
+
+def friend_add_date(wxid):
+    """加好友日期（确定性，0-LLM）：系统事件「你已添加了X / 通过好友验证」的时间，
+    回退到最早一条消息的时间。返回 'YYYY-MM-DD' 或 None。
+
+    病根复盘：这条信息以前一直找不到，是因为 analyze 入库把系统提示删了；
+    本派生直接读原始消息（无损），与 analyze 的无损分层一致。见
+    doc/plan/customer-management-media-visibility-plan.md 阶段4。
+    """
+    import datetime as _dt
+    path = os.path.join(DATA_DIR, f"messages_user_{wxid}.json")
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+    msgs = sorted((data.get("messages") or []), key=lambda m: m.get("createTime", 0))
+    for m in msgs:
+        c = _decode_content(m.get("content", "")) or ""
+        if any(p in c for p in _FRIEND_EVENT_PAT):
+            ts = m.get("createTime")
+            if ts:
+                return _dt.datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
+    for m in msgs:
+        ts = m.get("createTime")
+        if ts:
+            return _dt.datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
+    return None
+
+
 def main():
     print("Loading dashboard group data...")
     wxid_groups = load_dashboard_groups()

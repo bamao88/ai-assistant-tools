@@ -90,12 +90,12 @@ def main() -> int:
     ap.add_argument("--providers", default="kimi,minimax")
     ap.add_argument("--limit", type=int, default=None, help="只切前 N 条选题（省钱）")
     ap.add_argument("--crop", default=None, help="如 crop=1080:800:0:1120 裁下半摄像头")
-    ap.add_argument("--no-snap", action="store_true", help="不做字间静音吸附")
+    ap.add_argument("--snap", action="store_true", help="边界轻微吸字间静音（默认关；去口水已字精度）")
     a = ap.parse_args()
     load_env_file(_discover_env_file())
     providers = [p.strip() for p in a.providers.split(",") if p.strip()]
     run_cut(a.video, a.words, a.out, persona=a.persona, host=a.host, providers=providers,
-            limit=a.limit, crop=a.crop, snap=not a.no_snap)
+            limit=a.limit, crop=a.crop, snap=a.snap)
     return 0
 
 

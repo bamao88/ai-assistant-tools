@@ -6,10 +6,11 @@
   "atoms": {
     "framework_reframe": {
       "kind": "改造",
-      "desc": "口播 clip + pages spec → 手写框架图翻页 + 人像圆形PIP + 纠错字幕 + 自适应变速 竖版成片(720x1280)。当前 zh_business 主路径。",
+      "desc": "口播 clip + pages spec → 手写框架页翻页 + 人像圆形PIP + 纠错字幕 + 自适应变速成片。同一份 pages 可出竖版(720×1280 框架页)或横版(1280×720 方框版式)，视觉 DNA 同源（配色/手写字/药丸字幕/圆窗）。",
       "entry": "video_framework_render.render:run",
-      "input": "job.json {video, srt, pages:[{start,title,blocks}], params, subtitle_strip_px}",
+      "input": "job.json {video, srt, pages:[{start,title,blocks}], params, subtitle_strip_px, layout?}",
       "output": "out/<name>/{paginated.mp4, accel.mp4, page_*.png, zh.ass}",
+      "layout": "竖/横由 --layout 或 job.layout 选 layouts/<name>.json（vertical|landscape）；几何全外置在 layouts/，代码无硬编码画幅。",
       "stages": ["locate", "assets", "render_pages", "subtitles", "compose", "accelerate"]
     },
     "compose": {

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .cli import _discover_env_file, load_env_file
 from .llm import OpenAICompatibleClient
 
 _ENGINE = Path(__file__).resolve().parent.parent

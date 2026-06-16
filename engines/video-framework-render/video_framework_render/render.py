@@ -279,21 +279,22 @@ def accelerate(job, out: Path):
         "-c:a","aac","-movflags","+faststart",str(out/"accel.mp4")],check=True)
 
 # ======================================================================
-def run(job_path: str, out_root: str|None, skip_accel: bool, profile="zh_main"):
+def run(job_path: str, out_root: str|None, skip_accel: bool, profile="zh_main", layout="vertical"):
     job=json.loads(Path(job_path).read_text(encoding="utf-8"))
     name=job.get("name", Path(job_path).stem)
+    L=load_layout(job.get("layout") or layout)     # job 可钉死画幅(横版 job 写 "layout":"landscape")
     out=Path(out_root or HERE/"out")/name; out.mkdir(parents=True, exist_ok=True)
-    print(f"[{name}] → {out}")
+    print(f"[{name}] → {out}  (layout={L['name']})")
     # 探测源画幅
     info=subprocess.run(["ffprobe","-v","error","-select_streams","v:0","-show_entries",
         "stream=width,height","-of","csv=p=0",str(job["video"])],capture_output=True,text=True).stdout.strip()
     sw,sh=[int(x) for x in info.split(",")[:2]]; job["src_w"]=sw
     strip_px=int(job.get("subtitle_strip_px",0))   # 源底部烧死字幕条高度(腾讯合成轨常见;纯说话人轨=0)
     print("  [1/6] 人脸定位"); fcx=locate_face_cx(job["video"])
-    print("  [2/6] 静态资源(白环/遮罩)"); make_assets(out)
-    print("  [3/6] 渲染框架图页"); render_pages(job["pages"], out)
-    print("  [4/6] 字幕(纠错+药丸)"); make_subtitles(Path(job["srt"]), out, profile)
-    print("  [5/6] 合成(翻页+PIP+字幕)"); compose(job, out, fcx, sh, strip_px)
+    print("  [2/6] 静态资源(白环/遮罩)"); make_assets(out, L)
+    print("  [3/6] 渲染框架图页"); render_pages(job["pages"], out, L)
+    print("  [4/6] 字幕(纠错+药丸)"); make_subtitles(Path(job["srt"]), out, profile, L)
+    print("  [5/6] 合成(翻页+PIP+字幕)"); compose(job, out, fcx, sh, strip_px, L)
     if skip_accel:
         print("  [6/6] 跳过变速"); print(f"完成 → {out/'paginated.mp4'}"); return
     print("  [6/6] 自适应变速"); accelerate(job, out)
@@ -304,4 +305,5 @@ if __name__=="__main__":
     ap.add_argument("job"); ap.add_argument("--out", default=None)
     ap.add_argument("--skip-accel", action="store_true")
     ap.add_argument("--profile", default="zh_main")
-    a=ap.parse_args(); run(a.job, a.out, a.skip_accel, a.profile)
+    ap.add_argument("--layout", default="vertical", help="版式 layouts/<name>.json（vertical|landscape）")
+    a=ap.parse_args(); run(a.job, a.out, a.skip_accel, a.profile, a.layout)

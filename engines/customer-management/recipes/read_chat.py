@@ -159,11 +159,7 @@ def cmd_search(argv: list[str]) -> int:
 
 
 def main() -> int:
-    cmd = sys.argv[0]
-    argv = sys.argv[1:]
-    if cmd == "search-chat":
-        return cmd_search(argv)
-    return cmd_read(argv)
+    return cmd_read(sys.argv[1:])
 
 
 if __name__ == "__main__":

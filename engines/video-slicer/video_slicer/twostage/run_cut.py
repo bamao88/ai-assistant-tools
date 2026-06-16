@@ -39,38 +39,40 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
     clips_out = []
     for i, clip in enumerate(result["clips"], 1):
         title = clip.get("title", f"clip{i}")
-        print(f"[切片] ({i}/{len(result['clips'])}) {title[:24]}…", file=sys.stderr)
-        # 1) 选段的字（按 keep_sids 收集 host 句的字）
-        seg_words = []
-        for a, b in clip.get("keep_sids", []):
-            for sid in range(a, b + 1):
-                if 0 <= sid < len(sents) and sents[sid].wi >= 0:
-                    seg_words += words[sents[sid].wi: sents[sid].wj + 1]
-        if not seg_words:
-            continue
-        # 2) 字级去口水 → keep 区间
-        ck = script_clean.clean_to_keep(seg_words, hint=f"{title}｜{clip.get('one_argument','')}",
-                                        providers=providers)
-        spans = ck["keep_spans"]
-        # 3) 边界吸字间静音（可选·轻微，默认关；去口水已是字精度）
-        if snap and spans:
-            snapped = resolve.snap_segments(spans, words, mode="silence_mid", gap_search=0.25)
-            spans = [s["snapped"] for s in snapped]
-        # 4) 切视频 + 相对字幕 + 文案
         base = out / f"clip_{i:02d}_{_slug(title)}"
-        try:
+        print(f"[切片] ({i}/{len(result['clips'])}) {title[:24]}…", file=sys.stderr)
+        if base.with_suffix(".mp4").exists():          # 断点续切：已切的跳过
+            print("        ↳ 已存在，跳过", file=sys.stderr)
+            clips_out.append({"title": title, "mp4": str(base.with_suffix(".mp4")), "dur": None, "removed": None})
+            continue
+        try:                                            # 每条独立容错：一条失败(网络/去口水/切片)不拖累整批
+            # 1) 选段的字（按 keep_sids 收集 host 句的字）
+            seg_words = []
+            for a, b in clip.get("keep_sids", []):
+                for sid in range(a, b + 1):
+                    if 0 <= sid < len(sents) and sents[sid].wi >= 0:
+                        seg_words += words[sents[sid].wi: sents[sid].wj + 1]
+            if not seg_words:
+                continue
+            # 2) 字级去口水 → keep 区间
+            ck = script_clean.clean_to_keep(seg_words, hint=f"{title}｜{clip.get('one_argument','')}",
+                                            providers=providers)
+            spans = ck["keep_spans"]
+            # 3) 边界吸字间静音（可选·轻微，默认关；去口水已是字精度）
+            if snap and spans:
+                spans = [s["snapped"] for s in resolve.snap_segments(spans, words, mode="silence_mid", gap_search=0.25)]
+            # 4) 切视频 + 相对字幕 + 文案
             cut_video.cut_clip(video, spans, base.with_suffix(".mp4"), crop=crop)
             cut_video.relative_srt(ck["kept_words"], spans, base.with_suffix(".srt"))
+            dur = sum(e - s for s, e in spans)
+            base.with_suffix(".txt").write_text(
+                f"# {title}\n钩子：{clip.get('hook_line','')}\n时长：{dur:.1f}s ｜ 删 {len(ck['removed'])} 处口水\n\n{ck['kept_text']}\n",
+                encoding="utf-8")
+            clips_out.append({"title": title, "mp4": str(base.with_suffix(".mp4")),
+                              "dur": round(dur, 1), "removed": len(ck["removed"]), "keep_spans": spans})
         except Exception as ex:  # noqa: BLE001
-            print(f"        ✗ 切片失败：{str(ex)[:150]}", file=sys.stderr)
+            print(f"        ✗ 失败跳过：{str(ex)[:150]}", file=sys.stderr)
             continue
-        dur = sum(e - s for s, e in spans)
-        base.with_suffix(".txt").write_text(
-            f"# {title}\n钩子：{clip.get('hook_line','')}\n时长：{dur:.1f}s ｜ 删 {len(ck['removed'])} 处口水\n\n{ck['kept_text']}\n",
-            encoding="utf-8")
-        clips_out.append({"title": title, "mp4": str(base.with_suffix(".mp4")),
-                          "dur": round(dur, 1), "removed": len(ck["removed"]),
-                          "keep_spans": spans})
     # 索引
     idx = [f"# 字级线切片索引（{len(clips_out)} 条）", ""]
     for c in clips_out:

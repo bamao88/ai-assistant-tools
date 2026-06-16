@@ -61,8 +61,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     target = _DISPATCH[cmd]
-    # 把剩余参数交给目标模块的 argparse；argv[0] 用原命令名（让共享模块按 cmd 分支 + help 更友好）。
-    sys.argv = [cmd] + rest
+    # 把剩余参数交给目标模块的 argparse；以 engine 根为 sys.path 锚点跑 -m。
+    sys.argv = [target] + rest
     try:
         runpy.run_module(target, run_name="__main__", alter_sys=True)
     except SystemExit as e:

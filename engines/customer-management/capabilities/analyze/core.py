@@ -56,6 +56,7 @@ __all__ = [
     "find_message_file",
     "load_messages_raw",
     "try_decode_hex",
+    "try_decode_zstd",
     "is_staff_sender",
     "classify_message",
     "normalize_messages",

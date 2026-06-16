@@ -367,7 +367,7 @@ def enrich(args: argparse.Namespace) -> int:
                 break
             continue
 
-        user_prompt = build_user_prompt(student, new_msgs, user_template)
+        user_prompt = build_user_prompt(student, new_msgs, user_template, core.build_info_map(normalized))
         stats["llm_called"] += 1
 
         try:

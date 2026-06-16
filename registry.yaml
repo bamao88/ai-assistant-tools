@@ -278,7 +278,7 @@ engines:
   - id: video-framework-render
     path: engines/video-framework-render
     runtime: "python (独立 .venv: pillow+opencv-python-headless) — video_framework_render.render 模块（ffmpeg+libass；node puppeteer 经 PUPPETEER_PATH；字体 Hannotate/PingFang SC）"
-    purpose: "积木厂·改造/渲染原子：手写框架页翻页+人像圆形PIP+纠错字幕+自适应变速 竖版成片(framework_reframe/compose/accelerate/subtitles/reframe_locate/raw)；张和锁定几何=内置默认，账号 fixes.json 在 profiles/zh_main/；capabilities.json 声明。阶段3 由 assistant_zh slicer.py 迁入"
+    purpose: "积木厂·改造/渲染原子：手写框架页翻页+人像圆形PIP+纠错字幕+自适应变速成片(framework_reframe/compose/accelerate/subtitles/reframe_locate/raw)；竖版(720×1280 框架页)/横版(1280×720 方框版式)同源，几何外置 layouts/{vertical,landscape}.json(--layout 选)，账号 fixes.json 在 profiles/zh_main/；capabilities.json 声明"
   - id: video-compose
     path: engines/video-compose
     runtime: "python — selector.py/run.py/build_catalog.py（无重依赖；调度各引擎）"

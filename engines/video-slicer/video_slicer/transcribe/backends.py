@@ -61,20 +61,27 @@ def _volc_post(path: str, reqid: str, body: dict, key: str) -> tuple[str | None,
     return code, payload
 
 
-def _volc_extract(result_json: dict) -> tuple[str, list[dict]]:
-    """result.utterances[].words[] → 归一化词表（过滤无时间戳的标点占位）。"""
+def _volc_extract(result_json: dict) -> tuple[str, list[dict], list[dict]]:
+    """result.utterances[] → (整段文本, 字级词表, 原生语义句)。
+    保留三样火山原生信息：utterances 语义句(带句级时间戳)、句内带标点的 text、整段 ITN 文本。"""
     result = result_json.get("result") or {}
     words: list[dict] = []
+    sentences: list[dict] = []
     for u in result.get("utterances", []):
+        su, eu = u.get("start_time"), u.get("end_time")
+        tu = (u.get("text") or "").strip()                  # 句子文本（含标点）
+        if tu and su is not None and eu is not None and su >= 0:
+            sentences.append({"text": tu, "begin_time": int(su), "end_time": int(eu)})
         for w in u.get("words", []):
             st, et = w.get("start_time"), w.get("end_time")
             txt = (w.get("text") or "").strip()
-            if st is None or et is None or st < 0 or et < 0 or not txt:
+            if st is None or et is None or st < 0 or et < 0 or not txt:  # st<0 = 标点占位，跳过(标点在句 text 里)
                 continue
             words.append({"text": txt, "begin_time": int(st), "end_time": int(et)})
     words.sort(key=lambda x: x["begin_time"])
-    full_text = result.get("text") or "".join(w["text"] for w in words)
-    return full_text, words
+    sentences.sort(key=lambda s: s["begin_time"])
+    full_text = result.get("text") or "".join(w["text"] for w in words)  # result.text 已 ITN(数字书面化)
+    return full_text, words, sentences
 
 
 def transcribe_volc(url: str, *, fmt: str = "mp3", poll_secs: int = 5, max_polls: int = 600) -> dict:

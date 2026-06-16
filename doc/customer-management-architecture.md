@@ -106,6 +106,8 @@ python3 -m customer-management <命令> --help                    # 各命令具
 | **跑只读验证 / 体检** | `gather`（默认只读 0-LLM）、`health-check --dry-run`（只读镜像出 plan）。要 live 拉飞书须显式 `--source live`。 |
 | **真写飞书** | 对应命令带 `--apply`，且**须用户明说「同步飞书」**。就业飞书写回是独立一步：`python3 -m customer-management.outputs.sync_to_feishu [--apply]`。 |
 | **验证 employment/profile 不误写**（红线·P3 事故教训） | analyze 默认 `--auto`（真写本地 state + 飞书）。**任何试跑必须先 `--dry-run`**；单人核验用 `--wxid <id>`（走 stdout 不写盘）；批量先 `--dry-run` 看清单 + token 预估；mutate 前先备份。 |
+| **改聊天信息分层 / 信息地图口径**（哪些算文字 L0、媒体/系统事件怎么归类、地图怎么向 AI 描述） | 改 `capabilities/analyze/core.py`：分类在 `classify_message`、无损入库在 `normalize_messages`、地图在 `build_info_map`、默认喂层在 `text_layer`。**入库无损不删**，取舍在消费端。见 `doc/plan/customer-management-media-visibility-plan.md`。 |
+| **取加好友日期等确定性派生事实** | `recognize.friend_add_date(wxid)`（0-LLM，读系统事件「你已添加了X」回退首条消息）；analyze 侧同口径在 `core.friend_add_date`。 |
 | **结构变更后收口** | 改了引擎结构就更新 `registry.yaml`（engine `id: customer-management` + skill 块），跑 `python3 scripts/check-tools.py`（期望 0 error）；skill 软链变动再跑 `sync-skills.py`。 |
 
 ## 环境依赖（首跑准备）

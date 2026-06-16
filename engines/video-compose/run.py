@@ -63,12 +63,14 @@ def plan(recipe_name):
 def run(recipe_name, selection, profile):
     r, steps = resolve(recipe_name)
     if r.get("kind") == "delegate":
-        if recipe_name == "zh_business":
+        if recipe_name in ("zh_business", "landscape_business"):
             if not selection:
-                raise SystemExit("zh_business 需 --selection <sel.json>")
+                raise SystemExit(f"{recipe_name} 需 --selection <sel.json>")
             cmd = [sys.executable,
                    str(ENGINES.parent.parent / "assistant_zh/workflow/video_framework_slicer/run_pipeline.py"),
-                   selection, "--profile", profile or "zh_main"]
+                   selection, "--profile", profile or r.get("profile", "zh_main")]
+            if r.get("layout"):                      # 横版配方把 layout 传给渲染（竖版默认不传）
+                cmd += ["--layout", r["layout"]]
             print("⇒ delegate:", " ".join(cmd))
             return subprocess.run(cmd).returncode
         raise SystemExit(f"delegate 配方 {recipe_name} 暂无执行绑定")

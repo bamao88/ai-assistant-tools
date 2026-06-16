@@ -23,7 +23,8 @@
   "also_provides": {
     "transcribe": {"desc": "音频/视频 → 字级词表 JSON（火山 seedasr v3 主·阿里 paraformer 兜底·公网/OSS 上传）。字级线地基，输出对齐 twostage/resolve schema。", "entry": "video_slicer.transcribe", "creds": "var/credentials/aliyun.env (VOLCENGINE_API_KEY / DASHSCOPE_API_KEY)"},
     "pages_gen": {"desc": "逐字稿 → 框架页 pages JSON（LLM）", "entry": "video_slicer.pages_gen", "profile": "profiles/zh_main/pages_system_prompt.txt"},
-    "srt_fix": {"desc": "clip 字幕 LLM 纠错（术语+口语，1:1 保时间轴）", "entry": "video_slicer.srt_fix", "profile": "profiles/zh_main/srt_fix_system_prompt.txt"}
+    "srt_fix": {"desc": "clip 字幕 LLM 纠错（术语+口语，1:1 保时间轴）", "entry": "video_slicer.srt_fix", "profile": "profiles/zh_main/srt_fix_system_prompt.txt"},
+    "script_clean": {"desc": "字级去口水执行器：原始口语脚本 → 删语气词/卡顿/重复/残句 + 🚨承接句保护 + ASR纠错（会删词，产脚本）。执行 references/字级去口水与承接句保护.md。", "entry": "video_slicer.script_clean", "rules": "references/字级去口水与承接句保护.md"}
   },
   "note": "cut_sentence/cut_word 共存（迁移计划 §3.4 / D6）；transcribe/pages_gen/srt_fix 为内容决策（D1）。字级去口水判断知识在 references/字级去口水与承接句保护.md。catalog 汇总在 video-compose。"
 }

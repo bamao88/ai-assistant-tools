@@ -22,16 +22,12 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 _ENGINE_ROOT = Path(__file__).resolve().parent.parent  # engines/video-framework-render
-CANVAS_W, CANVAS_H = 720, 1280
+ACCEL = dict(target_cps=8.0, max_speed=2.0, gap_speed=2.0, min_speed=1.0)  # 语速变速(画幅无关)
 
-# ---- 锁定几何（成片定稿值）----
-GEOM = dict(
-    circle_d=250, circle_x=435, circle_y=850,      # 视频圆形(直径/左上)
-    ring_d=262, ring_cx=560, ring_cy=975,          # 白环(直径/圆心)
-    transition=0.5,                                 # 翻页滑动秒
-)
-SUB = dict(FS=36, CY=1150, PAD=22, H=60, R=22)      # 字幕药丸
-ACCEL = dict(target_cps=8.0, max_speed=2.0, gap_speed=2.0, min_speed=1.0)
+# ---- 版式几何外置：layouts/<name>.json（竖版 vertical / 横版 landscape）----
+# 竖版值锁定（成片定稿，G4 逐帧回归基线）。外置后竖版输出必须逐字节不变。
+def load_layout(name: str = "vertical") -> dict:
+    return json.loads((_ENGINE_ROOT / "layouts" / f"{name}.json").read_text(encoding="utf-8"))
 
 # ======================================================================
 # 页面 HTML 模板（手写体/标题带/coral 长条/正文；无白环——白环是独立静态层）

@@ -1,0 +1,13 @@
+{
+  "_schema": "video-framework-layout/v1",
+  "name": "vertical",
+  "desc": "竖版 720×1280（张和框架页·成片定稿值，G4 逐帧回归基线）。改动须保竖版逐字节不变。",
+  "template": "vertical",
+  "canvas": {"w": 720, "h": 1280},
+  "geom": {
+    "circle_d": 250, "circle_x": 435, "circle_y": 850,
+    "ring_d": 262, "ring_cx": 560, "ring_cy": 975,
+    "transition": 0.5
+  },
+  "sub": {"FS": 36, "CY": 1150, "PAD": 22, "H": 60, "R": 22}
+}

@@ -126,7 +126,7 @@ AI 每次分析一段对话,开头先看到这样一段"地图"(示意,具体格
 **改动落点**:
 - `engines/customer-management/capabilities/analyze/core.py` —— `normalize_messages()` 改为无损 + 分层标注;新增"信息地图"构建函数。
 - 消费方 `capabilities/analyze/employment.py`、`profile.py` —— prompt 构建处接入"地图 + L0 默认"契约。
-- 阶段3 读图:复用 `capabilities/acquire/{decrypt_dat,get_img_key}.py` + payment 视觉路径,封装"按图片 handle 取图→视觉读"的可调用入口。
+- 阶段3 读图(已实现):`capabilities/acquire/resolve_images.py::resolve_person_images(wxid)` —— 复用 `decrypt_dat.dat2img` + imgkey;按 `md5(wxid)` 取 `config.WECHAT_ATTACH_DIR/{md5}/**/*.dat` 全解。CLI `python3 -m capabilities.acquire.resolve_images --wxid <wxid>`。**不按聊天 handle 取**(按人解);视觉读图由 agent 直接看解出的图(与 payment 卡同口径,不走纯文本 LLM 通道)。payment 配方的 `decrypt_student` 是同逻辑的上层批量编排,后续可 dedup 复用本模块(parked)。
 - 阶段4 派生:`capabilities/recognize.py` 加"加好友日期"确定性派生(系统事件 `你已添加了X` / `通过好友验证` + 首条 `createTime`)。
 
 **阶段1 — 无损分层(改 `normalize_messages`)**:

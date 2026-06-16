@@ -90,7 +90,7 @@ def transcribe_volc(url: str, *, fmt: str = "mp3", poll_secs: int = 5, max_polls
         "request": {"model_name": "bigmodel", "enable_itn": True, "enable_punc": True, "show_utterances": True},
     }
     code = None
-    for a in range(5):
+    for _ in range(5):
         code, _ = _volc_post("submit", reqid, body, key)
         _log(f"[volc] submit code={code}")
         if code == "20000000":

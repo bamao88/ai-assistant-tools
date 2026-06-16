@@ -33,7 +33,7 @@ def cut_clip(video: str | Path, keep_spans: list[list[float]], out_mp4: str | Pa
     flt.write_text("\n".join(lines), encoding="utf-8")
     subprocess.run(
         ["ffmpeg", "-v", "error", "-y", "-i", str(video), "-filter_complex_script", str(flt),
-         "-map", "[outv]", "-map", "[outa]", "-r", "25", "-c:v", "libx264", "-preset", "medium",
+         "-map", "[outv]", "-map", "[outa]", "-r", "25", "-c:v", "libx264", "-preset", preset,
          "-crf", str(crf), "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", str(out_mp4)],
         check=True,
     )

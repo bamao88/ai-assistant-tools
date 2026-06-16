@@ -123,7 +123,7 @@ python3 -m customer-management <命令> --help                    # 各命令具
 
 ## 待验收门（代码已完成，需本地实跑签收）
 
-结构 / 冒烟已过（check-tools 0 error、7 命令 `--help` 正常、`gather` 端到端只读跑通）。剩下需用户本地真跑确认：
+结构 / 冒烟已过（check-tools 0 error、9 命令 `--help` 正常、`gather` 端到端只读跑通）。剩下需用户本地真跑确认：
 
 1. **飞书 `--apply` 真写** parity——字段口径正确。
 2. **LLM analyze parity**——employment/profile 读聊天结论质量对比迁移前。

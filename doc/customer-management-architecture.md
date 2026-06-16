@@ -100,7 +100,8 @@ python3 -m customer-management <命令> --help                    # 各命令具
 |---|---|
 | **改判定口径**（什么算转型成功 / 画像怎么填 / 怎么读聊天，不碰代码） | 改对应 `cards/<name>.md` 里的 prompt 段（fenced 块）。`employment/profile/leads/payment` 四张卡，编辑即生效。 |
 | **加一张新任务卡**（新分析维度） | ① 写 `cards/<new>.md`（front-matter 声明 `flow / gate / write_back`，正文 `## 段名 + ``` 块`）→ ② 若复用现有 flow 直接跑；要新 flow 则在 `capabilities/analyze/` 加 `<flow>.py`（参考 employment.py / profile.py）。 |
-| **改写回规矩**（覆盖 / 追加 / 只填空 / 幂等） | 改卡 front-matter 的 `write_back` 引用 `write_policy.py` 里的**命名策略**（append/overwrite/skip_if_marked/reset/fill_only_if_empty/idempotent_field）。只有要**新策略**才动 `write_policy.py`（加纯函数 + 注册 POLICIES）。 |
+| **改写回规矩**（通用：覆盖 / 追加 / 只填空 / 幂等） | 改卡 front-matter 的 `write_back` 引用 `write_policy.py` 里的**命名策略**（append/overwrite/skip_if_marked/reset/fill_only_if_empty/idempotent_field）。只有要**新策略**才动 `write_policy.py`（加纯函数 + 注册 POLICIES）。**注意**：`write_policy.py` 只放**跨 flow 通用、与字段无关**的策略。 |
+| **改某张卡的字段合并**（画像字段怎么拼：手机号去重 / 学期取高 / 按枚举合并） | 这是**该卡自己的输出契约**，按 core.py §12「保留 per-卡输出契约」**留在对应 flow 模块**，不在 write_policy.py。画像卡：`capabilities/analyze/profile.py` 的 `apply_*`（`apply_text_append`/`apply_phone_append`/`apply_list_append`/`apply_replace`/`apply_action`）+ 顶部字段表（`FIELD_ACTIONS`/`TEXT_SEPARATORS`/`LIST_ENUM` 等）。 |
 | **改字段口径 / 新增飞书字段映射** | 改 `assistant_zh/student_manage/FIELD_SPEC.md`（口径真源，profile 卡会注入）；写回映射在 `outputs/sync_*.py`。 |
 | **加 / 调一级命令** | 在 `__main__.py` 的 `_DISPATCH` 加映射 → 在 `recipes/<name>.py` 写配方（或指到 `capabilities.analyze.<flow>`）。 |
 | **改员工排除 / 学员判定** | `assistant_zh/student_manage/staff_exclude.json`（员工名单）；确定性识别规则在 `capabilities/recognize.py`。 |

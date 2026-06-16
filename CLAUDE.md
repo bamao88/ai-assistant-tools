@@ -54,6 +54,15 @@ To update or iterate the customer-management skill — the 微信现场 ↔ 飞�
 
 All maintenance / iteration plans for any skill or engine live under **`doc/plan/`** (kebab-case `.md`, one file per effort, e.g. `doc/plan/video-tools-migration-plan.md`). Before starting work, write the plan there; do not scatter plan docs into skill/engine dirs, `var/`, or the repo root. `doc/` itself holds cross-cutting runbooks (e.g. `video-skill-architecture.md`); `doc/plan/` holds the planning/migration docs.
 
+### Audience: write plans for a non-developer owner
+
+The owner of this repo builds with AI but does **not** read code. Docs under `doc/` and `doc/plan/` are written for them, so:
+
+- **Lead with the "what" and "why", not the "how".** The overall architecture (what the pieces are and how they fit together) and what each feature actually does for the user — that is the point. Implementation mechanics (function names, file paths, code, config keys) go only in a clearly-marked "技术细节 / 给 agent 看" section at the end, never woven through the main narrative.
+- **No unexplained jargon.** Any technical term that survives must be defined in one plain sentence on first use, ideally with an everyday analogy. If a term isn't needed to make a decision, cut it.
+- **Plain language, Chinese for the user-facing parts.** Prefer concrete everyday wording over precise-but-opaque terms; short bullets and tables over dense paragraphs.
+- This applies to docs **for the owner** (plans, status updates, reports). Agent-facing files (`SKILL.md`, engine READMEs, this `CLAUDE.md`) stay precise and technical.
+
 ## Maintenance workflow
 
 1. Read pending reports under `feedback/`.

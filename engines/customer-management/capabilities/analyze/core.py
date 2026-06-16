@@ -290,7 +290,7 @@ def build_info_map(normalized: list[dict]) -> str:
     from collections import Counter
     if not normalized:
         return "【本段对话信息清单】无可用消息"
-    kinds = Counter(m.get("kind") for m in normalized)
+    kinds: Counter[str] = Counter(str(m.get("kind") or "system") for m in normalized)
     n_text = kinds.get("text", 0)
     total = len(normalized)
     lines = [f"【本段对话信息清单】共 {total} 条消息"]

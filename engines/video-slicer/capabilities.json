@@ -15,11 +15,18 @@
       "kind": "剪辑策略", "tier": "词级·方案B·端到端跑通",
       "desc": "两阶段（选题→定脚本）+ 字级时间戳，支持句中精剪/跳接。与 cut_sentence 共存，AI 按视频选用。",
       "entry": "video_slicer.twostage.pipeline（minutes 输入）",
-      "end_to_end": "video_slicer.twostage.run_volc（火山转录文件 → 选片 → 去口水文案，不渲染）",
-      "adapter": "video_slicer.twostage.adapt_volc（火山字级词表+分句 → Sentence 表；绕开腾讯 minutes 格式）",
+      "end_to_end_文案": "video_slicer.twostage.run_volc（火山转录 → 选片 → 去口水文案，不渲染）",
+      "end_to_end_切片": "video_slicer.twostage.run_cut（源视频+火山转录 → 分句 → 精选 → 字级去口水 → 从源视频切出去口水后的干净片段 clip.mp4+srt+文案）",
+      "parts": {
+        "分句": "transcribe.segment（字级词→静音切句，自给自足）",
+        "适配": "twostage.adapt_volc（火山词表+外部分句→Sentence）",
+        "字级去口水": "script_clean.clean_to_keep（整段通读删口水→对齐回字→keep时间区间，承接句保护）",
+        "切片": "twostage.cut_video（keep区间+源视频→ffmpeg trim+concat，--crop可裁下半）",
+        "字级吸附": "twostage.resolve（边界吸字间静音，可选）"
+      },
       "persona": "personas/zh_main.md",
-      "status": "端到端实测：选片质量对齐人工、去口水+承接句保护可用",
-      "out": "keep_sids / sentence_time_spans + script_clean 去口水文案"
+      "status": "端到端实测跑通：源视频→去口水后干净切片 clip.mp4（选片对齐人工，去口水保守安全）",
+      "out": "clip_N.mp4 + 相对SRT + 去口水文案"
     }
   },
   "also_provides": {

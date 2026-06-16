@@ -261,6 +261,11 @@ def normalize_messages(
         content = try_decode_hex(content).strip()
         if not content:
             continue
+        # zstd 压缩正文（28b52ffd…，是压缩不是加密）→ 解压恢复真实文本
+        if content[:8].lower() == "28b52ffd":
+            z = try_decode_zstd(content)
+            if z:
+                content = z
         kind, layer, handle = classify_message(m, content)
         if layer == "L0" and max_chars_per_msg is not None and len(content) > max_chars_per_msg:
             content = content[:max_chars_per_msg] + "...[截断]"

@@ -151,23 +151,23 @@ def clean_to_keep(
     raw_text = "".join(w["text"] for w in seg_words)
     brief = (f"切片主旨（hint）：{hint}\n\n" if hint else "") + f"【逐字稿】\n{raw_text}"
     client = OpenAICompatibleClient(providers=providers)
-    data = client.chat_json(
+    cleaned = client.chat(                              # 纯文本输出，绕开 JSON 脆弱性
         [{"role": "system", "content": system}, {"role": "user", "content": brief}],
         temperature=temperature,
     )
+    cleaned = _re.sub(r"^```[a-z]*\s*|\s*```$", "", (cleaned or "").strip())
 
-    kept_text = data.get("kept_text", "") or ""
-    kept = _align_kept(seg_words, kept_text)
-    # 保底：对齐消费 < 70% 删后文本（说明 LLM 改了字/漂移），回退不删整段切
-    if not kept or len(_bare("".join(w["text"] for w in kept))) < 0.7 * len(_bare(kept_text)):
+    kept = _align_kept(seg_words, cleaned)
+    # 保底：对齐消费 < 60% 删后文本（说明 LLM 改了字/漂移/没好好删），回退不删整段切
+    if not kept or len(_bare("".join(w["text"] for w in kept))) < 0.6 * len(_bare(cleaned)):
         kept = list(seg_words)
 
     return {
         "keep_spans": _merge_keep(kept, pad_s, pad_e, gap_max),
         "kept_words": kept,
         "kept_text": "".join(w["text"] for w in kept),
-        "removed": data.get("removed", []),
-        "protected": data.get("protected", []),
+        "removed": _diff_removed(seg_words, kept),
+        "protected": [],
     }
 
 

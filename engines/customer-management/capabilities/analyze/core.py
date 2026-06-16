@@ -127,6 +127,24 @@ def load_messages_raw(path: Path) -> dict | None:
         return None
 
 
+# --- 通用 JSON IO（两个 flow 共用，原各抄一份）------------------------------
+
+def load_json(path: Path, default: Any) -> Any:
+    """读 JSON，文件不存在或解析失败返回 default。"""
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return default
+
+
+def save_json(path: Path, data: Any) -> None:
+    """写 JSON（建父目录、UTF-8、indent=2、不转义中文）。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 # --- 规范化 -----------------------------------------------------------------
 
 def try_decode_hex(content: str) -> str:

@@ -49,6 +49,7 @@ def clean_script(
     temperature: float = 0.2,
 ) -> dict:
     """原始口语脚本 → {script, removed, protected}。profile 预留（规则当前账号无关）。"""
+    load_env_file(_discover_env_file())   # 复用引擎共享 .env（LLM provider 密钥）
     rules = _load_rules()
     system = (rules + "\n\n" + CLEAN_TASK) if rules else CLEAN_TASK
     brief = (f"切片主旨（hint）：{hint}\n\n" if hint else "") + f"【原始逐字稿】\n{raw_text}"

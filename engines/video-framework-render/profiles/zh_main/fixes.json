@@ -15,5 +15,16 @@
   ["builder", "Builder"],
   ["saas", "SaaS"],
   ["demo", "Demo"],
+  ["honeystone|哈尼森|哈里森|海纳斯", "Harness"],
+  ["agent\\s*sdk", "Agent SDK"],
+  ["\\bmcp\\b", "MCP"],
+  ["\\bprd\\b", "PRD"],
+  ["\\brag\\b", "RAG"],
+  ["\\bapi\\b", "API"],
+  ["vibe\\s*coding", "vibe coding"],
+  ["context\\s*engineering", "context engineering"],
+  ["deep\\s*seek|deepseek", "DeepSeek"],
+  ["karpathy|卡帕西", "Karpathy"],
+  ["copilot", "Copilot"],
   ["ai", "AI"]
 ]

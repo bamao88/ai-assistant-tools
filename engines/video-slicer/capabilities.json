@@ -12,12 +12,14 @@
       "out": "选段清单 segments(句级秒/MM:SS)"
     },
     "cut_word": {
-      "kind": "剪辑策略", "tier": "词级·方案B·调试中",
-      "desc": "两阶段（选题→定脚本）+ paraformer 字级时间戳，支持句中精剪/跳接。与 cut_sentence 共存，AI 按视频选用。",
-      "entry": "video_slicer.twostage.pipeline",
+      "kind": "剪辑策略", "tier": "词级·方案B·端到端跑通",
+      "desc": "两阶段（选题→定脚本）+ 字级时间戳，支持句中精剪/跳接。与 cut_sentence 共存，AI 按视频选用。",
+      "entry": "video_slicer.twostage.pipeline（minutes 输入）",
+      "end_to_end": "video_slicer.twostage.run_volc（火山转录文件 → 选片 → 去口水文案，不渲染）",
+      "adapter": "video_slicer.twostage.adapt_volc（火山字级词表+分句 → Sentence 表；绕开腾讯 minutes 格式）",
       "persona": "personas/zh_main.md",
-      "status": "built-not-fully-validated",
-      "out": "keep_sids / sentence_time_spans（数值秒 spans，D6）"
+      "status": "端到端实测：选片质量对齐人工、去口水+承接句保护可用",
+      "out": "keep_sids / sentence_time_spans + script_clean 去口水文案"
     }
   },
   "also_provides": {

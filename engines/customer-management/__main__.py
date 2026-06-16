@@ -41,6 +41,9 @@ _DISPATCH: dict[str, str] = {
     "group-order": "recipes.group_order",
     "payment": "recipes.payment",
     "health-check": "recipes.health_check",
+    # 只读 / 0-LLM 的 ad-hoc 读聊天 / 找人（补回迁移丢失的 agent 入口）
+    "read-chat": "recipes.read_chat",
+    "search-chat": "recipes.read_chat",
 }
 
 

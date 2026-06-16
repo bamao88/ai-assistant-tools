@@ -80,11 +80,6 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
     return {"clips": clips_out}
 
 
-def word_list_to_words(word_list):
-    """ms 词表 → resolve 认的秒词表 [{text,start,end}]。"""
-    return [{"text": w["text"], "start": w["begin_time"] / 1000, "end": w["end_time"] / 1000} for w in word_list]
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(prog="run_cut", description="字级线端到端切片：源视频+转录 → 去口水切片")
     ap.add_argument("--video", required=True, help="源视频")

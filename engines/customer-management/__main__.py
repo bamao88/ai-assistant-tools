@@ -15,6 +15,8 @@
     group-order    群序号同步（resolve → 写回）                                → recipes.group_order
     payment        付款金额（acquire 解图 + analyze 视觉卡 → 写回）             → recipes.payment
     health-check   客户表数据体检/订正闭环（吸收死脚本，scan→plan→apply→archive） → recipes.health_check
+    read-chat      读某人解码+分层聊天 + 信息地图（只读 / 0-LLM）              → recipes.read_chat
+    search-chat    跨全部人按关键词/日期/方向找候选 wxid + 解码片段（只读/0-LLM） → recipes.read_chat
 
 写回安全（红线）:
     gather / health-check 默认只读 / dry-run；employment 默认 --auto（真写），其余写回类

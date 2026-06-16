@@ -104,17 +104,18 @@ def locate_face_cx(video) -> float:
     return cx
 
 # ======================================================================
-def make_assets(out: Path):
+def make_assets(out: Path, L: dict):
     """白环+阴影静态层 + 圆形遮罩（PIL）。"""
     from PIL import Image, ImageDraw, ImageFilter
-    d=GEOM["ring_d"]; r=d//2; cx,cy=GEOM["ring_cx"],GEOM["ring_cy"]
-    sh=Image.new("RGBA",(CANVAS_W,CANVAS_H),(0,0,0,0))
+    CW,CH=L["canvas"]["w"],L["canvas"]["h"]; G=L["geom"]
+    d=G["ring_d"]; r=d//2; cx,cy=G["ring_cx"],G["ring_cy"]
+    sh=Image.new("RGBA",(CW,CH),(0,0,0,0))
     ImageDraw.Draw(sh).ellipse([cx-r-4,cy-r-4+14,cx+r+4,cy+r+4+14],fill=(20,20,20,90))
     sh=sh.filter(ImageFilter.GaussianBlur(18))
-    ring=Image.new("RGBA",(CANVAS_W,CANVAS_H),(0,0,0,0))
+    ring=Image.new("RGBA",(CW,CH),(0,0,0,0))
     ImageDraw.Draw(ring).ellipse([cx-r,cy-r,cx+r,cy+r],fill=(255,255,255,255))
     Image.alpha_composite(sh,ring).save(out/"ring.png")
-    cd=GEOM["circle_d"]; m=Image.new("L",(cd,cd),0); ImageDraw.Draw(m).ellipse([0,0,cd-1,cd-1],fill=255)
+    cd=G["circle_d"]; m=Image.new("L",(cd,cd),0); ImageDraw.Draw(m).ellipse([0,0,cd-1,cd-1],fill=255)
     m.save(out/"mask.png")
 
 # ======================================================================

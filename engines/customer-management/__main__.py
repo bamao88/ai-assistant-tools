@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """customer-management engine — 命令分发入口。
 
-按 §6 暴露 7 个一级命令，每个落到 recipes/ 的配方（P4 起全部接线，无 stub）。
+暴露 9 个一级命令，每个落到 recipes/ 的配方或 capabilities.analyze flow（全部接线，无 stub）。
 
 用法:
     python3 -m customer-management <command> [args...]

@@ -9,6 +9,7 @@
 | `intake-runbook.md` | 新学员入营标准流程（快速路径 Step0-4 + 整期 A/B/C），付款视觉卡用法 |
 | `health-check.md` | 客户表数据体检/订正闭环：缺陷类、scan→plan→apply→archive |
 | `payment-vision.md` | 付款金额视觉读卡（`cards/payment.md`）的 agent 用法 |
+| `ad-hoc-chat-read.md` | **ad-hoc 读聊天/找人**（`read-chat`/`search-chat`）：数据现实（明文 vs zstd 非加密、isSelf 不可信）、两个示例 query 端到端 |
 | `symlink-rebuild.md` | ⚠️ 双 host 软链重建 runbook（软链脆弱性 §12）；移动 tools 目录后必跑 |
 
 ## 命令速查（7 配方）

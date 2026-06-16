@@ -70,12 +70,15 @@ def _block(b):
     if t=="gap": return f'<div class="gap-{b.get("size","l")}"></div>'
     return ""
 
-def page_html(spec):
+def page_html_vertical(spec):
     body="".join(_block(b) for b in spec["blocks"])
     return (f'<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><style>{PAGE_CSS}</style></head>'
             f'<body><div class="stage">'
             f'<div class="titlewrap"><span class="titleband">{_html.escape(spec["title"])}</span></div>'
             f'<div class="titlestrip"></div><div class="ppt">{body}</div></div></body></html>')
+
+# 模板注册表：按 layout["template"] 选页面 HTML 构造器。横版（landscape）在 WS-4 加。
+TEMPLATES = {"vertical": page_html_vertical}
 
 # ======================================================================
 def locate_face_cx(video) -> float:

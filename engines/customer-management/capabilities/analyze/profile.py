@@ -135,13 +135,15 @@ def build_system_prompt() -> str:
     return template.format(spec=spec_text)
 
 
-def build_user_prompt(student: dict, new_messages: list[dict], user_template: str) -> str:
-    """卡里的 USER_PROMPT_TEMPLATE → 注入当前画像 + 增量窗口消息。"""
+def build_user_prompt(student: dict, new_messages: list[dict], user_template: str, info_map: str = "") -> str:
+    """卡里的 USER_PROMPT_TEMPLATE → 注入当前画像 + 增量窗口消息（前置自描述信息地图）。"""
     profile_view = {k: v for k, v in student.items() if k != "wxid"}
     msgs_text = "\n".join(
         f"[{m['ts_str']}] [{'张和/助理' if m['is_staff'] else '学员'}:{m['sender_name']}] {m['content']}"
         for m in new_messages
     )
+    if info_map:
+        msgs_text = info_map + "\n\n---\n\n" + msgs_text
     profile_json = "```json\n" + json.dumps(profile_view, ensure_ascii=False, indent=2) + "\n```"
     return user_template.format(
         WXID=student.get("wxid", ""),

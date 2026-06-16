@@ -23,18 +23,21 @@ tools/engines/
 │   └── build_catalog.py      从各引擎 capabilities.json 重建 catalog
 │
 ├── video-slicer/             积木厂 · 剪辑策略 + 内容决策（Python 包，纯 urllib LLM，无独立 venv）
-│   ├── capabilities.json     声明：cut_sentence(句级·线上) / cut_word(词级·方案B) 共存
+│   ├── capabilities.json     声明：cut_sentence(句级·线上) / cut_word(词级·方案B) 共存 + transcribe
 │   ├── video_slicer/         planner + twostage + pages_gen(分页) + srt_fix(字幕纠错)
-│   ├── personas/zh_main.md   张和选题 persona
+│   │   └── transcribe/       字级转写：火山 seedasr v3 主 / 阿里 paraformer 兜底；公网/OSS 上传
+│   ├── personas/zh_main.md   张和选题 persona（含问答可剪）
+│   ├── references/           字级去口水与承接句保护.md（删前保后+承接句红线，cut_word 判断基底）
 │   ├── profiles/zh_main/     {pages,srt_fix}_system_prompt.txt（账号 prompt 定制）
 │   ├── baselines/            方案A 选段基准（对照用）
 │   └── .env                  → 符号链 var/credentials/llm.env（LLM provider 密钥，tools 侧真源）
 │
-├── video-framework-render/   积木厂 · 框架页竖版渲染（独立 .venv: pillow + opencv-python-headless）
-│   ├── video_framework_render/render.py        6 阶段原子：locate/assets/pages/subs/compose/accelerate
-│   ├── video_framework_render/render_page.js   puppeteer 渲 HTML→PNG（PUPPETEER_PATH 可指定，否则自动找）
+├── video-framework-render/   积木厂 · 框架页渲染（竖版 720×1280 / 横版 1280×720 同源·独立 .venv: pillow+opencv）
+│   ├── video_framework_render/render.py        6 阶段原子 + TEMPLATES(vertical 框架页 / landscape 方框)
+│   ├── video_framework_render/render_page.js   puppeteer 渲 HTML→PNG（画幅参数化，默认 720×1280）
+│   ├── layouts/              vertical.json / landscape.json（CANVAS/GEOM/SUB 几何外置，--layout 选）
 │   ├── capabilities.json     声明：framework_reframe / compose / accelerate / subtitles / reframe_locate / raw
-│   ├── profiles/zh_main/     fixes.json（账号 ASR 术语表）；GEOM/版式 = render.py 内置默认
+│   ├── profiles/zh_main/     fixes.json（账号 ASR 术语表）
 │   └── requirements.txt      pillow + opencv-python-headless（首跑建 .venv）
 │
 └── video-clip/               积木厂 · 通用叠加原子（独立 .venv）

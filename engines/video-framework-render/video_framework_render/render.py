@@ -77,8 +77,40 @@ def page_html_vertical(spec):
             f'<div class="titlewrap"><span class="titleband">{_html.escape(spec["title"])}</span></div>'
             f'<div class="titlestrip"></div><div class="ppt">{body}</div></div></body></html>')
 
-# 模板注册表：按 layout["template"] 选页面 HTML 构造器。横版（landscape）在 WS-4 加。
-TEMPLATES = {"vertical": page_html_vertical}
+# ---- 横版 1280×720 模板：吸收 videocut-zh 适合横屏的「方框」骨架，配色/手写字/coral 沿用我们的。----
+# 复用同一套 block（hero/arrow/mid/key/sub/gap）——内容/视觉解耦：同一份 pages 既出竖版又出横版。
+# 右侧 + 右下留空给人像圆形 PIP（内容别压到那）。
+PAGE_CSS_LANDSCAPE = """
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:1280px; height:720px; background:#ffffff; }
+.stage { position:relative; width:1280px; height:720px; background:#fbfbf7;
+  font-family:"Hannotate SC","HanziPen SC","PingFang SC",cursive; color:#1a1a1a; }
+.titlewrap { position:absolute; top:42px; left:0; width:1280px; text-align:center; }
+.titleband { display:inline-block; padding:8px 40px; background:#f0ece3; border-radius:14px;
+  font-size:40px; font-weight:700; letter-spacing:1px; color:#1a1a1a; }
+.titlestrip { position:absolute; top:128px; left:50%; transform:translateX(-50%);
+  width:520px; height:12px; border-radius:6px; background:#FF6B5C; }
+.ppt { position:absolute; top:172px; left:80px; width:840px;
+  display:flex; flex-direction:column; align-items:flex-start;
+  padding:30px 40px; border:3px solid #1a1a1a; border-radius:24px; background:#ffffff; }
+.l-hero { font-size:52px; font-weight:700; letter-spacing:1px; position:relative; }
+.underline { display:block; margin:4px 0 0; height:10px; }
+.arrow { margin:10px 0 4px; }
+.l-mid { font-size:34px; font-weight:700; line-height:1.4; }
+.l-key { font-size:40px; font-weight:700; margin-top:8px; }
+.l-sub { font-size:28px; color:#555; margin-top:6px; line-height:1.4; }
+.gap-l { height:30px; } .gap-m { height:18px; }
+"""
+
+def page_html_landscape(spec):
+    body="".join(_block(b) for b in spec["blocks"])
+    return (f'<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><style>{PAGE_CSS_LANDSCAPE}</style></head>'
+            f'<body><div class="stage">'
+            f'<div class="titlewrap"><span class="titleband">{_html.escape(spec["title"])}</span></div>'
+            f'<div class="titlestrip"></div><div class="ppt">{body}</div></div></body></html>')
+
+# 模板注册表：按 layout["template"] 选页面 HTML 构造器。
+TEMPLATES = {"vertical": page_html_vertical, "landscape": page_html_landscape}
 
 # ======================================================================
 def locate_face_cx(video) -> float:

@@ -68,6 +68,7 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
         result = pipeline.run_from_sentences(sents, persona=persona, host=host,
                                              providers=providers, limit=limit, source=str(words_json))
         sel_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    dump_process_files(out, words_json, words, sents, result)   # 各阶段中间产物落盘
     clips_out = []
     for i, clip in enumerate(result["clips"], 1):
         title = clip.get("title", f"clip{i}")

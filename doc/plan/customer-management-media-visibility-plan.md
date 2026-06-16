@@ -1,7 +1,14 @@
 # 学员管理 skill —— 聊天记录「无损分层 + 自描述信息地图」改造计划
 
 > 面向 owner 的计划文档。前面讲**是什么、为什么、改完有什么不一样**;最后一节「技术细节」才是给写代码的 agent 看的。
-> 状态:**待你最终确认 → 即可实现**。本文件取代早前的"媒体可见性"版本(那一版只想修图片,范围太窄)。
+> 状态:**阶段1/2/4 已实现并验证(2026-06-16);阶段3 待做**。本文件取代早前的"媒体可见性"版本(那一版只想修图片,范围太窄)。
+>
+> **实现进度**
+> - ✅ 阶段1 无损分层:`core.normalize_messages` 改为无损+`kind/layer/handle` 标注(48→48 条不丢,旧逻辑会丢 17 条)。
+> - ✅ 阶段2 信息地图:`core.build_info_map` + `core.text_layer`;已接入 `employment.py`/`profile.py`(默认喂 L0 文字 + 前置地图)。
+> - ✅ 阶段4 加好友日期:`core.friend_add_date` + `recognize.friend_add_date`(Will 实测 2026-04-01)。
+> - ✅ 验证:Will 现场"文字+付款截图+回复"全部保留(漏判根因已消除);check-tools 0 error;employment dry-run 正常、未触碰业务数据。
+> - ⏳ 阶段3 读图工具:需把聊天图片 handle ↔ 解密(payment acquire)打通,依赖本机 WeChat 上游,headless 难验,单列后续。
 
 ---
 

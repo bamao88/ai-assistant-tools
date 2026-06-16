@@ -33,14 +33,15 @@ def assemble_script(keep_sids: list[list[int]], sentences: list[Sentence]) -> di
     return {"script": "\n".join(parts), "sentence_time_spans": spans_time, "est_duration": round(dur, 1)}
 
 
-def run(
-    minutes_path: str,
+def run_from_sentences(
+    sentences: list[Sentence],
     persona: str,
     host: str = "张和",
     providers: list[str] | None = None,
     limit: int | None = None,
+    source: str = "<sentences>",
 ) -> dict:
-    sentences = load_indexed_sentences(minutes_path, host=host)
+    """已索引的句子表 → {选题 + 切片脚本}。输入来源无关（腾讯 minutes / 火山适配层都喂这里）。"""
     persona_text = load_persona(persona)
 
     print(f"[stage1] 选题中…（{len(sentences)} 句逐字稿）", file=sys.stderr)

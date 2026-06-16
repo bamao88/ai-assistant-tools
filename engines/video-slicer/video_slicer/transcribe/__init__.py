@@ -34,7 +34,7 @@ def _log(m: str) -> None:
     print(m, file=sys.stderr, flush=True)
 
 
-def load_env_file(path: Path) -> None:
+def load_env_file(path: str | Path) -> None:
     """读 KEY=VALUE 注入 os.environ（已存在的不覆盖）。火山 key 也放这里。"""
     import os
 

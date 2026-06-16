@@ -141,6 +141,38 @@ def try_decode_hex(content: str) -> str:
         return content
 
 
+def try_decode_zstd(content: str) -> str | None:
+    """微信把部分消息正文存成 zstd 压缩的 hex（magic 28 b5 2f fd）——**是压缩不是加密**。
+
+    实测这些行 ~100% 能解出可读文本，且大多是真人对话（群发课程/回放链接、学员反馈、试听询问），
+    旧 try_decode_hex 只做 bytes.fromhex().decode() 对压缩数据必失败 → 这些消息一直被当乱码丢掉。
+    本函数补回解压。`zstandard` 惰性 import，缺库则返回 None 优雅退回（不在 import 期硬依赖）。
+    返回解出的文本，或 None（不是 zstd / 解不出 / 无库）。
+    """
+    if not content or not re.match(r"^[0-9a-fA-F]+$", content) or len(content) % 2 != 0:
+        return None
+    try:
+        raw = bytes.fromhex(content)
+    except Exception:
+        return None
+    if raw[:4] != b"\x28\xb5\x2f\xfd":
+        return None
+    try:
+        import zstandard as zstd  # 惰性
+    except Exception:
+        return None
+    try:
+        try:
+            data = zstd.ZstdDecompressor().decompress(raw)
+        except zstd.ZstdError:
+            import io
+            data = zstd.ZstdDecompressor().stream_reader(io.BytesIO(raw)).read()
+        text = data.decode("utf-8", "replace").strip()
+        return text or None
+    except Exception:
+        return None
+
+
 def is_staff_sender(msg: dict, student_wxid: str, staff_wxids: set[str]) -> bool:
     """WeFlow 抽出的 isSelf 全是 0 不可信。靠 senderWxid + senderName 推断。"""
     sender_wxid = msg.get("senderWxid", "") or ""

@@ -15,10 +15,10 @@
 ## 4 能力模型 + 目录布局
 
 ```
-工序组织：① 任务卡 cards/（analyze 的参数）→ ② 4 能力 capabilities/ → ③ 7 配方 recipes/ → ④ 出口 outputs/
+工序组织：① 任务卡 cards/（analyze 的参数）→ ② 4 能力 capabilities/ → ③ 配方 recipes/ → ④ 出口 outputs/
 
 tools/engines/customer-management/
-├── __main__.py              ★ 唯一对外入口 · 7 命令分发（_DISPATCH → recipes/ 或 capabilities.analyze）
+├── __main__.py              ★ 唯一对外入口 · 9 命令分发（_DISPATCH → recipes/ 或 capabilities.analyze）
 ├── config.py                ★ 跨仓单点路径解析器——所有路径收口于此（DATA_ROOT 锚 assistant_zh，CUSTOMER_MGMT_DATA_ROOT 可覆盖）
 ├── write_policy.py          ★ 写入策略层：命名纯函数（append/overwrite/skip_if_marked/reset/fill_only_if_empty/idempotent_field），卡片用名字引用
 │

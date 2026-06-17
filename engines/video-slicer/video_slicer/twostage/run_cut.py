@@ -55,10 +55,13 @@ def dump_process_files(out: Path, words_json, words, sents, result) -> None:
 
 
 def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
-            providers=None, limit=None, crop=None, snap=False) -> dict:
+            providers=None, limit=None, crop=None, snap=False, no_video=False) -> dict:
+    """no_video=True：纯文字模式——只出文案/字幕(.txt/.srt)，跳过 ffmpeg 切视频（验证/无视频时用）。"""
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     words, sents = segment.sentences_from_wordfile(words_json, host=host)
     print(f"[adapt] 转录 → {len(words)} 字 / {len(sents)} 句", file=sys.stderr)
+    align_total = align_ok = 0                          # 原生句↔字级 对齐统计（P1 指标）
+    align_fails: list[dict] = []
 
     sel_path = out / "_selection.json"                  # 选题缓存：复用则可断点续切（避免重跑 stage1/2、避免选题漂移）
     if sel_path.exists():

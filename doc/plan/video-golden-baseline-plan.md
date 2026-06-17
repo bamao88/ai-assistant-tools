@@ -85,6 +85,49 @@ AI 出的是**候选**，不是终稿。你像现在筛 `人工筛选版` 那样
 | 选题来源（复用，不重做） | `var/zh_main/cuts/agent全量-volc-native/_selection.json` | 22 个选题的 title/论点/钩子从这读 |
 | persona / 时间回查（复用） | `personas/zh_main.md`、`twostage/resolve.py` | 不重复造 |
 
+### 涉及文件目录树
+
+图例：🆕 本期新建 ｜ ✏️ 本期增补 ｜ ♻️ 复用不改（读取/参考） ｜ 📦 产物落点
+
+```
+tools/
+├── engines/video-slicer/
+│   ├── baselines/                              ← 金标准这条线的代码窝（已存在）
+│   │   ├── README.md                       ✏️ 增补：金标准 schema + 打分法 + 口径
+│   │   ├── select_clips.py                 ♻️ 已有"方案A"选段基准，做邻居、不动
+│   │   ├── global_evidence.py              🆕 全局取证生成器（阶段1核心）
+│   │   └── score.py                        🆕 打分器：候选 vs 金标准（阶段3）
+│   │
+│   ├── personas/
+│   │   └── zh_main.md                       ♻️ 张和 persona，生成器读它当 system 头
+│   │
+│   └── video_slicer/twostage/                  ← 现有两阶段生产逻辑（本期不改）
+│       ├── stage1_topics.py                 ♻️ 选题（无异议）
+│       ├── stage2_script.py                 ⚠️ 瓶颈所在(WINDOW_PAD=6)，本期不碰
+│       ├── index.py                         ♻️ 句号稿渲染（render_numbered 复用）
+│       └── resolve.py                       ♻️ 句子编号→时间秒，金标准回查/剪辑复用
+│
+├── var/zh_main/
+│   ├── asr/agent_eval_0613/
+│   │   └── words.json                       ♻️ 3h 全场转录稿（句/字/全文，输入源）
+│   │
+│   ├── cuts/agent全量-volc-native/             ← 现有产物 + 选题来源
+│   │   ├── _selection.json                  ♻️ 22 个选题(title/论点/钩子)，生成器读它
+│   │   ├── 全部选题与文案.md                  ♻️ 选题人读版（参考）
+│   │   └── 剪辑脚本_人工筛选版.json            ♻️ 你已有的手工筛选版，定稿流程参考
+│   │
+│   └── eval/agent_eval_0613/                🆕📦 金标准产物全落这（新建目录）
+│       ├── candidates/clip_NN_*.md         🆕📦 每条选题一份人工评审稿（阶段1出）
+│       ├── golden.json                     🆕📦 你人工拍定的标准答案（阶段2出）
+│       └── score_report.json               🆕📦 打分结果，含现有产出的基线分（阶段3出）
+│
+└── doc/
+    ├── plan/video-golden-baseline-plan.md  🆕 本计划文档
+    └── video-skill-architecture.md         ✏️ 收口：维护表加"金标准/评测基准"这条线（阶段4）
+```
+
+> 一眼看懂：**只新增 2 个代码文件**（`global_evidence.py` 生成器、`score.py` 打分器）+ 1 个产物目录（`var/zh_main/eval/`）；其余全是**读取/参考已有文件**。线上生产逻辑（`twostage/`）一个字不改。
+
 ---
 
 ## 六、分阶段做（每阶段都能单独验收）

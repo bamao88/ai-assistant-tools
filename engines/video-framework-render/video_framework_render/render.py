@@ -326,7 +326,7 @@ def run(job_path: str, out_root: str|None, skip_accel: bool, profile="zh_main", 
         "stream=width,height","-of","csv=p=0",str(job["video"])],capture_output=True,text=True).stdout.strip()
     sw,sh=[int(x) for x in info.split(",")[:2]]; job["src_w"]=sw
     strip_px=int(job.get("subtitle_strip_px",0))   # 源底部烧死字幕条高度(腾讯合成轨常见;纯说话人轨=0)
-    print("  [1/6] 人脸定位"); fcx=locate_face_cx(job["video"])
+    print("  [1/6] 人脸定位"); fcx,fcy=locate_face_cx(job["video"])
     print("  [2/6] 静态资源(白环/遮罩)"); make_assets(out, L)
     print("  [3/6] 渲染框架图页"); render_pages(job["pages"], out, L)
     print("  [4/6] 字幕(纠错+药丸)"); make_subtitles(Path(job["srt"]), out, profile, L)

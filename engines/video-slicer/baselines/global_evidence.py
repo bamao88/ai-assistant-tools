@@ -138,13 +138,14 @@ def select_evidence(topic: dict, sents, persona_text: str, full_view: str,
         f"【全场编号句】\n{full_view}"
     )
     client = OpenAICompatibleClient(providers=providers)
-    data = client.chat_json(
-        [
-            {"role": "system", "content": persona_text + "\n\n" + GLOBAL_EVIDENCE_TASK},
-            {"role": "user", "content": brief},
-        ],
-        temperature=temperature,
-    )
+    msgs = [
+        {"role": "system", "content": persona_text + "\n\n" + GLOBAL_EVIDENCE_TASK},
+        {"role": "user", "content": brief},
+    ]
+    try:                                  # 一次重试：长稿偶发 JSON 截断/超时
+        data = client.chat_json(msgs, temperature=temperature)
+    except Exception:  # noqa: BLE001
+        data = client.chat_json(msgs, temperature=temperature)
     segments = _clean_segments(data.get("segments", []), sents)
     keep_sids = [seg["sids"] for seg in segments]
     time_spans = [seg["span"] for seg in segments]

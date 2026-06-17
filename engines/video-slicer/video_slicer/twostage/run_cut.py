@@ -140,7 +140,7 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
 
 def main() -> int:
     ap = argparse.ArgumentParser(prog="run_cut", description="字级线端到端切片：源视频+转录 → 去口水切片")
-    ap.add_argument("--video", required=True, help="源视频")
+    ap.add_argument("--video", default=None, help="源视频（--no-video 时可省）")
     ap.add_argument("--words", required=True, help="火山字级词表 subtitles_words.json")
     ap.add_argument("--out", required=True, help="输出目录")
     ap.add_argument("--persona", default="zh_main")
@@ -149,11 +149,15 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=None, help="只切前 N 条选题（省钱）")
     ap.add_argument("--crop", default=None, help="如 crop=1080:800:0:1120 裁下半摄像头")
     ap.add_argument("--snap", action="store_true", help="边界轻微吸字间静音（默认关；去口水已字精度）")
+    ap.add_argument("--no-video", dest="no_video", action="store_true",
+                    help="纯文字模式：只出文案/字幕，不切视频（验证/无视频时用）")
     a = ap.parse_args()
+    if not a.no_video and not a.video:
+        ap.error("需要 --video（或加 --no-video 走纯文字模式）")
     load_env_file(_discover_env_file())
     providers = [p.strip() for p in a.providers.split(",") if p.strip()]
     run_cut(a.video, a.words, a.out, persona=a.persona, host=a.host, providers=providers,
-            limit=a.limit, crop=a.crop, snap=a.snap)
+            limit=a.limit, crop=a.crop, snap=a.snap, no_video=a.no_video)
     return 0
 
 

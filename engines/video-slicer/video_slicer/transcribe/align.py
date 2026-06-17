@@ -70,9 +70,22 @@ def map_sentence(text: str, words: list[dict]) -> list[dict]:
             raise AlignError(f"文本读完仍剩 {len(words) - j} 个字未对齐")
         # 3) 数字段(ITN)：原子块，吃到下一个锚字
         if _is_itn(text[i]):
+            # 收最大数字段：连续数字字符 + "标点后紧跟另一个数字段"也并入
+            # （如 "30%、20%" 两块间只隔顿号、无中文锚字，须合并成一个原子块）
             k = i
-            while k < n and _is_itn(text[k]):
-                k += 1
+            while k < n:
+                if _is_itn(text[k]):
+                    k += 1
+                elif _is_skip(text[k]):
+                    p = k
+                    while p < n and _is_skip(text[p]):
+                        p += 1
+                    if p < n and _is_itn(text[p]):
+                        k = p                       # 吸收中间标点，继续数字段
+                    else:
+                        break
+                else:
+                    break
             itn_text = text[i:k]
             a = k                                   # 数字段后、跳过标点，找下一个普通锚字
             while a < n and _is_skip(text[a]):

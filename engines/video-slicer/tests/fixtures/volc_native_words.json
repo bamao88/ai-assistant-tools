@@ -1,0 +1,451 @@
+{
+  "words": [
+    {
+      "text": "真",
+      "begin_time": 1000,
+      "end_time": 1200
+    },
+    {
+      "text": "的",
+      "begin_time": 1200,
+      "end_time": 1400
+    },
+    {
+      "text": "真",
+      "begin_time": 1400,
+      "end_time": 1600
+    },
+    {
+      "text": "的",
+      "begin_time": 1600,
+      "end_time": 1800
+    },
+    {
+      "text": "真",
+      "begin_time": 1800,
+      "end_time": 2000
+    },
+    {
+      "text": "的",
+      "begin_time": 2000,
+      "end_time": 2200
+    },
+    {
+      "text": "不",
+      "begin_time": 2200,
+      "end_time": 2400
+    },
+    {
+      "text": "要",
+      "begin_time": 2400,
+      "end_time": 2600
+    },
+    {
+      "text": "做",
+      "begin_time": 2600,
+      "end_time": 2800
+    },
+    {
+      "text": "低",
+      "begin_time": 2800,
+      "end_time": 3000
+    },
+    {
+      "text": "代",
+      "begin_time": 3000,
+      "end_time": 3200
+    },
+    {
+      "text": "码",
+      "begin_time": 3200,
+      "end_time": 3400
+    },
+    {
+      "text": "了",
+      "begin_time": 3400,
+      "end_time": 3600
+    },
+    {
+      "text": "不",
+      "begin_time": 3600,
+      "end_time": 3800
+    },
+    {
+      "text": "要",
+      "begin_time": 3800,
+      "end_time": 4000
+    },
+    {
+      "text": "做",
+      "begin_time": 4000,
+      "end_time": 4200
+    },
+    {
+      "text": "工",
+      "begin_time": 4200,
+      "end_time": 4400
+    },
+    {
+      "text": "作",
+      "begin_time": 4400,
+      "end_time": 4600
+    },
+    {
+      "text": "流",
+      "begin_time": 4600,
+      "end_time": 4800
+    },
+    {
+      "text": "了",
+      "begin_time": 4800,
+      "end_time": 5000
+    },
+    {
+      "text": "完",
+      "begin_time": 5000,
+      "end_time": 5200
+    },
+    {
+      "text": "全",
+      "begin_time": 5200,
+      "end_time": 5400
+    },
+    {
+      "text": "干",
+      "begin_time": 5400,
+      "end_time": 5600
+    },
+    {
+      "text": "不",
+      "begin_time": 5600,
+      "end_time": 5800
+    },
+    {
+      "text": "过",
+      "begin_time": 5800,
+      "end_time": 6000
+    },
+    {
+      "text": "Agent",
+      "begin_time": 6000,
+      "end_time": 6200
+    },
+    {
+      "text": "嗯",
+      "begin_time": 6500,
+      "end_time": 6700
+    },
+    {
+      "text": "今",
+      "begin_time": 6700,
+      "end_time": 6900
+    },
+    {
+      "text": "天",
+      "begin_time": 6900,
+      "end_time": 7100
+    },
+    {
+      "text": "用",
+      "begin_time": 7100,
+      "end_time": 7300
+    },
+    {
+      "text": "Codex",
+      "begin_time": 7300,
+      "end_time": 7500
+    },
+    {
+      "text": "能",
+      "begin_time": 7500,
+      "end_time": 7700
+    },
+    {
+      "text": "解",
+      "begin_time": 7700,
+      "end_time": 7900
+    },
+    {
+      "text": "决",
+      "begin_time": 7900,
+      "end_time": 8100
+    },
+    {
+      "text": "的",
+      "begin_time": 8100,
+      "end_time": 8300
+    },
+    {
+      "text": "问",
+      "begin_time": 8300,
+      "end_time": 8500
+    },
+    {
+      "text": "题",
+      "begin_time": 8500,
+      "end_time": 8700
+    },
+    {
+      "text": "如",
+      "begin_time": 8700,
+      "end_time": 8900
+    },
+    {
+      "text": "果",
+      "begin_time": 8900,
+      "end_time": 9100
+    },
+    {
+      "text": "用",
+      "begin_time": 9100,
+      "end_time": 9300
+    },
+    {
+      "text": "低",
+      "begin_time": 9300,
+      "end_time": 9500
+    },
+    {
+      "text": "代",
+      "begin_time": 9500,
+      "end_time": 9700
+    },
+    {
+      "text": "码",
+      "begin_time": 9700,
+      "end_time": 9900
+    },
+    {
+      "text": "只",
+      "begin_time": 9900,
+      "end_time": 10100
+    },
+    {
+      "text": "能",
+      "begin_time": 10100,
+      "end_time": 10300
+    },
+    {
+      "text": "解",
+      "begin_time": 10300,
+      "end_time": 10500
+    },
+    {
+      "text": "决",
+      "begin_time": 10500,
+      "end_time": 10700
+    },
+    {
+      "text": "百",
+      "begin_time": 10700,
+      "end_time": 10900
+    },
+    {
+      "text": "分",
+      "begin_time": 10900,
+      "end_time": 11100
+    },
+    {
+      "text": "之",
+      "begin_time": 11100,
+      "end_time": 11300
+    },
+    {
+      "text": "三",
+      "begin_time": 11300,
+      "end_time": 11500
+    },
+    {
+      "text": "十",
+      "begin_time": 11500,
+      "end_time": 11700
+    },
+    {
+      "text": "百",
+      "begin_time": 11700,
+      "end_time": 11900
+    },
+    {
+      "text": "分",
+      "begin_time": 11900,
+      "end_time": 12100
+    },
+    {
+      "text": "之",
+      "begin_time": 12100,
+      "end_time": 12300
+    },
+    {
+      "text": "二",
+      "begin_time": 12300,
+      "end_time": 12500
+    },
+    {
+      "text": "十",
+      "begin_time": 12500,
+      "end_time": 12700
+    },
+    {
+      "text": "甚",
+      "begin_time": 12700,
+      "end_time": 12900
+    },
+    {
+      "text": "至",
+      "begin_time": 12900,
+      "end_time": 13100
+    },
+    {
+      "text": "百",
+      "begin_time": 13100,
+      "end_time": 13300
+    },
+    {
+      "text": "分",
+      "begin_time": 13300,
+      "end_time": 13500
+    },
+    {
+      "text": "之",
+      "begin_time": 13500,
+      "end_time": 13700
+    },
+    {
+      "text": "十",
+      "begin_time": 13700,
+      "end_time": 13900
+    },
+    {
+      "text": "水",
+      "begin_time": 13900,
+      "end_time": 14100
+    },
+    {
+      "text": "平",
+      "begin_time": 14100,
+      "end_time": 14300
+    },
+    {
+      "text": "能",
+      "begin_time": 14300,
+      "end_time": 14500
+    },
+    {
+      "text": "差",
+      "begin_time": 14500,
+      "end_time": 14700
+    },
+    {
+      "text": "五",
+      "begin_time": 14700,
+      "end_time": 14900
+    },
+    {
+      "text": "到",
+      "begin_time": 14900,
+      "end_time": 15100
+    },
+    {
+      "text": "十",
+      "begin_time": 15100,
+      "end_time": 15300
+    },
+    {
+      "text": "倍",
+      "begin_time": 15300,
+      "end_time": 15500
+    },
+    {
+      "text": "那",
+      "begin_time": 15800,
+      "end_time": 16000
+    },
+    {
+      "text": "个",
+      "begin_time": 16000,
+      "end_time": 16200
+    },
+    {
+      "text": "除",
+      "begin_time": 16200,
+      "end_time": 16400
+    },
+    {
+      "text": "了",
+      "begin_time": 16400,
+      "end_time": 16600
+    },
+    {
+      "text": "极",
+      "begin_time": 16600,
+      "end_time": 16800
+    },
+    {
+      "text": "少",
+      "begin_time": 16800,
+      "end_time": 17000
+    },
+    {
+      "text": "数",
+      "begin_time": 17000,
+      "end_time": 17200
+    },
+    {
+      "text": "场",
+      "begin_time": 17200,
+      "end_time": 17400
+    },
+    {
+      "text": "景",
+      "begin_time": 17400,
+      "end_time": 17600
+    },
+    {
+      "text": "比",
+      "begin_time": 17600,
+      "end_time": 17800
+    },
+    {
+      "text": "如",
+      "begin_time": 17800,
+      "end_time": 18000
+    },
+    {
+      "text": "外",
+      "begin_time": 18000,
+      "end_time": 18200
+    },
+    {
+      "text": "呼",
+      "begin_time": 18200,
+      "end_time": 18400
+    },
+    {
+      "text": "客",
+      "begin_time": 18400,
+      "end_time": 18600
+    },
+    {
+      "text": "服",
+      "begin_time": 18600,
+      "end_time": 18800
+    }
+  ],
+  "sentences": [
+    {
+      "text": "真的真的真的不要做低代码了，不要做工作流了，完全干不过Agent。",
+      "begin_time": 1000,
+      "end_time": 6200
+    },
+    {
+      "text": "嗯，今天用Codex能解决的问题，如果用低代码只能解决30%、20%甚至10%，水平能差5到10倍。",
+      "begin_time": 6500,
+      "end_time": 15500
+    },
+    {
+      "text": "那个，除了极少数场景，比如外呼客服。",
+      "begin_time": 15800,
+      "end_time": 18800
+    }
+  ]
+}

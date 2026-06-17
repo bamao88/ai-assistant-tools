@@ -15,8 +15,10 @@ def _ass_t(sec: float) -> str:
 
 
 def cut_clip(video: str | Path, keep_spans: list[list[float]], out_mp4: str | Path,
-             crop: str | None = None, crf: int = 20, preset: str = "veryfast") -> Path:
-    """源视频 + keep_spans → clip.mp4（trim 每段 + concat）。crop 如 'crop=1080:800:0:1120' 裁下半。"""
+             crop: str | None = None, crf: int = 20, preset: str = "veryfast",
+             fade_out_sec: float = 0.0) -> Path:
+    """源视频 + keep_spans → clip.mp4（trim 每段 + concat）。crop 如 'crop=1080:800:0:1120' 裁下半。
+    fade_out_sec>0：结尾加该秒数音频淡出（防结尾突兀）。"""
     keep = [(float(s), float(e)) for s, e in keep_spans if float(e) - float(s) > 0.05]
     if not keep:
         raise ValueError("无有效保留区间")
@@ -27,8 +29,13 @@ def cut_clip(video: str | Path, keep_spans: list[list[float]], out_mp4: str | Pa
     for i, (s, e) in enumerate(keep):
         lines.append(f"[0:v]trim=start={s:.3f}:end={e:.3f},setpts=PTS-STARTPTS{vf}[v{i}];")
         lines.append(f"[0:a]atrim=start={s:.3f}:end={e:.3f},asetpts=PTS-STARTPTS[a{i}];")
-    lines.append("".join(f"[v{i}][a{i}]" for i in range(len(keep))) +
-                 f"concat=n={len(keep)}:v=1:a=1[outv][outa]")
+    cat = "".join(f"[v{i}][a{i}]" for i in range(len(keep))) + f"concat=n={len(keep)}:v=1:a=1"
+    if fade_out_sec > 0:
+        total = sum(e - s for s, e in keep)
+        lines.append(cat + "[outv][araw];")
+        lines.append(f"[araw]afade=t=out:st={max(0.0, total - fade_out_sec):.3f}:d={fade_out_sec:.3f}[outa]")
+    else:
+        lines.append(cat + "[outv][outa]")
     flt = out_mp4.with_suffix(".filter.txt")
     flt.write_text("\n".join(lines), encoding="utf-8")
     subprocess.run(

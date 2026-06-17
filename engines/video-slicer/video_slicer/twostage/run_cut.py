@@ -79,17 +79,25 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
             clips_out.append({"title": title, "mp4": str(base.with_suffix(".mp4")), "dur": None, "removed": None})
             continue
         try:                                            # 每条独立容错：一条失败(网络/去口水/切片)不拖累整批
-            # 1) 选段的字（按 keep_sids 收集 host 句的字）
+            # 1) 选段的字 + 句（按 keep_sids 收集 host 句的字，并记下覆盖的句供建富 token）
             seg_words = []
+            seg_sents = []
             for a, b in clip.get("keep_sids", []):
                 for sid in range(a, b + 1):
                     if 0 <= sid < len(sents) and sents[sid].wi >= 0:
                         seg_words += words[sents[sid].wi: sents[sid].wj + 1]
+                        seg_sents.append(sents[sid])
             if not seg_words:
                 continue
-            # 2) 字级去口水 → keep 区间
+            # 富 token（句级带标点 ITN + 时间）：任一句对不齐则降级回字级裸拼（不断流）
+            rich = None
+            try:
+                rich = align.map_clip(seg_sents, words) if seg_sents else None
+            except align.AlignError as ae:
+                print(f"        ↳ 原生句对齐失败，降级字级裸拼：{str(ae)[:80]}", file=sys.stderr)
+            # 2) 去口水 → keep 区间（富 token 在则字幕/文案带标点 ITN）
             ck = script_clean.clean_to_keep(seg_words, hint=f"{title}｜{clip.get('one_argument','')}",
-                                            providers=providers)
+                                            providers=providers, rich_tokens=rich)
             spans = ck["keep_spans"]
             # 3) 边界吸字间静音（可选·轻微，默认关；去口水已是字精度）
             if snap and spans:

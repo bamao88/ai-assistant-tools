@@ -78,6 +78,8 @@ def map_sentence(text: str, words: list[dict]) -> list[dict]:
             while k < n:
                 if _is_itn(text[k]):
                     k += 1
+                elif text[k] in _ITN_SEP and k + 1 < n and _is_itn(text[k + 1]):
+                    k += 1                          # 区间号(如 1~5)夹在数字间 → 并入数字块
                 elif _is_skip(text[k]):
                     p = k
                     while p < n and _is_skip(text[p]):

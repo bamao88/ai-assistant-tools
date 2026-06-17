@@ -266,7 +266,7 @@ def compose(job, out: Path, face_cx: float, face_cy: float, clip_h: int, strip_p
         F.append(f"[{prev}][p{i}]overlay={sl}[{tag}];"); prev=tag
     clip_in=n; ring_in=n+1; mask_in=n+2   # ffmpeg 输入序: pages(0..n-1) → clip(n) → ring(n+1) → mask(n+2)
     F.append(f"[{prev}][{ring_in}:v]overlay=0:0[wr];")
-    F.append(f"[{clip_in}:v]crop={side}:{side}:{x0}:0,scale={cd}:{cd},setsar=1,format=rgba[spk];")
+    F.append(f"[{clip_in}:v]crop={side}:{side}:{x0}:{y0},scale={cd}:{cd},setsar=1,format=rgba[spk];")
     F.append(f"[spk][{mask_in}:v]alphamerge[pip];")
     F.append(f"[wr][pip]overlay={cx}:{cy}[o];")
     F.append(f"[o]subtitles={out/'zh.ass'}[v]")

@@ -330,7 +330,7 @@ def run(job_path: str, out_root: str|None, skip_accel: bool, profile="zh_main", 
     print("  [2/6] 静态资源(白环/遮罩)"); make_assets(out, L)
     print("  [3/6] 渲染框架图页"); render_pages(job["pages"], out, L)
     print("  [4/6] 字幕(纠错+药丸)"); make_subtitles(Path(job["srt"]), out, profile, L)
-    print("  [5/6] 合成(翻页+PIP+字幕)"); compose(job, out, fcx, sh, strip_px, L)
+    print("  [5/6] 合成(翻页+PIP+字幕)"); compose(job, out, fcx, fcy, sh, strip_px, L)
     if skip_accel:
         print("  [6/6] 跳过变速"); print(f"完成 → {out/'paginated.mp4'}"); return
     print("  [6/6] 自适应变速"); accelerate(job, out)

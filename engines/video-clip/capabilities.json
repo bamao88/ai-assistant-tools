@@ -9,6 +9,7 @@
     "endcard":        {"kind": "叠加", "file": "atoms/endcard.py",        "sig": "endcard.py IN OUT --card PATH(.png/.jpg/.html) [--seconds 3] [--fade 0.5]"},
     "speed_adapt":    {"kind": "叠加", "file": "atoms/speed_adapt.py",    "sig": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0]", "ported_from": "slicer.py::accelerate"},
     "subtitle_burn":  {"kind": "叠加", "file": "atoms/subtitle_burn.py",  "sig": "subtitle_burn.py IN OUT --srt x.srt [--fs 36] [--y h-130]", "ported_from": "slicer.py::make_subtitles"},
+    "title_bar":      {"kind": "叠加", "file": "atoms/title_bar.py",      "sig": "title_bar.py IN OUT --text 标题 [--fs N] [--font PATH] [--top-frac 0.0385] [--bar-h-frac 0.1406] [--bar-color 202020]", "note": "顶部黑底标题条·白色思源宋体超粗体·中文按字宽自动换行居中；几何/配色照搬「标题黑色底色.png」；字体自带 assets/fonts/SourceHanSerifCN-Heavy.otf"},
     "subtitle_ai_fix":{"kind": "叠加", "file": "atoms/subtitle_ai_fix.py","sig": "subtitle_ai_fix.py IN.srt OUT.srt [--hint ...]", "note": "走 video-slicer LLM，需 .env", "ported_from": "srt_fix.py"},
     "face_locate":    {"kind": "改造", "file": "atoms/face_locate.py",    "sig": "face_locate.py IN [--target WxH] [--samples 40] -> JSON(face_cx/crop)", "ported_from": "slicer.py::locate_face_cx + reframe_locate.py"},
     "name_mask":      {"kind": "叠加", "file": "atoms/name_mask.py",      "sig": "name_mask.py IN OUT --region WxH+X+Y [--fill img] [--mask alpha.png] [--trim 0]", "ported_from": "make_publish.py"},

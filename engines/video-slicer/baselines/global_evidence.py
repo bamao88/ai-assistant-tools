@@ -238,9 +238,10 @@ def run(words_json: str, selection_json: str, out_dir: str, persona: str = "zh_m
     gpath = out / "golden_candidate.json"
     by_idx: dict[int, dict] = {}
     if want is not None and gpath.exists():
-        for c in json.loads(gpath.read_text(encoding="utf-8")).get("clips", []):
-            if c.get("idx"):
-                by_idx[c["idx"]] = c
+        for pos, c in enumerate(json.loads(gpath.read_text(encoding="utf-8")).get("clips", []), 1):
+            idx = c.get("idx") or pos      # 旧版无 idx 字段 → 按位置(选题序)兜底
+            c["idx"] = idx
+            by_idx[idx] = c
 
     log = []
     for i in todo:

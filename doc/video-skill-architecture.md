@@ -26,6 +26,7 @@ tools/engines/
 │   ├── capabilities.json     声明：cut_sentence(句级·线上) / cut_word(词级·方案B) 共存 + transcribe
 │   ├── video_slicer/         planner + twostage + pages_gen(分页) + srt_fix(字幕纠错)
 │   │   └── transcribe/       字级转写：火山 seedasr v3 主 / 阿里 paraformer 兜底；公网/OSS 上传
+│   │                          + align.py(句级带标点 ITN ↔ 字级时间 对齐) + segment.py(分句·优先原生语义句)
 │   ├── personas/zh_main.md   张和选题 persona（含问答可剪）
 │   ├── references/           字级去口水与承接句保护.md（删前保后+承接句红线，cut_word 判断基底）
 │   ├── profiles/zh_main/     {pages,srt_fix}_system_prompt.txt（账号 prompt 定制）

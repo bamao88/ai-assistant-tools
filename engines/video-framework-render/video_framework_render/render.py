@@ -127,19 +127,20 @@ def locate_face_cx(video) -> tuple[float, float, float]:
     base=cv2.data.haarcascades
     cas=[cv2.CascadeClassifier(base+"haarcascade_frontalface_default.xml"),
          cv2.CascadeClassifier(base+"haarcascade_frontalface_alt2.xml")]
-    xs=[]; ys=[]
+    xs=[]; ys=[]; hs=[]
     for i in np.linspace(0,max(total-1,0),40).astype(int):
         cap.set(cv2.CAP_PROP_POS_FRAMES,int(i)); ok,fr=cap.read()
         if not ok: continue
         g=cv2.cvtColor(fr,cv2.COLOR_BGR2GRAY); fc=[]
         for c in cas: fc+=[tuple(int(v) for v in f) for f in c.detectMultiScale(g,1.1,6,minSize=(80,80))]
         if fc:
-            x,y,w,h=max(fc,key=lambda f:f[2]*f[3]); xs.append((x+w/2)/W); ys.append((y+h/2)/H)
+            x,y,w,h=max(fc,key=lambda f:f[2]*f[3]); xs.append((x+w/2)/W); ys.append((y+h/2)/H); hs.append(h/H)
     cap.release()
     cx=statistics.median(xs) if xs else 0.5
     cy=statistics.median(ys) if ys else 0.42
-    print(f"  [locate] 检到 {len(xs)} 帧，脸中心 x={cx*100:.1f}% y={cy*100:.1f}%")
-    return cx, cy
+    fh=statistics.median(hs) if hs else 0.16
+    print(f"  [locate] 检到 {len(xs)} 帧，脸中心 x={cx*100:.1f}% y={cy*100:.1f}% 脸高={fh*100:.1f}%")
+    return cx, cy, fh
 
 # ======================================================================
 def make_assets(out: Path, L: dict):

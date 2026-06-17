@@ -11,7 +11,8 @@
       "also_provides": [
         "transcribe",
         "pages_gen",
-        "srt_fix"
+        "srt_fix",
+        "script_clean"
       ]
     },
     "video-framework-render": {
@@ -34,6 +35,7 @@
         "endcard",
         "speed_adapt",
         "subtitle_burn",
+        "title_bar",
         "subtitle_ai_fix",
         "face_locate",
         "name_mask",
@@ -52,8 +54,8 @@
     "cut_word": {
       "engine": "video-slicer",
       "kind": "剪辑策略",
-      "tier": "词级·方案B·调试中",
-      "desc": "两阶段（选题→定脚本）+ paraformer 字级时间戳，支持句中精剪/跳接。与 cut_sentence 共存，AI 按视频选用。"
+      "tier": "词级·方案B·端到端跑通",
+      "desc": "两阶段（选题→定脚本）+ 字级时间戳，支持句中精剪/跳接。与 cut_sentence 共存，AI 按视频选用。"
     },
     "framework_reframe": {
       "engine": "video-framework-render",
@@ -120,6 +122,12 @@
       "kind": "叠加",
       "tier": null,
       "desc": "subtitle_burn.py IN OUT --srt x.srt [--fs 36] [--y h-130]"
+    },
+    "title_bar": {
+      "engine": "video-clip",
+      "kind": "叠加",
+      "tier": null,
+      "desc": "title_bar.py IN OUT --text 标题 [--fs N] [--font PATH] [--top-frac 0.0385] [--bar-h-frac 0.1406] [--bar-color 202020]"
     },
     "subtitle_ai_fix": {
       "engine": "video-clip",

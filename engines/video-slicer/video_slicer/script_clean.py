@@ -137,17 +137,23 @@ def clean_to_keep(
     pad_e: float = 0.12,
     gap_max: float = 0.6,
     temperature: float = 0.2,
+    rich_tokens: list[dict] | None = None,
 ) -> dict:
-    """选段字级词表 → 去口水后的 keep 时间区间。
+    """选段 → 去口水后的 keep 时间区间。
 
-    整段单次通读去口水（上下文完整、不误删核心内容），LLM 输出"只删不改"的纯文本，
-    代码忽略大小写对齐回原字 → 保留字 → 合并成 keep 时间区间（直接喂 ffmpeg 切片）。
-    返回 {keep_spans, kept_words, kept_text, removed}。
+    整段单次通读去口水（上下文完整、不误删核心内容），LLM 输出"只删不改"的文本，
+    代码对齐回时间 → 保留内容 → 合并成 keep 时间区间（直接喂 ffmpeg 切片）。
+    返回 {keep_spans, kept_words, kept_text, kept_text_rich, removed}。
+
+    **富 token 路径（rich_tokens 非空）**：喂给 LLM 的是**句级带标点 ITN 文本**（更利于
+    判断口水/承接句），删后文本对回富 token → 字幕/文案带标点和书面数字（"90%"）。
+    **降级路径（rich_tokens 为空）**：旧的字级裸拼——无原生句/对不齐时保底，与历史一致。
     """
     load_env_file(_discover_env_file())
     rules = _load_rules()
     system = (rules + "\n\n" + CLEAN_KEEP_TASK) if rules else CLEAN_KEEP_TASK
-    raw_text = "".join(w["text"] for w in seg_words)
+    rich = rich_tokens or None
+    raw_text = align.rich_text(rich) if rich else "".join(w["text"] for w in seg_words)
     brief = (f"切片主旨（hint）：{hint}\n\n" if hint else "") + f"【逐字稿】\n{raw_text}"
     client = OpenAICompatibleClient(providers=providers)
     cleaned = client.chat(                              # 纯文本输出，绕开 JSON 脆弱性
@@ -156,16 +162,23 @@ def clean_to_keep(
     )
     cleaned = _re.sub(r"^```[a-z]*\s*|\s*```$", "", (cleaned or "").strip())
 
-    kept = _align_kept(seg_words, cleaned)
-    # 保底：对齐保留 < 50% 删后文本字数（LLM 改字/漂移/没好好删）→ 回退不删、整段切
-    if not kept or len(_bare("".join(w["text"] for w in kept))) < 0.5 * len(_bare(cleaned)):
-        kept = list(seg_words)
+    if rich:                                            # 富 token 路径：保留带标点 ITN
+        kept = align.project_cleaned(cleaned, rich)
+        if not kept or len(_bare(align.rich_text(kept))) < 0.5 * len(_bare(cleaned)):
+            kept = list(rich)                           # 同样的 50% 漂移保底
+        removed = _diff_removed(rich, kept)
+    else:                                               # 降级路径：字级裸拼（历史行为）
+        kept = _align_kept(seg_words, cleaned)
+        if not kept or len(_bare("".join(w["text"] for w in kept))) < 0.5 * len(_bare(cleaned)):
+            kept = list(seg_words)
+        removed = _diff_removed(seg_words, kept)
 
     return {
         "keep_spans": _merge_keep(kept, pad_s, pad_e, gap_max),
-        "kept_words": kept,
-        "kept_text": "".join(w["text"] for w in kept),
-        "removed": _diff_removed(seg_words, kept),
+        "kept_words": kept,                             # 富路径下即带标点 ITN 的富 token
+        "kept_text": align.rich_text(kept) if rich else "".join(w["text"] for w in kept),
+        "kept_text_rich": align.rich_text(kept) if rich else None,
+        "removed": removed,
     }
 
 

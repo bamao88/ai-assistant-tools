@@ -198,7 +198,7 @@ def write_review_md(out: Path, idx: int, clip: dict) -> None:
 def run(words_json: str, selection_json: str, out_dir: str, persona: str = "zh_main",
         host: str = "张和", providers=None, limit=None) -> dict:
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
-    _words, sents = segment.sentences_from_wordfile(words_json, host=host)
+    _, sents = segment.sentences_from_wordfile(words_json, host=host)
     persona_text = load_persona(persona)
     topics = load_topics(selection_json)
     if limit:

@@ -20,7 +20,7 @@ from pathlib import Path
 
 from ..cli import _discover_env_file, load_env_file
 from .. import script_clean
-from ..transcribe import segment
+from ..transcribe import align, segment
 from . import cut_video, pipeline, resolve
 
 

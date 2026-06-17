@@ -34,7 +34,7 @@ tools/engines/
 │   └── .env                  → 符号链 var/credentials/llm.env（LLM provider 密钥，tools 侧真源）
 │
 ├── video-framework-render/   积木厂 · 框架页渲染（竖版 720×1280 / 横版 1280×720 同源·独立 .venv: pillow+opencv）
-│   ├── video_framework_render/render.py        6 阶段原子 + TEMPLATES(vertical 框架页 / landscape 方框)
+│   ├── video_framework_render/render.py        6 阶段原子 + TEMPLATES(vertical 框架页 / landscape 方框) + PIP 构图锁定/批量标定(--calibrate)
 │   ├── video_framework_render/render_page.js   puppeteer 渲 HTML→PNG（画幅参数化，默认 720×1280）
 │   ├── layouts/              vertical.json / landscape.json（CANVAS/GEOM/SUB 几何外置，--layout 选）
 │   ├── capabilities.json     声明：framework_reframe / compose / accelerate / subtitles / reframe_locate / raw

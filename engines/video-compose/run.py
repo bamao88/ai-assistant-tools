@@ -30,6 +30,7 @@ DISPATCH = {
     "endcard":        ("video-clip", "python atoms/endcard.py"),
     "speed_adapt":    ("video-clip", "python atoms/speed_adapt.py"),
     "subtitle_burn":  ("video-clip", "python atoms/subtitle_burn.py"),
+    "title_bar":      ("video-clip", "python atoms/title_bar.py"),
     "name_mask":      ("video-clip", "python atoms/name_mask.py"),
     "face_locate":    ("video-clip", "python atoms/face_locate.py"),
     "cover_frame":    ("video-clip", "python atoms/cover_frame.py"),

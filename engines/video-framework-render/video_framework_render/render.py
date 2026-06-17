@@ -113,14 +113,14 @@ def page_html_landscape(spec):
 TEMPLATES = {"vertical": page_html_vertical, "landscape": page_html_landscape}
 
 # ======================================================================
-def locate_face_cx(video) -> tuple[float, float]:
-    """Haar 人脸检测取脸中心 (x,y)(占宽/高比例)。失败→(0.5,0.42)。
-    x 用于人像圆形水平居中；y 用于竖屏源垂直定位 PIP 方裁（横屏源 y 不影响，方裁满高）。"""
+def locate_face_cx(video) -> tuple[float, float, float]:
+    """Haar 人脸检测取脸中心 (x,y) + 脸高 fh(均占比例)。失败→(0.5,0.42,0.16)。
+    x 水平居中；竖屏源用 y+fh 做头肩方裁（避开上方 PPT）；横屏源仍方裁满高(y/fh 不影响)。"""
     try:
         import cv2, numpy as np, statistics
     except ImportError:
-        print("  [locate] 无 cv2，用 cx=0.5 cy=0.42（建议 venv 装 opencv-python-headless）")
-        return 0.5, 0.42
+        print("  [locate] 无 cv2，用 cx=0.5 cy=0.42 fh=0.16（建议 venv 装 opencv-python-headless）")
+        return 0.5, 0.42, 0.16
     cap=cv2.VideoCapture(str(video)); total=int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 1
     W=int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 1920
     H=int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 1080

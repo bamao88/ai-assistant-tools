@@ -312,10 +312,15 @@ def accelerate(job, out: Path):
         F.append(f"[0:v]trim={s:.3f}:{e:.3f},setpts=(PTS-STARTPTS)/{sp:.4f}[v{i}];")
         F.append(f"[0:a]atrim={s:.3f}:{e:.3f},asetpts=PTS-STARTPTS,atempo={sp:.4f}[a{i}];")
         vc.append(f"[v{i}]"); ac.append(f"[a{i}]")
-    F.append("".join(f"{vc[i]}{ac[i]}" for i in range(len(segs)))+f"concat=n={len(segs)}:v=1:a=1[v][a]")
-    (out/"accel_filter.txt").write_text("\n".join(F))
     od=sum((e-s)/sp for s,e,sp in segs)
-    print(f"  [accel] {len(segs)}段 目标{TGT}cps 均速{DUR/od:.2f} {DUR:.0f}s→{od:.0f}s")
+    fo=float(pr.get("fade_out_sec", 2.0))       # 结尾音效淡出(默认2s，防结尾突兀)
+    if fo>0:
+        F.append("".join(f"{vc[i]}{ac[i]}" for i in range(len(segs)))+f"concat=n={len(segs)}:v=1:a=1[v][araw];")
+        F.append(f"[araw]afade=t=out:st={max(0.0,od-fo):.3f}:d={fo:.3f}[a]")
+    else:
+        F.append("".join(f"{vc[i]}{ac[i]}" for i in range(len(segs)))+f"concat=n={len(segs)}:v=1:a=1[v][a]")
+    (out/"accel_filter.txt").write_text("\n".join(F))
+    print(f"  [accel] {len(segs)}段 目标{TGT}cps 均速{DUR/od:.2f} {DUR:.0f}s→{od:.0f}s 末{fo}s淡出")
     subprocess.run(["ffmpeg","-y","-loglevel","error","-i",str(src),
         "-filter_complex_script",str(out/"accel_filter.txt"),"-map","[v]","-map","[a]",
         "-r","25","-c:v","libx264","-preset","veryfast","-crf","21","-pix_fmt","yuv420p",

@@ -259,11 +259,20 @@ def compose(job, out: Path, face_cx: float, face_cy: float, face_fh: float, clip
         side=clip_h-strip_px
         x0=int(min(max(face_cx*src_w-side/2,0),max(0,src_w-side)))
         y0=0
-    else:                                       # 竖屏源：头肩方裁(≈2.2×脸高)、以脸为中心 → 避开上方 PPT
-        side=int(min(max(face_fh*src_h*2.2, src_w*0.45), src_w))
+    else:                                       # 竖屏源：头肩方裁 → 避开上方 PPT
+        # 构图锁定（geom 配了 pip_face_ratio 即启用）：脸高占圆固定比例 + 眼睛纵向固定位置，
+        # 使每条切片头肩大小/位置一致；未配则退回旧逻辑(2.2×脸高·脸居中)保逐字节不变。
+        face_ratio=G.get("pip_face_ratio")
+        if face_ratio:
+            vpos=G.get("pip_face_vpos", 0.42)
+            side=int(min(max(face_fh*src_h/face_ratio, src_w*0.30), src_w))
+            y0=int(min(max(face_cy*src_h-vpos*side, 0), max(0,src_h-side)))
+            print(f"  [pip] 构图锁定 脸占圆{face_ratio:.0%} 眼高{vpos:.0%} side={side} y0={y0}")
+        else:
+            side=int(min(max(face_fh*src_h*2.2, src_w*0.45), src_w))
+            y0=int(min(max(face_cy*src_h-side/2,0),max(0,src_h-side)))
+            print(f"  [pip] 竖屏源头肩方裁 side={side} y0={y0}（旧逻辑·脸居中）")
         x0=int(min(max(face_cx*src_w-side/2,0),max(0,src_w-side)))
-        y0=int(min(max(face_cy*src_h-side/2,0),max(0,src_h-side)))
-        print(f"  [pip] 竖屏源头肩方裁 side={side} x0={x0} y0={y0}（避开 PPT）")
     cd=G["circle_d"]; cx,cy=G["circle_x"],G["circle_y"]
     starts=[p["start"] for p in pages]
     F=[]

@@ -368,8 +368,16 @@ def run(job_path: str, out_root: str|None, skip_accel: bool, profile="zh_main", 
 
 if __name__=="__main__":
     ap=argparse.ArgumentParser()
-    ap.add_argument("job"); ap.add_argument("--out", default=None)
+    ap.add_argument("job", nargs="?", help="job.json；或配 --calibrate 时为视频路径")
+    ap.add_argument("--out", default=None)
     ap.add_argument("--skip-accel", action="store_true")
     ap.add_argument("--profile", default="zh_main")
     ap.add_argument("--layout", default="vertical", help="版式 layouts/<name>.json（vertical|landscape）")
-    a=ap.parse_args(); run(a.job, a.out, a.skip_accel, a.profile, a.layout)
+    ap.add_argument("--calibrate", action="store_true",
+                    help="标定模式：对 job 位置传入的视频测一次人脸，打印 {cx,cy,fh} JSON（批量复用，零飘动）")
+    a=ap.parse_args()
+    if a.calibrate:                                # 整段录屏标定：所有切片共用 → 大小/位置一致，免手调
+        cx,cy,fh=locate_face_cx(a.job)
+        print(json.dumps({"cx":round(cx,4),"cy":round(cy,4),"fh":round(fh,4)}, ensure_ascii=False))
+    else:
+        run(a.job, a.out, a.skip_accel, a.profile, a.layout)

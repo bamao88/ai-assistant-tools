@@ -95,10 +95,15 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
                 continue
             # 富 token（句级带标点 ITN + 时间）：任一句对不齐则降级回字级裸拼（不断流）
             rich = None
-            try:
-                rich = align.map_clip(seg_sents, words) if seg_sents else None
-            except align.AlignError as ae:
-                print(f"        ↳ 原生句对齐失败，降级字级裸拼：{str(ae)[:80]}", file=sys.stderr)
+            if seg_sents:
+                align_total += 1
+                try:
+                    rich = align.map_clip(seg_sents, words)
+                    align_ok += 1
+                except align.AlignError as ae:
+                    msg = str(ae)[:120]
+                    print(f"        ↳ 原生句对齐失败，降级字级裸拼：{msg}", file=sys.stderr)
+                    align_fails.append({"clip": i, "title": title, "reason": msg})
             # 2) 去口水 → keep 区间（富 token 在则字幕/文案带标点 ITN）
             ck = script_clean.clean_to_keep(seg_words, hint=f"{title}｜{clip.get('one_argument','')}",
                                             providers=providers, rich_tokens=rich)

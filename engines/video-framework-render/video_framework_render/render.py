@@ -244,14 +244,15 @@ def ffprobe_dur(path) -> float:
     return float(subprocess.run(["ffprobe","-v","error","-show_entries","format=duration",
         "-of","csv=p=0",str(path)],capture_output=True,text=True).stdout.strip())
 
-def compose(job, out: Path, face_cx: float, clip_h: int, strip_px: int, L: dict):
+def compose(job, out: Path, face_cx: float, face_cy: float, clip_h: int, strip_px: int, L: dict):
     """ffmpeg：PPT层翻页(slide) + 静态白环 + 人像圆形 + 字幕。输出 paginated.mp4。"""
     G=L["geom"]; CW,CH=L["canvas"]["w"],L["canvas"]["h"]
     pages=job["pages"]; n=len(pages); D=job.get("params",{}).get("transition",G["transition"])
     dur=ffprobe_dur(job["video"])
-    side=clip_h-strip_px                        # 完整干净高度方裁
-    src_w=job.get("src_w",1920)
-    x0=int(min(max(face_cx*src_w-side/2,0),src_w-side))
+    src_w=job.get("src_w",1920); src_h=clip_h
+    side=min(int(src_w), clip_h-strip_px)       # PIP 方裁边长：取 min(宽,高)。横屏源=clip_h(行为不变)；竖屏源=src_w
+    x0=int(min(max(face_cx*src_w-side/2,0),max(0,src_w-side)))   # 脸水平居中
+    y0=int(min(max(face_cy*src_h-side/2,0),max(0,src_h-side)))   # 竖屏源按脸纵向定位；横屏源 src_h=side→0(不变)
     cd=G["circle_d"]; cx,cy=G["circle_x"],G["circle_y"]
     starts=[p["start"] for p in pages]
     F=[]

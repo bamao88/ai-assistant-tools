@@ -209,19 +209,42 @@ def write_review_md(out: Path, idx: int, clip: dict) -> None:
     (d / f"clip_{idx:02d}_{_slug(clip['title'])}.md").write_text("\n".join(lines), encoding="utf-8")
 
 
+def _parse_only(only: str | None, n: int) -> set[int] | None:
+    """'6-22' / '8' → 要处理的 1-based 选题序号集合（None=全部）。"""
+    if not only:
+        return None
+    only = only.strip()
+    if "-" in only:
+        a, b = only.split("-", 1)
+        return set(range(int(a), int(b) + 1))
+    return {int(only)}
+
+
 def run(words_json: str, selection_json: str, out_dir: str, persona: str = "zh_main",
-        host: str = "张和", providers=None, limit=None) -> dict:
+        host: str = "张和", providers=None, limit=None, only: str | None = None) -> dict:
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     _, sents = segment.sentences_from_wordfile(words_json, host=host)
     persona_text = load_persona(persona)
     topics = load_topics(selection_json)
     if limit:
         topics = topics[:limit]
+    want = _parse_only(only, len(topics))     # None=全部；否则只重跑这些序号，其余保留旧结果
     full_view = render_full(sents)
-    print(f"[全局取证] {len(sents)} 句 / {len(topics)} 选题 / 语料 {len(full_view)} 字", file=sys.stderr)
+    todo = [i for i in range(1, len(topics) + 1) if want is None or i in want]
+    print(f"[全局取证] {len(sents)} 句 / 处理 {len(todo)} 条（共{len(topics)}）/ 语料 {len(full_view)} 字",
+          file=sys.stderr)
 
-    clips, log = [], []
-    for i, topic in enumerate(topics, 1):
+    # 合并模式：--only 时复用旧 golden_candidate.json，只替换重跑的条目
+    gpath = out / "golden_candidate.json"
+    by_idx: dict[int, dict] = {}
+    if want is not None and gpath.exists():
+        for c in json.loads(gpath.read_text(encoding="utf-8")).get("clips", []):
+            if c.get("idx"):
+                by_idx[c["idx"]] = c
+
+    log = []
+    for i in todo:
+        topic = topics[i - 1]
         title = topic.get("title", f"clip{i}")
         print(f"  ({i}/{len(topics)}) {title[:28]}…", file=sys.stderr)
         try:
@@ -230,10 +253,12 @@ def run(words_json: str, selection_json: str, out_dir: str, persona: str = "zh_m
             print(f"      ✗ 失败跳过：{str(ex)[:160]}", file=sys.stderr)
             log.append(f"{i:02d} ✗ {title} :: {str(ex)[:160]}")
             continue
-        clips.append(clip)
+        clip["idx"] = i
+        by_idx[i] = clip
         write_review_md(out, i, clip)
         log.append(f"{i:02d} ✓ {title} :: {len(clip['segments'])}段 {clip['est_dur']}s")
 
+    clips = [by_idx[i] for i in sorted(by_idx)]
     golden = {
         "source_words": str(words_json),
         "selection": str(selection_json),
@@ -242,10 +267,9 @@ def run(words_json: str, selection_json: str, out_dir: str, persona: str = "zh_m
         "human_status": "pending",       # 整体定稿状态
         "clips": clips,
     }
-    (out / "golden_candidate.json").write_text(
-        json.dumps(golden, ensure_ascii=False, indent=2), encoding="utf-8")
+    gpath.write_text(json.dumps(golden, ensure_ascii=False, indent=2), encoding="utf-8")
     (out / "_run.log").write_text("\n".join(log) + "\n", encoding="utf-8")
-    print(f"[done] 候选 {len(clips)} 条 → {out}/golden_candidate.json", file=sys.stderr)
+    print(f"[done] 共 {len(clips)} 条（本次重跑 {len(todo)}）→ {gpath}", file=sys.stderr)
     return golden
 
 

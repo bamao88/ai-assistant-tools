@@ -111,8 +111,9 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
             # 3) 边界吸字间静音（可选·轻微，默认关；去口水已是字精度）
             if snap and spans:
                 spans = [s["snapped"] for s in resolve.snap_segments(spans, words, mode="silence_mid", gap_search=0.25)]
-            # 4) 切视频 + 相对字幕 + 文案
-            cut_video.cut_clip(video, spans, base.with_suffix(".mp4"), crop=crop)
+            # 4) 切视频(纯文字模式跳过) + 相对字幕 + 文案
+            if not no_video:
+                cut_video.cut_clip(video, spans, base.with_suffix(".mp4"), crop=crop)
             cut_video.relative_srt(ck["kept_words"], spans, base.with_suffix(".srt"))
             dur = sum(e - s for s, e in spans)
             base.with_suffix(".txt").write_text(

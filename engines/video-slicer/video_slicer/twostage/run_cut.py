@@ -130,7 +130,12 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
         idx.append(f"- **{c['title']}**（{c['dur']}s, 删{c['removed']}处）  `{c['mp4']}`")
     (out / "index.md").write_text("\n".join(idx) + "\n", encoding="utf-8")
     print("\n".join(idx), file=sys.stderr)
-    return {"clips": clips_out}
+    # 对齐统计落盘（P1：原生句↔字级 对齐成功率；降级=该片走字级裸拼无标点）
+    stats = {"clips_with_native_sents": align_total, "aligned_ok": align_ok,
+             "fell_back": align_total - align_ok, "failures": align_fails}
+    (out / "_align_stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[align] 富token对齐 {align_ok}/{align_total} 成功，{align_total - align_ok} 条降级字级裸拼", file=sys.stderr)
+    return {"clips": clips_out, "align_stats": stats}
 
 
 def main() -> int:

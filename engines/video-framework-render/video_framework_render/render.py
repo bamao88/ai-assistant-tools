@@ -113,30 +113,33 @@ def page_html_landscape(spec):
 TEMPLATES = {"vertical": page_html_vertical, "landscape": page_html_landscape}
 
 # ======================================================================
-def locate_face_cx(video) -> float:
-    """Haar 人脸检测取脸中心 x(占宽比例)。失败→0.5。用于人像圆形水平居中。"""
+def locate_face_cx(video) -> tuple[float, float]:
+    """Haar 人脸检测取脸中心 (x,y)(占宽/高比例)。失败→(0.5,0.42)。
+    x 用于人像圆形水平居中；y 用于竖屏源垂直定位 PIP 方裁（横屏源 y 不影响，方裁满高）。"""
     try:
         import cv2, numpy as np, statistics
     except ImportError:
-        print("  [locate] 无 cv2，用 cx=0.5（建议 venv 装 opencv-python-headless）")
-        return 0.5
+        print("  [locate] 无 cv2，用 cx=0.5 cy=0.42（建议 venv 装 opencv-python-headless）")
+        return 0.5, 0.42
     cap=cv2.VideoCapture(str(video)); total=int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 1
     W=int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 1920
+    H=int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 1080
     base=cv2.data.haarcascades
     cas=[cv2.CascadeClassifier(base+"haarcascade_frontalface_default.xml"),
          cv2.CascadeClassifier(base+"haarcascade_frontalface_alt2.xml")]
-    xs=[]
+    xs=[]; ys=[]
     for i in np.linspace(0,max(total-1,0),40).astype(int):
         cap.set(cv2.CAP_PROP_POS_FRAMES,int(i)); ok,fr=cap.read()
         if not ok: continue
         g=cv2.cvtColor(fr,cv2.COLOR_BGR2GRAY); fc=[]
         for c in cas: fc+=[tuple(int(v) for v in f) for f in c.detectMultiScale(g,1.1,6,minSize=(80,80))]
         if fc:
-            x,y,w,h=max(fc,key=lambda f:f[2]*f[3]); xs.append((x+w/2)/W)
+            x,y,w,h=max(fc,key=lambda f:f[2]*f[3]); xs.append((x+w/2)/W); ys.append((y+h/2)/H)
     cap.release()
     cx=statistics.median(xs) if xs else 0.5
-    print(f"  [locate] 检到 {len(xs)} 帧，脸中心 x={cx*100:.1f}%")
-    return cx
+    cy=statistics.median(ys) if ys else 0.42
+    print(f"  [locate] 检到 {len(xs)} 帧，脸中心 x={cx*100:.1f}% y={cy*100:.1f}%")
+    return cx, cy
 
 # ======================================================================
 def make_assets(out: Path, L: dict):

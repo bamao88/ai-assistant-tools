@@ -6,7 +6,7 @@
       "label": "张和业务流·框架页竖版口播切片（线上主路径）",
       "kind": "delegate",
       "steps": ["cut_sentence", "srt_fix(=subtitle_ai_fix)", "pages_gen", "framework_reframe(含 subtitle_burn + speed_adapt)"],
-      "post_optional": ["name_mask", "endcard"],
+      "post_optional": ["title_bar(--text 选题标题)", "name_mask", "endcard"],
       "profile": "zh_main",
       "delegate": "assistant_zh/workflow/video_framework_slicer/run_pipeline.py (已薄化：--profile + --out-root)",
       "note": "§3.4：当前业务流 = 这条 recipe。渲染核心已拆原子入 video-framework-render（framework_reframe）；端到端 atom 级编排待 G4 逐帧回归（BLOCKED_NEEDS_LOCAL_VALIDATION）就绪后由 run.py 接管，过渡期委派已装配好的 run_pipeline。"

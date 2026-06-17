@@ -228,7 +228,7 @@ def run(words_json: str, selection_json: str, out_dir: str, persona: str = "zh_m
     topics = load_topics(selection_json)
     if limit:
         topics = topics[:limit]
-    want = _parse_only(only, len(topics))     # None=全部；否则只重跑这些序号，其余保留旧结果
+    want = _parse_only(only)                  # None=全部；否则只重跑这些序号，其余保留旧结果
     full_view = render_full(sents)
     todo = [i for i in range(1, len(topics) + 1) if want is None or i in want]
     print(f"[全局取证] {len(sents)} 句 / 处理 {len(todo)} 条（共{len(topics)}）/ 语料 {len(full_view)} 字",

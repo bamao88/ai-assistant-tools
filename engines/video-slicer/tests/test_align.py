@@ -50,6 +50,17 @@ def test_map_sentence_adjacent_itn_blocks_merge():
     assert itn["start"] == 0.2 and itn["end"] == 1.2          # 起=首"百" 止=末"十"
 
 
+def test_map_sentence_itn_range_separator():
+    # "1~5分" 区间号夹在数字间 → 并入一个数字块（真实视频 clip_12 那类，曾导致降级）
+    words = _words([("用", 0.0, 0.1),
+                    ("一", 0.1, 0.2), ("到", 0.2, 0.3), ("五", 0.3, 0.4),
+                    ("分", 0.4, 0.5)])
+    toks = align.map_sentence("用1~5分", words)
+    assert align.rich_text(toks) == "用1~5分"
+    itn = next(t for t in toks if t["kind"] == "itn")
+    assert itn["text"] == "1~5" and itn["start"] == 0.1 and itn["end"] == 0.4
+
+
 def test_map_sentence_itn_at_end_consumes_rest():
     # 数字在句末："五倍"→"5倍" 里 "5" 在末尾的退化情形：数字段后无锚字 → 吃光剩余字
     words = _words([("差", 0.0, 0.2), ("五", 0.2, 0.4), ("十", 0.4, 0.6)])

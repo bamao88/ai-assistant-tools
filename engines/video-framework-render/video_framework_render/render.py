@@ -136,9 +136,13 @@ def locate_face_cx(video) -> tuple[float, float, float]:
         if fc:
             x,y,w,h=max(fc,key=lambda f:f[2]*f[3]); xs.append((x+w/2)/W); ys.append((y+h/2)/H); hs.append(h/H)
     cap.release()
+    portrait = H > W
     cx=statistics.median(xs) if xs else 0.5
-    cy=statistics.median(ys) if ys else 0.42
+    # 检测失败兜底：竖屏源人物在下半部→默认 0.75(避免圆窗落到上方 PPT)；横屏源保持 0.42
+    cy=statistics.median(ys) if ys else (0.75 if portrait else 0.42)
     fh=statistics.median(hs) if hs else 0.16
+    if len(xs) < 3:
+        print(f"  [locate] ⚠️仅检到 {len(xs)} 帧人脸，用兜底 y={cy*100:.0f}%（竖屏下部）—建议人工抽查此条 PIP")
     print(f"  [locate] 检到 {len(xs)} 帧，脸中心 x={cx*100:.1f}% y={cy*100:.1f}% 脸高={fh*100:.1f}%")
     return cx, cy, fh
 

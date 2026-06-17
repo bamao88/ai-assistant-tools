@@ -72,6 +72,8 @@ python engines/video-compose/run.py --run zh_business \
 | **改账号定制**（选题口径 / 术语表 / 版式几何，不碰代码） | 改对应 `engines/<engine>/profiles/<account>/`：选题/分页/纠错 prompt 在 `video-slicer/profiles/`、persona 在 `video-slicer/personas/`、ASR 术语在 `video-framework-render/profiles/<acct>/fixes.json`。 |
 | **接一个新账号 / 第二个号** | 新建 `engines/<engine>/profiles/<新account>/`（拷 zh_main 改），调用时 `--profile <新account>`。引擎代码不动。 |
 | **改视觉几何**（画幅 / 圆形人像窗 / 药丸字幕位置） | 改 `video-framework-render/layouts/<vertical|landscape>.json`（CANVAS/GEOM/SUB 已外置，代码不再硬编码）。**改完必跑 G4 回归。** |
+| **改圆窗 PIP 构图**（人物在圆里多大 / 眼睛多高） | 改 `vertical.json` 的 `geom.pip_face_ratio`（脸高占圆比例，越大人越大）/ `pip_face_vpos`（脸心在圆内纵向位置，越小人越靠上）。当前 0.42/0.42(脸占42%·眼略上移)。竖版用此构图锁定；横版(landscape)及未配该键的版式仍走旧逻辑(2.2×脸高·脸居中)逐字节不变。**改完必按新构图重冻 G4 基线。** |
+| **保证每条切片圆窗大小/位置一致**（免逐条手调） | 圆窗飘动的根因是「每条片各自做角落小脸检测」噪声大。`run_pipeline.py` 已对整段录屏 `video_speaker` **标定一次**(调 `render.py <video> --calibrate` 取 cx/cy/fh)，把 `pip_calib` 注入每条 job → 所有切片共用同一裁框、零飘动。竖版自动启用；标定失败自动退回每条各自定位(不断流)。 |
 | **改版式排布**（框架页 / 方框 CSS 结构） | 改 `render.py` 的 `PAGE_CSS`（竖版框架页）/ `PAGE_CSS_LANDSCAPE`（横版方框），或 `TEMPLATES` 注册新模板。 |
 | **出横屏成片** | `run.py --run landscape_business --selection <sel>.json`（或渲染 `--layout landscape`）。横版=1280×720 方框版式，视觉 DNA 同竖版（配色/手写字/药丸/圆窗）。同一份 pages 既出竖版又出横版。 |
 | **换/加转写后端**（字级线地基） | `video-slicer/video_slicer/transcribe/`：火山 seedasr v3 主 + 阿里 paraformer 兜底；上传公网默认、阿里 OSS 备选(`--uploader oss`)。火山 key 入 `var/credentials/aliyun.env`。输出对齐 `twostage/resolve.py` 词表 schema。 |

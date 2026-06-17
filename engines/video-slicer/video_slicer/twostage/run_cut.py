@@ -77,7 +77,8 @@ def run_cut(video, words_json, out_dir, persona="zh_main", host="张和",
         title = clip.get("title", f"clip{i}")
         base = out / f"clip_{i:02d}_{_slug(title)}"
         print(f"[切片] ({i}/{len(result['clips'])}) {title[:24]}…", file=sys.stderr)
-        if base.with_suffix(".mp4").exists():          # 断点续切：已切的跳过
+        done_marker = base.with_suffix(".txt") if no_video else base.with_suffix(".mp4")
+        if done_marker.exists():                       # 断点续跑：已产出的跳过
             print("        ↳ 已存在，跳过", file=sys.stderr)
             clips_out.append({"title": title, "mp4": str(base.with_suffix(".mp4")), "dur": None, "removed": None})
             continue

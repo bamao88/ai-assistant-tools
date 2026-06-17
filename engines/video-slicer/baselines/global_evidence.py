@@ -284,11 +284,13 @@ def main() -> int:
     ap.add_argument("--host", default="张和")
     ap.add_argument("--providers", default="kimi,minimax")
     ap.add_argument("--limit", type=int, default=None, help="只跑前 N 条选题（先小跑省钱）")
+    ap.add_argument("--only", default=None,
+                    help="只重跑这些选题序号（如 6-22 或 8），合并进已存 golden_candidate.json，其余保留")
     a = ap.parse_args()
     load_env_file(_discover_env_file())
     providers = [p.strip() for p in a.providers.split(",") if p.strip()]
     run(a.words, a.selection, a.out, persona=a.persona, host=a.host,
-        providers=providers, limit=a.limit)
+        providers=providers, limit=a.limit, only=a.only)
     return 0
 
 

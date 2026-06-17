@@ -85,7 +85,7 @@ def _fit(text, font_path, maxw, max_block_h, fs_hint, max_lines):
     return chosen
 
 
-def render_overlay(W, H, text, font_path, args) -> Image.Image:
+def render_overlay(W, H, text, font_path, args):
     top = round(args.top_frac * H)
     bar_h = round(args.bar_h_frac * H)
     side = round(args.side_frac * W)

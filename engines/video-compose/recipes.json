@@ -15,7 +15,7 @@
       "label": "张和业务流·横屏方框版式口播切片（视觉=我们的，版式=横屏方框）",
       "kind": "delegate",
       "steps": ["cut_sentence", "srt_fix(=subtitle_ai_fix)", "pages_gen", "framework_reframe(layout=landscape)"],
-      "post_optional": ["name_mask", "endcard"],
+      "post_optional": ["title_bar(--text 选题标题)", "name_mask", "endcard"],
       "profile": "zh_main",
       "layout": "landscape",
       "delegate": "assistant_zh/workflow/video_framework_slicer/run_pipeline.py --layout landscape",

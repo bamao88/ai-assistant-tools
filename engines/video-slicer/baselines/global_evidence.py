@@ -209,7 +209,7 @@ def write_review_md(out: Path, idx: int, clip: dict) -> None:
     (d / f"clip_{idx:02d}_{_slug(clip['title'])}.md").write_text("\n".join(lines), encoding="utf-8")
 
 
-def _parse_only(only: str | None, n: int) -> set[int] | None:
+def _parse_only(only: str | None) -> set[int] | None:
     """'6-22' / '8' → 要处理的 1-based 选题序号集合（None=全部）。"""
     if not only:
         return None

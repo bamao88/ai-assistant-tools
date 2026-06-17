@@ -37,6 +37,19 @@ def test_map_sentence_itn_block_binds_numeral_span():
     assert itn["start"] == 0.4 and itn["end"] == 0.9             # 起=百, 止=十
 
 
+def test_map_sentence_adjacent_itn_blocks_merge():
+    # "30%、20%" 两块只隔标点、无中文锚字 → 合并成一个原子块，绑定全部数字字
+    words = _words([("只", 0.0, 0.1), ("能", 0.1, 0.2),
+                    ("百", 0.2, 0.3), ("分", 0.3, 0.4), ("之", 0.4, 0.5),
+                    ("三", 0.5, 0.6), ("十", 0.6, 0.7),
+                    ("百", 0.7, 0.8), ("分", 0.8, 0.9), ("之", 0.9, 1.0),
+                    ("二", 1.0, 1.1), ("十", 1.1, 1.2), ("吧", 1.2, 1.3)])
+    toks = align.map_sentence("只能30%、20%吧", words)
+    assert align.rich_text(toks) == "只能30%、20%吧"
+    itn = next(t for t in toks if t["kind"] == "itn")
+    assert itn["start"] == 0.2 and itn["end"] == 1.2          # 起=首"百" 止=末"十"
+
+
 def test_map_sentence_itn_at_end_consumes_rest():
     # 数字在句末："五倍"→"5倍" 里 "5" 在末尾的退化情形：数字段后无锚字 → 吃光剩余字
     words = _words([("差", 0.0, 0.2), ("五", 0.2, 0.4), ("十", 0.4, 0.6)])

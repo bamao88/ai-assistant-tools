@@ -198,11 +198,13 @@ def main():
     ap.add_argument("--block-pad", dest="block_pad", type=int, default=12, help="[label]标签到信箱块上下留边")
     a = ap.parse_args()
 
-    # 按样式补色彩默认（None=未显式指定）
+    # 按样式补默认（None=未显式指定）：label 走白底黑字单行贴纸，bar 走黑底白字双行
     if a.bar_color is None:
         a.bar_color = "FFFFFF" if a.style == "label" else "202020"
     if a.text_color is None:
         a.text_color = "000000" if a.style == "label" else "FFFFFF"
+    if a.max_lines is None:
+        a.max_lines = 1 if a.style == "label" else 2
 
     src = Path(a.input)
     if not src.exists():

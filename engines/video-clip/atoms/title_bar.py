@@ -114,19 +114,94 @@ def render_overlay(W, H, text, font_path, args):
     return img, fs, lines
 
 
+def detect_top_block(video, H, dark=50, min_frac=0.03):
+    """探测顶部「黑色信箱块」高度：抽首帧，从顶往下走连续暗行，返回块高(px)。
+
+    每行横向取样 20 点求平均亮度，<dark 视为暗行；首个亮行处停。
+    暗行不足 min_frac*H（没有信箱块）则返回 None，交给调用方走默认比例。
+    """
+    with tempfile.TemporaryDirectory() as td:
+        f1 = Path(td) / "f1.png"
+        r = run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video),
+                 "-frames:v", "1", str(f1)])
+        if r.returncode != 0 or not f1.exists():
+            return None
+        im = Image.open(f1).convert("RGB")
+        W, _h = im.size
+        px = im.load()
+        xs = [int(W * (i + 0.5) / 20) for i in range(20)]
+        bottom = 0
+        for y in range(min(im.size[1], H)):
+            lum = sum(sum(px[x, y]) for x in xs) / (3 * len(xs))
+            if lum >= dark:
+                break
+            bottom = y
+    return bottom + 1 if bottom + 1 >= min_frac * H else None
+
+
+def render_label_overlay(W, H, text, font_path, a, block_top, block_h):
+    """白底圆角标签：宽按文字+内边距自适应，水平+垂直居中于 [block_top, block_top+block_h]。"""
+    side = round(a.side_frac * W)
+    maxw = W - 2 * side                       # 标签外框最大宽
+    inner_maxw = maxw - 2 * a.pad_x           # 文字最大宽
+    max_box_h = block_h - 2 * a.block_pad     # 标签最大高（块内上下留边）
+    fs, font, lines = _fit(text, font_path, inner_maxw,
+                           max_box_h - 2 * a.pad_y, a.fs, a.max_lines)
+
+    line_h = fs * 1.32
+    tw = max(font.getlength(ln) for ln in lines)
+    th = len(lines) * line_h
+    box_w = round(tw + 2 * a.pad_x)
+    box_h = round(th + 2 * a.pad_y)
+    cx, cy = W // 2, round(block_top + block_h / 2)
+    bx0, by0 = cx - box_w // 2, cy - box_h // 2
+
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    br, bg, bb = (int(a.bar_color[i:i + 2], 16) for i in (0, 2, 4))
+    d.rounded_rectangle([bx0, by0, bx0 + box_w, by0 + box_h],
+                        radius=a.radius, fill=(br, bg, bb, 255))
+    tr, tg, tb = (int(a.text_color[i:i + 2], 16) for i in (0, 2, 4))
+    y = by0 + a.pad_y
+    for ln in lines:
+        x = (W - font.getlength(ln)) / 2
+        d.text((x, y), ln, font=font, fill=(tr, tg, tb, 255))
+        y += line_h
+    return img, fs, lines
+
+
 def main():
-    ap = argparse.ArgumentParser(description="顶部黑底标题条叠加")
+    ap = argparse.ArgumentParser(description="顶部标题叠加（bar 整条 / label 居中标签）")
     ap.add_argument("input"); ap.add_argument("output")
     ap.add_argument("--text", required=True, help="标题文字（\\n 手动换行）")
+    ap.add_argument("--style", choices=["bar", "label"], default="bar",
+                    help="bar=顶部整条(默认) | label=信箱块内白底圆角标签")
     ap.add_argument("--font", default=None, help="字体路径（默认思源宋体超粗体）")
-    ap.add_argument("--fs", type=int, default=None, help="字号(默认自动撑满条高)")
-    ap.add_argument("--top-frac", dest="top_frac", type=float, default=0.0385, help="条顶距画面顶比例")
-    ap.add_argument("--bar-h-frac", dest="bar_h_frac", type=float, default=0.1406, help="条高占画面高比例")
+    ap.add_argument("--fs", type=int, default=None, help="字号(默认自动撑满)")
+    ap.add_argument("--top-frac", dest="top_frac", type=float, default=0.0385, help="[bar]条顶距画面顶比例")
+    ap.add_argument("--bar-h-frac", dest="bar_h_frac", type=float, default=0.1406, help="[bar]条高占画面高比例")
     ap.add_argument("--side-frac", dest="side_frac", type=float, default=0.055, help="左右安全边比例")
-    ap.add_argument("--bar-color", dest="bar_color", default="202020", help="底色 RRGGBB(默认202020)")
-    ap.add_argument("--text-color", dest="text_color", default="FFFFFF", help="字色 RRGGBB(默认白)")
+    ap.add_argument("--bar-color", dest="bar_color", default=None,
+                    help="底色 RRGGBB(bar 默认202020 / label 默认FFFFFF)")
+    ap.add_argument("--text-color", dest="text_color", default=None,
+                    help="字色 RRGGBB(bar 默认FFFFFF / label 默认000000)")
     ap.add_argument("--max-lines", dest="max_lines", type=int, default=2, help="自动字号时目标最多行数")
+    # label 专用
+    ap.add_argument("--block-h-frac", dest="block_h_frac", type=float, default=None,
+                    help="[label]信箱块高占画面高比例（默认自动探测顶部黑边）")
+    ap.add_argument("--block-top-frac", dest="block_top_frac", type=float, default=0.0,
+                    help="[label]信箱块顶距画面顶比例（默认0=画面最顶）")
+    ap.add_argument("--radius", type=int, default=18, help="[label]标签圆角半径")
+    ap.add_argument("--pad-x", dest="pad_x", type=int, default=34, help="[label]文字到标签左右内边距")
+    ap.add_argument("--pad-y", dest="pad_y", type=int, default=18, help="[label]文字到标签上下内边距")
+    ap.add_argument("--block-pad", dest="block_pad", type=int, default=12, help="[label]标签到信箱块上下留边")
     a = ap.parse_args()
+
+    # 按样式补色彩默认（None=未显式指定）
+    if a.bar_color is None:
+        a.bar_color = "FFFFFF" if a.style == "label" else "202020"
+    if a.text_color is None:
+        a.text_color = "000000" if a.style == "label" else "FFFFFF"
 
     src = Path(a.input)
     if not src.exists():
@@ -137,7 +212,20 @@ def main():
         raise SystemExit(f"读不到视频: {src}")
 
     font_path = _font_path(a.font)
-    overlay, fs, lines = render_overlay(w, h, a.text, font_path, a)
+    if a.style == "label":
+        block_top = round(a.block_top_frac * h)
+        if a.block_h_frac is not None:
+            block_h = round(a.block_h_frac * h)
+        else:
+            block_h = detect_top_block(src, h)
+            if block_h is None:
+                block_h = round(0.128 * h)   # 没探到信箱块时的兜底（竖版常见值）
+                print(f"  ⚠ 未探到顶部黑边，按默认块高 {block_h}px（约12.8%H）")
+            else:
+                print(f"  顶部信箱块自动探测：{block_h}px（约{block_h/h*100:.1f}%H）")
+        overlay, fs, lines = render_label_overlay(w, h, a.text, font_path, a, block_top, block_h)
+    else:
+        overlay, fs, lines = render_overlay(w, h, a.text, font_path, a)
     png = out.with_suffix(".titlebar.png")
     overlay.save(png)
 

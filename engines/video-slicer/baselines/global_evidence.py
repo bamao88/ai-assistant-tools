@@ -360,8 +360,10 @@ def run(words_json, selection_json, out_dir, persona="zh_main", host="张和",
     return golden
 
 
-def migrate(words_json, out_dir, persona="zh_main", host="张和", providers=None, only=None) -> dict:
-    """不重跑正文：对已存 golden 每条，拆掉旧钩子段→正文，补①钩子+④精修+换新版式，保留人工定稿区。"""
+def migrate(words_json, out_dir, persona="zh_main", host="张和", providers=None, only=None,
+            steps=("hooks", "refine")) -> dict:
+    """不重跑正文：对已存 golden 每条，拆掉旧钩子段→正文，重算 steps 指定的步骤（其余沿用旧值），
+    换新版式，保留人工定稿区。steps=('hooks',) 即只重钩子。"""
     out = Path(out_dir)
     gpath = out / "golden_candidate.json"
     if not gpath.exists():

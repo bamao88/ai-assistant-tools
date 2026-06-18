@@ -42,9 +42,9 @@ tools/engines/
 │   └── requirements.txt      pillow + opencv-python-headless（首跑建 .venv）
 │
 └── video-clip/               积木厂 · 通用叠加原子（独立 .venv）
-    ├── atoms/*.py            concat / progress_bar / endcard / name_mask / subtitle_burn / subtitle_ai_fix / speed_adapt / face_locate / cover_frame / title_bar
+    ├── atoms/*.py            concat / prepend_hook / progress_bar / endcard / name_mask / subtitle_burn / subtitle_ai_fix / speed_adapt / face_locate / cover_frame / title_bar
     ├── assets/fonts/         自带字体（title_bar 用思源宋体超粗体 SourceHanSerifCN-Heavy.otf）
-    └── capabilities.json     声明 10 个叠加原子
+    └── capabilities.json     声明 11 个叠加原子
 ```
 
 **铁律**：

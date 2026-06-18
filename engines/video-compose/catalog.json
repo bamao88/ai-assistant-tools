@@ -31,6 +31,7 @@
       "role": "积木厂：提供「叠加/通用剪辑」原子。只产原子，不指挥。原 catalog.json/recipes.json 的总表+配方已上移到 video-compose（真源唯一）。",
       "atoms": [
         "concat",
+        "prepend_hook",
         "progress_bar",
         "endcard",
         "speed_adapt",
@@ -99,6 +100,12 @@
       "tier": null,
       "desc": "concat.py OUT --inputs a.mp4 b.mp4 ... [--target WxH] [--fps 25] [--reencode]"
     },
+    "prepend_hook": {
+      "engine": "video-clip",
+      "kind": "叠加",
+      "tier": null,
+      "desc": "prepend_hook.py 钩子.mp4 正文.mp4 OUT [--flip 0.30] [--trans slideleft] [--fps 30]"
+    },
     "progress_bar": {
       "engine": "video-clip",
       "kind": "叠加",
@@ -127,7 +134,7 @@
       "engine": "video-clip",
       "kind": "叠加",
       "tier": null,
-      "desc": "title_bar.py IN OUT --text 标题 [--fs N] [--font PATH] [--top-frac 0.0385] [--bar-h-frac 0.1406] [--bar-color 202020]"
+      "desc": "title_bar.py IN OUT --text 标题 [--style bar|label] [--fs N] [--font PATH] [--block-h-frac 0.128] [--bar-color RRGGBB] [--text-color RRGGBB]"
     },
     "subtitle_ai_fix": {
       "engine": "video-clip",

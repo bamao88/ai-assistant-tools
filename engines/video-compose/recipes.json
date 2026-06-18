@@ -6,9 +6,10 @@
       "label": "张和业务流·框架页竖版口播切片（线上主路径）",
       "kind": "delegate",
       "steps": ["cut_sentence", "srt_fix(=subtitle_ai_fix)", "pages_gen", "framework_reframe(含 subtitle_burn + speed_adapt)"],
-      "post_optional": ["title_bar(--text 选题标题)", "name_mask", "endcard"],
+      "post_optional": ["title_bar(--style label --text ✅标题)", "prepend_hook(开篇钩子+翻页转场)", "name_mask", "endcard"],
       "profile": "zh_main",
       "delegate": "assistant_zh/workflow/video_framework_slicer/run_pipeline.py (已薄化：--profile + --out-root)",
+      "finishing": "出片后收尾(0618 起线上做法)：① title_bar --style label 把 item publish_copy.md 里「标题候选」✅ 标题烧进顶部信箱块(白底黑字宋体超粗) ② prepend_hook 前置开篇钩子打字卡+翻页转场(翻页时正文定格)。参考 var/zh_main/0618test/doc/钩子+标题-成片收尾流程.md。",
       "note": "§3.4：当前业务流 = 这条 recipe。渲染核心已拆原子入 video-framework-render（framework_reframe）；端到端 atom 级编排待 G4 逐帧回归（BLOCKED_NEEDS_LOCAL_VALIDATION）就绪后由 run.py 接管，过渡期委派已装配好的 run_pipeline。"
     },
     "landscape_business": {

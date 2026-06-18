@@ -81,7 +81,7 @@ python engines/video-compose/run.py --run zh_business \
 | **字幕/文案带标点 ITN**（字级线） | 去口水输入用**句级带标点 ITN 文本**（`run_cut.py` 建富 token → `script_clean.clean_to_keep(rich_tokens=…)`），删后经 `transcribe/align.py` 对回字级拿时间 → 字幕/文案/PPT输入(读 srt)带标点和"90%"。无原生句或对不齐 → 自动降级回字级裸拼（不断流）。原生效果待火山实跑验证。 |
 | **跑一条切片验证** | 竖版 `run.py --run zh_business --selection <sel>.json --profile zh_main`；横版 `run.py --run landscape_business --selection <sel>.json`；产物 `var/<account>/.../accel.mp4`。 |
 | **改完验证不回归（G4）** | `var/zh_main/baseline/` 存了冻结基线（`primaries/` 含可重放 `job.json`）。用引擎 venv 重放该 job.json，与基线逐帧/逐字节比对。方法 + 上次结果见 `var/zh_main/baseline/{STAGE0-baseline.md,G4-result.md}`。 |
-| **建/迭代金标准（评测基准）** | 选段质量的"标准答案"这条线在 `engines/video-slicer/baselines/`：`global_evidence.py`（对每条已选定选题，喂整场逐字稿→全局取证→论证结构化精选成高质量脚本，只产候选）+ `score.py`（任意切片产出 vs 金标准 → 句号召回/F1 + 时间 IoU）。口径=论证结构化精选；产出只回真实句号（可校验、可经 `resolve.py` 换算成秒）。流程与命令见 `baselines/README.md`；设计见 `doc/plan/video-golden-baseline-plan.md`。**不进生产管线**，是 prompt 迭代的对照尺子。 |
+| **建/迭代金标准（评测基准）** | 选段质量的"标准答案"这条线在 `engines/video-slicer/baselines/`：`global_evidence.py`（**四级流水线**：①开场钩子短拼接 ②正文论证结构全局取证 ③组装脚本 ④精修去口水/去重复/开篇独立/结尾干脆，只产候选）+ `score.py`（vs 金标准 → 句号召回/F1 + 时间 IoU）。全新生成用 `--selection`，对已有结果换版式用 `--migrate`。产出②只回真实句号（可经 `resolve.py` 换算成秒）。流程/命令见 `baselines/README.md`；设计见 `doc/plan/video-golden-baseline-plan.md`。**不进生产管线**，是 prompt 迭代的对照尺子。 |
 | **登记 / 结构变更后收口** | 改了引擎结构就更新 `registry.yaml`，跑 `python scripts/check-tools.py`（期望 0 error）。 |
 
 ## 环境依赖（首跑准备）

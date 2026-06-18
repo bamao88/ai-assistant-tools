@@ -240,7 +240,9 @@ def main():
            "-filter_complex", fc, "-map", "[v]"]
     if has_audio:
         cmd += ["-map", "0:a"]
-    cmd += ["-shortest", *x264(audio=has_audio), "-movflags", "+faststart", str(out)]
+    # -fps_mode passthrough：保留源帧时间戳，避免 VFR 源被重采样导致画面(含标题/字幕)相对音轨漂移。
+    cmd += ["-fps_mode", "passthrough", "-shortest",
+            *x264(audio=has_audio), "-movflags", "+faststart", str(out)]
     r = run(cmd)
     png.unlink(missing_ok=True)
     if r.returncode != 0:

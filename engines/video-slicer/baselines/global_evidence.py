@@ -212,14 +212,19 @@ def refine_script(raw_script: str, core: dict, providers=None) -> str:
     return str(data.get("refined", "")).strip()
 
 
-def finalize_clip(core: dict, body: list[dict], sents, persona_text: str, providers=None) -> dict:
-    """正文 segments → 完整 clip：补①钩子候选 + ③组装 + ④精修。core 含 title/one_argument 等元信息。"""
+def finalize_clip(core: dict, body: list[dict], sents, persona_text: str, providers=None,
+                  steps=("hooks", "refine"), prev: dict | None = None) -> dict:
+    """正文 segments → 完整 clip：补①钩子候选 + ③组装 + ④精修。
+    steps 控制重算哪些 LLM 步骤（其余沿用 prev）：如 --hooks-only 只重钩子、保留已有精修。"""
+    prev = prev or {}
     keep_sids = [s["sids"] for s in body]
     time_spans = [s["span"] for s in body]
     est_dur = round(sum(e - s for s, e in time_spans), 1)
     script_raw = "\n".join(s["text"] for s in body)
-    hook_options = gen_hook_options(core, body, sents, persona_text, providers=providers)
-    script_refined = refine_script(script_raw, core, providers=providers)
+    hook_options = (gen_hook_options(core, body, sents, persona_text, providers=providers)
+                    if "hooks" in steps else prev.get("hook_options", []))
+    script_refined = (refine_script(script_raw, core, providers=providers)
+                      if "refine" in steps else prev.get("script_refined", ""))
     clip = dict(core)
     clip.update({"hook_options": hook_options, "segments": body, "keep_sids": keep_sids,
                  "time_spans": time_spans, "est_dur": est_dur,

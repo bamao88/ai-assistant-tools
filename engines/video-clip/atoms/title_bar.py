@@ -185,7 +185,8 @@ def main():
                     help="底色 RRGGBB(bar 默认202020 / label 默认FFFFFF)")
     ap.add_argument("--text-color", dest="text_color", default=None,
                     help="字色 RRGGBB(bar 默认FFFFFF / label 默认000000)")
-    ap.add_argument("--max-lines", dest="max_lines", type=int, default=2, help="自动字号时目标最多行数")
+    ap.add_argument("--max-lines", dest="max_lines", type=int, default=None,
+                    help="自动字号时目标最多行数（bar 默认2 / label 默认1=单行贴纸）")
     # label 专用
     ap.add_argument("--block-h-frac", dest="block_h_frac", type=float, default=None,
                     help="[label]信箱块高占画面高比例（默认自动探测顶部黑边）")

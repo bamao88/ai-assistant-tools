@@ -5,6 +5,7 @@
   "deps": ["ffmpeg(libass)", "python: opencv-python(face-locate)"],
   "atoms": {
     "concat":         {"kind": "叠加", "file": "atoms/concat.py",         "sig": "concat.py OUT --inputs a.mp4 b.mp4 ... [--target WxH] [--fps 25] [--reencode]"},
+    "prepend_hook":   {"kind": "叠加", "file": "atoms/prepend_hook.py",   "sig": "prepend_hook.py 钩子.mp4 正文.mp4 OUT [--flip 0.30] [--trans slideleft] [--fps 30]", "note": "开篇钩子片 + 快速翻页转场(翻页期间正文定格暂停) + 正文；自动统一画幅/帧率、音频 acrossfade。和 concat(硬切拼接) 互补：本原子带转场+定格。"},
     "progress_bar":   {"kind": "叠加", "file": "atoms/progress_bar.py",   "sig": "progress_bar.py IN OUT --chapters N --index k [--label 文字] [--h 12] [--color FF6B5C]"},
     "endcard":        {"kind": "叠加", "file": "atoms/endcard.py",        "sig": "endcard.py IN OUT --card PATH(.png/.jpg/.html) [--seconds 3] [--fade 0.5]"},
     "speed_adapt":    {"kind": "叠加", "file": "atoms/speed_adapt.py",    "sig": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0]", "ported_from": "slicer.py::accelerate"},

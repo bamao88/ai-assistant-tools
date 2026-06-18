@@ -157,20 +157,29 @@ def select_body(topic: dict, sents, persona_text: str, full_view: str,
     return body, {"title_suggestion": str(data.get("title_suggestion", "")).strip()}
 
 
-def _sentence_view(sents, body) -> str:
-    """正文覆盖的句子(±3) 逐句列出，供钩子步骤抠片段（约束范围杜绝串味）。"""
+def _sentence_view(sents, body, extra_spans=None) -> str:
+    """钩子候选池：正文覆盖句(±3) ∪ 选题原始选段区(orig_keep_sids, ±2)，逐句列出。
+    纳入 orig 区是因为很多选题的招牌钩子句在正文取证段之外（如"传统脚本已死"在全场很早处），
+    但 orig 区仍是这条选题自己的地盘，不会串到别的话题。"""
+    n = len(sents)
     ids: set[int] = set()
     for s in body:
         a, b = s["sids"]
-        ids.update(range(max(0, a - 3), min(len(sents) - 1, b + 3) + 1))
+        ids.update(range(max(0, a - 3), min(n - 1, b + 3) + 1))
+    for span in extra_spans or []:
+        if isinstance(span, (list, tuple)) and len(span) >= 2:
+            a, b = int(span[0]), int(span[-1])
+            ids.update(range(max(0, a - 2), min(n - 1, b + 2) + 1))
     return "\n".join(f"#{i} {sents[i].text}" for i in sorted(ids))
 
 
 def gen_hook_options(core: dict, body, sents, persona_text: str, providers=None) -> list[dict]:
-    """① 短钩子候选（跨句抠片段拼接，每片段标 verbatim 是否逐字）。"""
+    """① 钩子候选（几个短句拼成一个顺口句子；候选池含正文区+选题原始选段区）。"""
     if not body:
         return []
-    user = f"标题：{core['title']}\n论点：{core['one_argument']}\n\n【正文原话句】\n{_sentence_view(sents, body)}"
+    view = _sentence_view(sents, body, extra_spans=core.get("orig_keep_sids"))
+    user = (f"标题：{core['title']}\n论点：{core['one_argument']}\n"
+            f"目标受众：{core.get('audience','')}\n\n【候选原话句】\n{view}")
     client = OpenAICompatibleClient(providers=providers)
     data = _chat_json_retry(client, [
         {"role": "system", "content": persona_text + "\n\n" + HOOK_TASK},

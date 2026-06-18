@@ -126,13 +126,15 @@ def detect_top_block(video, H, dark=50, min_frac=0.03):
                  "-frames:v", "1", str(f1)])
         if r.returncode != 0 or not f1.exists():
             return None
-        im = Image.open(f1).convert("RGB")
+        im = Image.open(f1).convert("L")        # 灰度：每点直接是亮度
         W, fh = im.size
         px = im.load()
+        if px is None:
+            return None
         xs = [int(W * (i + 0.5) / 20) for i in range(20)]
         bottom = 0
         for y in range(min(fh, H)):
-            lum = sum(px[xx, y][c] for xx in xs for c in range(3)) / (3 * len(xs))
+            lum = sum(px[xx, y] for xx in xs) / len(xs)
             if lum >= dark:
                 break
             bottom = y

@@ -188,11 +188,16 @@ def gen_hook_options(core: dict, body, sents, persona_text: str, providers=None)
     for h in data.get("hooks", []) or []:
         frags = []
         for fr in h.get("fragments", []) or []:
-            sid, txt = fr.get("sid"), (fr.get("text") or "").strip()
-            if sid is None or not txt:
+            txt = (fr.get("text") or "").strip()
+            rng = _parse_sid_range(fr.get("sid"))     # 容错：AI 可能把 sid 给成区间"761-763"
+            if not txt or rng is None:
                 continue
-            verbatim = 0 <= int(sid) < len(sents) and txt in sents[int(sid)].text
-            frags.append({"sid": int(sid), "text": txt, "verbatim": verbatim})
+            a, b = rng
+            if not (0 <= a <= b < len(sents)):
+                continue
+            src = "".join(sents[i].text for i in range(a, b + 1))   # 区间原文（跨句短句也能校验）
+            sid_disp = a if a == b else f"{a}-{b}"
+            frags.append({"sid": sid_disp, "text": txt, "verbatim": txt in src})
         if not frags:
             continue
         stitched = (h.get("stitched") or "".join(f["text"] for f in frags)).strip()

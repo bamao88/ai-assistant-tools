@@ -76,6 +76,9 @@ python engines/video-compose/run.py --run zh_business \
 | **保证每条切片圆窗大小/位置一致**（免逐条手调） | 圆窗飘动的根因是「每条片各自做角落小脸检测」噪声大。`run_pipeline.py` 已对整段录屏 `video_speaker` **标定一次**(调 `render.py <video> --calibrate` 取 cx/cy/fh)，把 `pip_calib` 注入每条 job → 所有切片共用同一裁框、零飘动。竖版自动启用；标定失败自动退回每条各自定位(不断流)。 |
 | **改版式排布**（框架页 / 方框 CSS 结构） | 改 `render.py` 的 `PAGE_CSS`（竖版框架页）/ `PAGE_CSS_LANDSCAPE`（横版方框），或 `TEMPLATES` 注册新模板。 |
 | **出横屏成片** | `run.py --run landscape_business --selection <sel>.json`（或渲染 `--layout landscape`）。横版=1280×720 方框版式，视觉 DNA 同竖版（配色/手写字/药丸/圆窗）。同一份 pages 既出竖版又出横版。 |
+| **给成片加顶部标题**（贴纸式白底黑字 / 旧黑底白字整条） | `engines/video-clip/atoms/title_bar.py IN OUT --text 标题`。两种样式：`--style bar`（默认·顶部黑底白字整条）；`--style label`（顶部黑色信箱块里**白底黑字圆角贴纸**·单行·块高自动探测顶部黑边）。字色/底色 `--bar-color`/`--text-color` 可覆盖。 |
+| **成片前置开篇钩子 + 翻页转场** | `engines/video-clip/atoms/prepend_hook.py 钩子 正文 OUT [--flip 0.30] [--trans slideleft]`。钩子→翻页(翻页期间正文定格暂停)→正文，自动统一画幅/帧率+音频过渡。与 `concat`（硬切拼接，无转场）互补。 |
+| **整条切片"加标题+拼钩子"一键收尾**（标题取自选题文案） | 业务粘合脚本 `var/zh_main/0618test/finalize_clip.py <clip号>`：自动从对应 item `publish_copy.md`「标题候选」✅ 取标题 → `title_bar --style label` 烧标题 → `prepend_hook` 前置钩子。clip↔item 映射见该脚本与 `var/zh_main/0618test/doc/钩子+标题-成片收尾流程.md`。 |
 | **换/加转写后端**（字级线地基） | `video-slicer/video_slicer/transcribe/`：火山 seedasr v3 主 + 阿里 paraformer 兜底；上传公网默认、阿里 OSS 备选(`--uploader oss`)。火山 key 入 `var/credentials/aliyun.env`。输出对齐 `twostage/resolve.py` 词表 schema。 |
 | **改去口水/承接句判断**（字级线） | 改 `video-slicer/references/字级去口水与承接句保护.md`（删前保后 + 四类高危承接句红线，cut_word 去口水的判断基底）。 |
 | **字幕/文案带标点 ITN**（字级线） | 去口水输入用**句级带标点 ITN 文本**（`run_cut.py` 建富 token → `script_clean.clean_to_keep(rich_tokens=…)`），删后经 `transcribe/align.py` 对回字级拿时间 → 字幕/文案/PPT输入(读 srt)带标点和"90%"。无原生句或对不齐 → 自动降级回字级裸拼（不断流）。原生效果待火山实跑验证。 |

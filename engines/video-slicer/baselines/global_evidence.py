@@ -287,6 +287,7 @@ def write_review_md(out: Path, idx: int, clip: dict, human_block: str | None = N
     if clip.get("hook_options"):
         for h in clip["hook_options"]:
             srcs = " + ".join(f"#{f['sid']}「{f['text']}」" + ("" if f["verbatim"] else "⚠")
+                              + ("〔长〕" if len(f["text"]) > 14 else "")
                               for f in h["fragments"])
             verbatim_join = "".join(f["text"] for f in h["fragments"])
             L.append(f"- 拟稿：**{h['stitched']}**")

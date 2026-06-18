@@ -412,11 +412,13 @@ def main() -> int:
     ap.add_argument("--only", default=None, help="只处理这些选题序号（如 6-22 或 8）")
     ap.add_argument("--migrate", action="store_true",
                     help="不重跑正文：对已存 golden 补①钩子+④精修+换新版式（保留人工定稿区）")
+    ap.add_argument("--hooks-only", action="store_true", help="迁移时只重算①钩子（保留已有正文+④精修）")
     a = ap.parse_args()
     load_env_file(_discover_env_file())
     providers = [p.strip() for p in a.providers.split(",") if p.strip()]
-    if a.migrate:
-        migrate(a.words, a.out, persona=a.persona, host=a.host, providers=providers, only=a.only)
+    if a.migrate or a.hooks_only:
+        steps = ("hooks",) if a.hooks_only else ("hooks", "refine")
+        migrate(a.words, a.out, persona=a.persona, host=a.host, providers=providers, only=a.only, steps=steps)
     else:
         if not a.selection:
             ap.error("全新生成需要 --selection（或加 --migrate 走迁移）")

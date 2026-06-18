@@ -106,8 +106,11 @@ def main():
     ass = out.with_suffix(".zh.ass")
     ass.write_text(build_ass(a.srt, w, h, a.fs, cy), encoding="utf-8")
 
+    # -fps_mode passthrough：保留源帧时间戳。VFR(变帧率)源若重采样成定帧率会让
+    # 烧进画面的字幕相对"-c:a copy"的原音轨整体漂移（口型对不上）——passthrough 杜绝此类。
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", a.input,
-           "-vf", f"subtitles={ass}", "-c:v", "libx264", "-preset", "medium",
+           "-vf", f"subtitles={ass}", "-fps_mode", "passthrough",
+           "-c:v", "libx264", "-preset", "medium",
            "-crf", "18", "-pix_fmt", "yuv420p"]
     if has_audio:
         cmd += ["-c:a", "copy"]

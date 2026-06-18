@@ -386,9 +386,9 @@ def migrate(words_json, out_dir, persona="zh_main", host="张和", providers=Non
                 "hook_line": c.get("hook_line", ""), "audience": c.get("audience", ""),
                 "mainstream": c.get("mainstream", ""), "orig_keep_sids": c.get("orig_keep_sids", []),
                 "title_suggestion": c.get("title_suggestion", ""), "human_status": c.get("human_status", "pending")}
-        print(f"  ({idx}) {core['title'][:26]}… 正文{len(body)}段", file=sys.stderr)
+        print(f"  ({idx}) {core['title'][:26]}… 正文{len(body)}段 [{'+'.join(steps)}]", file=sys.stderr)
         try:
-            clip = finalize_clip(core, body, sents, persona_text, providers=providers)
+            clip = finalize_clip(core, body, sents, persona_text, providers=providers, steps=steps, prev=c)
         except Exception as ex:  # noqa: BLE001
             print(f"      ✗ {str(ex)[:150]}", file=sys.stderr); by_idx[idx] = c; log.append(f"{idx:02d} ✗"); continue
         clip["idx"] = idx; by_idx[idx] = clip

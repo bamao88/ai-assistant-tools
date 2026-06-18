@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""title-bar —— 顶部黑底标题条叠加（原子能力）。
+"""title-bar —— 顶部标题叠加（原子能力，两种样式）。
 
-在画面顶部叠一条纯色底（默认黑 #202020、整宽），上面排白色粗宋标题，
-中文自动换行 + 按字宽居中，几何/配色照搬"标题黑色底色.png"参照：
-顶部留白 3.85%H、条高 14.06%H、整宽。字体默认 思源宋体超粗体（SourceHanSerifCN-Heavy）。
+style=bar（默认）：在画面顶部叠一条纯色底（默认黑 #202020、整宽），上面排白色粗宋标题，
+  几何/配色照搬"标题黑色底色.png"参照：顶部留白 3.85%H、条高 14.06%H、整宽。
+style=label：在顶部「黑色信箱块」里居中放一枚白底圆角标签（默认白底 + 黑字），
+  标签宽度按文字+内边距自适应、水平+垂直居中；信箱块默认自动探测（首帧顶部连续黑边），
+  也可 --block-h-frac 手动指定。框架页竖版口播片的"贴纸式标题"就是这种。
 
+两种样式都：中文按字宽自动换行/居中，字体默认 思源宋体超粗体（SourceHanSerifCN-Heavy）。
 排版交给 PIL（拿真实字宽，懂"DIfy"不拆、"。，、？"不放行首），
 ffmpeg 只把渲好的透明 PNG 整片叠上去（全程显示，不裁不改原片，幂等）。
 标题文字是内容，由调用方 --text 提供——引擎不内置任何选题标题。
@@ -13,9 +16,11 @@ ffmpeg 只把渲好的透明 PNG 整片叠上去（全程显示，不裁不改�
   title_bar.py IN.mp4 OUT.mp4 --text "2026，企业AI落地还用 DIfy、扣子？纯属浪费钱"
   title_bar.py IN.mp4 OUT.mp4 --text "..." --fs 56            # 固定字号（默认自动撑满）
   title_bar.py IN.mp4 OUT.mp4 --text "上行\n下行"              # \n 手动换行
+  title_bar.py IN.mp4 OUT.mp4 --style label --text "给还在观望的AI人：认知差就是机会"
+  title_bar.py IN.mp4 OUT.mp4 --style label --text "..." --block-h-frac 0.128  # 手动指定信箱块高
 """
 from __future__ import annotations
-import argparse, sys
+import argparse, sys, tempfile
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 

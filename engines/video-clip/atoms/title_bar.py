@@ -132,7 +132,6 @@ def detect_top_block(video, H, dark=50, min_frac=0.03):
         xs = [int(W * (i + 0.5) / 20) for i in range(20)]
         bottom = 0
         for y in range(min(fh, H)):
-            r, g, b = px[x, y] if False else (0, 0, 0)  # placeholder; replaced below
             lum = sum(px[xx, y][c] for xx in xs for c in range(3)) / (3 * len(xs))
             if lum >= dark:
                 break

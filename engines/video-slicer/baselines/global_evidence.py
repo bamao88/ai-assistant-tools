@@ -221,7 +221,9 @@ def gen_hook_options(core: dict, body, sents, persona_text: str, providers=None)
                 continue
             src = "".join(sents[i].text for i in range(a, b + 1))   # 区间原文（跨句短句也能校验）
             sid_disp = a if a == b else f"{a}-{b}"
-            frags.append({"sid": sid_disp, "text": txt, "verbatim": txt in src})
+            # 忽略空白再判逐字（英文词周围空格如"干 AI 很多年"vs"干AI很多年"不算改写）
+            verbatim = txt in src or re.sub(r"\s", "", txt) in re.sub(r"\s", "", src)
+            frags.append({"sid": sid_disp, "text": txt, "verbatim": verbatim})
         if not frags:
             continue
         stitched = (h.get("stitched") or "".join(f["text"] for f in frags)).strip()

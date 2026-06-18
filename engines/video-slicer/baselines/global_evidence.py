@@ -233,12 +233,14 @@ def write_review_md(out: Path, idx: int, clip: dict, human_block: str | None = N
     L.append(f"- **原钩子(参考)**：{clip.get('hook_line','')}")
 
     L += ["", "## ① 开场钩子（短·炸·挑一个；钩子唯一出处）",
-          "（钩子=短片段拼接，每片段标来源句号；⚠=非逐字子串需人工核对）", ""]
+          "（**拟稿**=可能重排/加衔接，**原话以片段为准**；⚠=该片段非逐字子串需人工核对）", ""]
     if clip.get("hook_options"):
         for h in clip["hook_options"]:
             srcs = " + ".join(f"#{f['sid']}「{f['text']}」" + ("" if f["verbatim"] else "⚠")
                               for f in h["fragments"])
-            L.append(f"- **{h['stitched']}**")
+            verbatim_join = "".join(f["text"] for f in h["fragments"])
+            L.append(f"- 拟稿：**{h['stitched']}**")
+            L.append(f"  - 原话拼接：{verbatim_join}")
             L.append(f"  - 片段：{srcs}")
             if h["why"]:
                 L.append(f"  - 理由：{h['why']}")

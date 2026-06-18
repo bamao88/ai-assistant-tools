@@ -26,6 +26,7 @@ DISPATCH = {
     "framework_reframe": ("video-framework-render", "python -m video_framework_render.render"),
     "raw":            ("video-framework-render", "(直出·不改造)"),
     "concat":         ("video-clip", "python atoms/concat.py"),
+    "prepend_hook":   ("video-clip", "python atoms/prepend_hook.py"),
     "progress_bar":   ("video-clip", "python atoms/progress_bar.py"),
     "endcard":        ("video-clip", "python atoms/endcard.py"),
     "speed_adapt":    ("video-clip", "python atoms/speed_adapt.py"),

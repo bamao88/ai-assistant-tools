@@ -2,34 +2,31 @@
 """全局取证 · 金标准切片脚本生成器（评测基准这条线 · 不进生产管线）。
 
 问题：现有两阶段里 stage2 只在选题落点 ±6 句的小窗口里挑句（stage2_script.py:WINDOW_PAD=6），
-看不到张和在全场别处对同一观点更有力的复述/举例。本脚本反过来：
+看不到张和在全场别处对同一观点更有力的复述/举例。本脚本反过来：对每条**已选定选题**，把张和
+**整场逐字稿**喂给 AI 在全局取证，按论证结构精选组装。
 
-  对每条**已选定选题**，把张和**整场 3 小时逐字稿**喂给一个 AI，让它在全局范围取证，
-  按【论证结构】(钩子→核心论点→全场最有力的论据/举例→收尾)精选组装成一条高质量脚本。
+一条 clip 的四级流水线（钩子单独拎出来，只有一个出处）：
+  ① 开场钩子   短·炸·可跨句抠片段拼接（gen_hook_options）——钩子唯一来源
+  ② 正文·论证结构  论点/论据/收尾（select_body·全局取证）——句号可回查时间
+  ③ 组装脚本   ②各段原话原始拼接（带口水）
+  ④ 精修脚本   去口水/去重复/开篇独立/结尾干脆（refine_script，只删理顺不改写实质）
+  → 人工定稿   挑一个钩子 + 核对精修忠实度 + 拍板
 
-口径：论证结构化精选（不是穷尽堆料）。跨选题之间允许内容重复，但单条内部不堆砌、控时长。
-铁律：AI 只能引用真实句号、不得编造/改写——产出是一串句号区间，可校验、可经 resolve 换算成秒剪片。
-定稿：本脚本只产**候选**(human_status=pending)；人工筛选拍定后才成金标准 golden.json。
-
+口径：论证结构化精选（不堆料）。铁律：②只引真实句号、可经 resolve 换算成秒；①每片段标 sid 可校验；
+④允许调语序/合并但只用原话出现过的字词、不新增观点（③原始版并排留着供核对）。
 句号索引复用生产线同一个 segment.sentences_from_wordfile，sid↔时间 与 _selection.json 完全一致。
 
 用法:
-  python global_evidence.py \\
-      --words   var/zh_main/asr/agent_eval_0613/words.json \\
-      --selection var/zh_main/cuts/agent全量-volc-native/_selection.json \\
-      --out     var/zh_main/eval/agent_eval_0613 \\
-      [--persona zh_main] [--providers kimi,minimax] [--limit N] [--host 张和]
+  python global_evidence.py --words words.json --selection _selection.json --out <dir> \\
+      [--persona zh_main] [--providers kimi,minimax] [--limit N] [--only 6-22] [--migrate]
+  --migrate：不重跑正文，对已存 golden_candidate.json 的每条补①钩子+④精修+换新版式（保留人工定稿区）。
 
-产出（落 --out）:
-  golden_candidate.json          全部候选（人工定稿前；human_status=pending）
-  candidates/clip_NN_<slug>.md   每条一份人工评审稿（方便逐条留/删/改）
-  _run.log                       本次运行摘要
+产出（落 --out）：golden_candidate.json + candidates/clip_NN_<slug>.md + _run.log
 """
 from __future__ import annotations
-import argparse, json, sys
+import argparse, json, re, sys
 from pathlib import Path
 
-# baselines/ 上溯到引擎根（含 video_slicer 包），与 select_clips.py 同款无硬编码路径。
 _ENGINE = str(Path(__file__).resolve().parent.parent)
 if _ENGINE not in sys.path:
     sys.path.insert(0, _ENGINE)
@@ -38,63 +35,78 @@ from video_slicer.cli import load_env_file, _discover_env_file  # noqa: E402
 from video_slicer.transcribe import segment  # noqa: E402
 from video_slicer.twostage.stage1_topics import load_persona  # noqa: E402
 
-_ROLES = {"hook", "argument", "evidence", "closing"}
+BODY_ROLES = {"argument", "evidence", "closing"}   # 正文角色；钩子不在正文里，单独生成
 
-# ───────────────────────── 提示词（质量核心杠杆 · prompt 迭代主战场）─────────────────────────
-GLOBAL_EVIDENCE_TASK = """\
-【你的任务 · 全局取证定金标准脚本】
-下面给你一条【已选定的选题】+ 张和这场直播的【全场编号句】（每行 `#句号 文本`，按时间顺序；句号是稳定锚点）。
-这条选题"选什么"已经定了，**你不要质疑或更换选题**。你的唯一任务：在【全场】范围内，为这条选题挑出能把它讲到最好的张和原话，组装成一条高质量短视频脚本。
+# ═══════════════════════ ② 正文·全局取证（提示词=质量核心杠杆）═══════════════════════
+BODY_TASK = """\
+【你的任务 · 全局取证定正文】
+下面给你一条【已选定的选题】+ 张和这场直播的【全场编号句】（每行 `#句号 文本`；句号是稳定锚点）。
+选题"选什么"已定，**不要质疑或更换**。你只产**正文**（论点→论据→收尾），**不要产钩子**（钩子另有专门步骤生成）。
 
-【与旧做法的根本区别——这是关键】
-不要只盯选题落点附近那一段。张和经常在全场不同位置**反复讲同一个观点、给更好的例子、说更狠的金句**——你要把全场都扫一遍，跨位置取证，把散落各处最有力的原话聚到一条里。
+【与旧做法的根本区别】
+不要只盯选题落点附近。张和常在全场不同位置反复讲同一观点、给更好的例子——你要扫全场，跨位置取证，把散落各处最有力的原话聚到一条里。
 
-【论证结构（按结构精选，不是堆料）】
-一条好切片 = 钩子(hook) + 核心论点(argument) + 全场最有力的 1-2 个论据/举例(evidence) + 收尾(closing，可省)：
-- hook：0-3 秒抓人的那句张和原话（反认知 / 戳痛 / 疑问）。
-- argument：把这条选题的唯一观点一句话立住。
-- evidence：从**全场任意位置**调取最有说服力的论据、案例、数据、金句（允许跨越很远的句号——这就是全局取证的价值）。
+【正文结构】
+- argument：把这条选题的唯一观点一句话立住（这是正文第一句，不必是钩子）。
+- evidence：从**全场任意位置**调取最有说服力的论据/案例/数据/金句（允许跨很远句号——这就是全局取证的价值）。
 - closing：一句收口或升华（没有合适的就不要）。
 
-【钩子纪律（最关键·常犯错）】
-- 钩子**第一句就要是反认知 / 戳痛 / 疑问的爆点**。**砍掉开头一切软铺垫和承接语**——如"还有一个最近的认知分享就是""我要给大家讲一下""然后就是刚才我说的""其实""我跟大家讲""那个/这个"这类填充词，绝不能留在钩子开头。
-- 若爆点句本身前面挂了一截铺垫（同一句里），就把该句选进来、但在 reason 里注明"钩子从'……'这几个字起念"，让定稿的人知道砍到哪。被砍掉的铺垫可以移作 argument 的第一句。
-- 钩子若太弱，**多给 1-2 个备选**：在 segments 里把次选钩子标 role=hook 多放一个，或在 reason 写"备选钩子：句号X"。
-- **禁止串味**：钩子必须是张和**就这条选题本身**说的话，绝不能因为某句够炸就从别的话题搬过来（如别条切片的招牌金句）。钩子要能自然引出本条的核心论点。
-
-【反串味（每段都要守）】
-- 每一段都必须服务**这一条选题的论点**。张和全场讲很多话题，你只能取真正在论证/支撑本选题的原话；够炸但属于别的话题的句子，不要拿。
-
-【结尾纪律】
-- 收尾必须落在一句**完整、有力**的话上。**绝不能停在半截或拖尾**——结尾段尾部若是"包括这个""然后……"、孤立的"嗯/啊"、没说完的从句，要把这些尾巴砍掉，收在前一句完整有力处。
-
+【反串味】每一段都必须服务**这一条选题的论点**；够炸但属于别话题的句子不要拿。
+【结尾纪律】closing 落在完整有力的话上，不要停在半截或拖尾（后续精修还会再收一遍）。
 【通用纪律】
-- 只能引用给你的真实句号，**绝对不要编造句号、不要改写文字**。挑不出合适内容就少挑、宁缺毋滥。
-- 每段是一个连续句号闭区间 [起句号, 止句号]；多段 = 跳接，砍掉中间废话，但每段内部要语义完整。
-- **每段要短而准**：一段尽量控制在 ~6 句以内，只取最锋利、最有说服力的那几句。**禁止一段圈几十句照搬**——若一个论据点要很多句才说清，说明你选宽了，换更锋利的几句或拆成更紧的小段。
-- 控制总时长约 60–120 秒（宁精勿长）；跨选题之间内容可重复，但**单条内部不许注水堆砌**。
-- segments **按论证逻辑顺序排**（hook 在前，哪怕它在全场时间上靠后），不必按时间先后。
+- 只能引用真实句号，**不要编造句号、不要改写文字**。挑不出就少挑。
+- 每段是连续句号闭区间 [起,止]；多段=跳接。
+- **每段短而准**：尽量 ~6 句以内，只取最锋利几句，**禁止一段圈几十句照搬**。
+- 总时长约 60–120 秒；单条内部不堆砌。按论证逻辑顺序排。
 
 【输出严格 JSON，无 markdown】
-{"segments":[
-  {"role":"hook|argument|evidence|closing", "sids":[起句号, 止句号], "reason":"为什么选这段（一句话）"}
-], "title_suggestion":"（可选）若你发现比原标题更好的钩子式标题，否则留空"}
+{"segments":[{"role":"argument|evidence|closing","sids":[起,止],"reason":"为什么选这段（一句话）"}],
+ "title_suggestion":"（可选）更好的钩子式标题，否则留空"}
+只输出这个 JSON 对象。"""
+
+# ═══════════════════════ ① 开场钩子（短·炸·跨句拼接）═══════════════════════
+HOOK_TASK = """\
+给你一条切片的论点 + 它正文用到的原话句（每行 `#句号 文本`）。设计 2-3 个**短而炸**的开场钩子候选，按吸引力从高到低排。
+【钩子要求】
+- **短**：每个就一句话、念 1-3 秒，不要整段长句。
+- **炸**：反认知/戳痛/疑问，第一下抓住陌生人。
+- **可跨句抠片段拼接**：可从不同句子各抠一个短片段（必须是该句里一字不差的原话子串）拼成钩子；砍掉"啊/然后/就是/这个"等口水和承接词。
+- 钩子是开场 teaser，**不要把正文论点整句照搬**，提炼得更短更炸。
+【铁律】每个片段 text 必须是给你的某句号原话里**一字不差**的连续子串，不得改写/编造/跨到没给你的句子。
+【输出严格 JSON】{"hooks":[{"fragments":[{"sid":句号,"text":"原话子串"}],"stitched":"拼起来读的钩子","why":"为什么炸"}]}
+只输出这个 JSON 对象。"""
+
+# ═══════════════════════ ④ 精修（去口水/去重复/开篇独立/结尾干脆）═══════════════════════
+REFINE_TASK = """\
+对下面这段张和原话做【精修】，产出能直接当短视频成片用的正文脚本。这段是从一场长直播里切出来的，按短视频标准收拾干净：
+【必须做】
+1. 去口水：删"啊/嗯/这个/那个/然后/就是/对吧/你知道吧"等口头禅与口吃；同一句重说的只留一遍最顺的。
+2. 去重复+顺语序：把反复绕回、表达同一意思的几句合并成一句最利落的，语序可调整让它通顺。
+3. 开篇独立：第一句**不能承接上文**。原素材开头常有"就是他…""然后…""还有一个…"这类接上面内容的承接/转折词——剪掉，让第一句自己立得住。
+4. 结尾干脆：结尾**不要像没讲完、还在引导往下听**（如"那接下来…""这个我们后面再说…""听懂了吗我们继续…"），收在一句完整有力的话上。
+【铁律】只能用原话里**出现过的字词**，**不得新增观点、不得改写措辞的实质含义、不得编造**——你是在"删和理顺"，不是重写。保留张和口吻和关键金句。
+【输出严格 JSON】{"refined":"精修后的脚本纯文本"}
 只输出这个 JSON 对象。"""
 
 
 def load_topics(selection_path: str | Path) -> list[dict]:
-    """从 _selection.json 读已选定的选题（选什么已定，本脚本只重做"选哪些原话"）。"""
     data = json.loads(Path(selection_path).read_text(encoding="utf-8"))
     return data.get("clips", [])
 
 
 def render_full(sents) -> str:
-    """全场编号句（喂给 AI 的取证语料）。单说话人口播，只列句号+文本，省 token。"""
     return "\n".join(f"#{s.sid} {s.text}" for s in sents)
 
 
+def _chat_json_retry(client, msgs, temperature):
+    try:
+        return client.chat_json(msgs, temperature=temperature)
+    except Exception:  # noqa: BLE001  长稿偶发 JSON 截断/超时，重试一次
+        return client.chat_json(msgs, temperature=temperature)
+
+
 def _clean_segments(raw_segments, sents) -> list[dict]:
-    """校验 AI 回的 segments：丢非法/编造句号，钳进合法范围，回填文本+时间。"""
+    """校验 AI 回的正文 segments：丢非法/编造句号，钳进合法范围，回填文本+时间。"""
     max_sid = sents[-1].sid if sents else -1
     out: list[dict] = []
     for seg in raw_segments or []:
@@ -109,108 +121,156 @@ def _clean_segments(raw_segments, sents) -> list[dict]:
             continue
         if a > b:
             a, b = b, a
-        a, b = max(0, a), min(max_sid, b)          # 钳进合法范围（防越界/编造）
+        a, b = max(0, a), min(max_sid, b)
         if a > b:
             continue
         role = seg.get("role", "evidence")
-        if role not in _ROLES:
+        if role not in BODY_ROLES:
             role = "evidence"
         text = "".join(sents[sid].text for sid in range(a, b + 1))
-        out.append({
-            "role": role,
-            "sids": [a, b],
-            "span": [round(sents[a].start, 2), round(sents[b].end, 2)],  # 秒
-            "text": text,
-            "reason": str(seg.get("reason", ""))[:200],
-        })
+        out.append({"role": role, "sids": [a, b],
+                    "span": [round(sents[a].start, 2), round(sents[b].end, 2)],
+                    "text": text, "reason": str(seg.get("reason", ""))[:200]})
     return out
 
 
-def select_evidence(topic: dict, sents, persona_text: str, full_view: str,
-                    providers=None, temperature: float = 0.3) -> dict:
-    """单条选题 → 全局取证 → 论证结构化 segments（校验+回填时间后的结构化结果）。"""
-    brief = (
-        f"【已选定选题】\n"
-        f"标题：{topic.get('title','')}\n"
-        f"核心论点(one_argument)：{topic.get('one_argument','')}\n"
-        f"钩子原话(hook_line)：{topic.get('hook_line','')}\n"
-        f"受众：{topic.get('audience','')} ｜ 流量潜力：{topic.get('mainstream','')}\n\n"
-        f"【全场编号句】\n{full_view}"
-    )
+def select_body(topic: dict, sents, persona_text: str, full_view: str,
+                providers=None, temperature: float = 0.3) -> tuple[list[dict], dict]:
+    """② 全局取证 → 正文 segments（论点/论据/收尾，无钩子）。"""
+    brief = (f"【已选定选题】\n标题：{topic.get('title','')}\n"
+             f"核心论点(one_argument)：{topic.get('one_argument','')}\n"
+             f"钩子原话参考(hook_line)：{topic.get('hook_line','')}\n"
+             f"受众：{topic.get('audience','')} ｜ 流量潜力：{topic.get('mainstream','')}\n\n"
+             f"【全场编号句】\n{full_view}")
     client = OpenAICompatibleClient(providers=providers)
-    msgs = [
-        {"role": "system", "content": persona_text + "\n\n" + GLOBAL_EVIDENCE_TASK},
-        {"role": "user", "content": brief},
-    ]
-    try:                                  # 一次重试：长稿偶发 JSON 截断/超时
-        data = client.chat_json(msgs, temperature=temperature)
-    except Exception:  # noqa: BLE001
-        data = client.chat_json(msgs, temperature=temperature)
-    segments = _clean_segments(data.get("segments", []), sents)
-    keep_sids = [seg["sids"] for seg in segments]
-    time_spans = [seg["span"] for seg in segments]
+    data = _chat_json_retry(client, [
+        {"role": "system", "content": persona_text + "\n\n" + BODY_TASK},
+        {"role": "user", "content": brief}], temperature)
+    body = _clean_segments(data.get("segments", []), sents)
+    return body, {"title_suggestion": str(data.get("title_suggestion", "")).strip()}
+
+
+def _sentence_view(sents, body) -> str:
+    """正文覆盖的句子(±3) 逐句列出，供钩子步骤抠片段（约束范围杜绝串味）。"""
+    ids: set[int] = set()
+    for s in body:
+        a, b = s["sids"]
+        ids.update(range(max(0, a - 3), min(len(sents) - 1, b + 3) + 1))
+    return "\n".join(f"#{i} {sents[i].text}" for i in sorted(ids))
+
+
+def gen_hook_options(core: dict, body, sents, persona_text: str, providers=None) -> list[dict]:
+    """① 短钩子候选（跨句抠片段拼接，每片段标 verbatim 是否逐字）。"""
+    if not body:
+        return []
+    user = f"标题：{core['title']}\n论点：{core['one_argument']}\n\n【正文原话句】\n{_sentence_view(sents, body)}"
+    client = OpenAICompatibleClient(providers=providers)
+    data = _chat_json_retry(client, [
+        {"role": "system", "content": persona_text + "\n\n" + HOOK_TASK},
+        {"role": "user", "content": user}], 0.4)
+    out = []
+    for h in data.get("hooks", []) or []:
+        frags = []
+        for fr in h.get("fragments", []) or []:
+            sid, txt = fr.get("sid"), (fr.get("text") or "").strip()
+            if sid is None or not txt:
+                continue
+            verbatim = 0 <= int(sid) < len(sents) and txt in sents[int(sid)].text
+            frags.append({"sid": int(sid), "text": txt, "verbatim": verbatim})
+        if not frags:
+            continue
+        stitched = (h.get("stitched") or "".join(f["text"] for f in frags)).strip()
+        out.append({"stitched": stitched, "fragments": frags, "why": str(h.get("why", ""))[:200]})
+    return out
+
+
+def refine_script(raw_script: str, core: dict, providers=None) -> str:
+    """④ 精修：去口水/去重复/开篇独立/结尾干脆（只删理顺，不改写实质）。"""
+    if not raw_script.strip():
+        return ""
+    user = f"选题：{core['title']}\n论点：{core['one_argument']}\n\n【待精修正文（原始拼接）】\n{raw_script}"
+    client = OpenAICompatibleClient(providers=providers)
+    data = _chat_json_retry(client, [
+        {"role": "system", "content": REFINE_TASK},
+        {"role": "user", "content": user}], 0.3)
+    return str(data.get("refined", "")).strip()
+
+
+def finalize_clip(core: dict, body: list[dict], sents, persona_text: str, providers=None) -> dict:
+    """正文 segments → 完整 clip：补①钩子候选 + ③组装 + ④精修。core 含 title/one_argument 等元信息。"""
+    keep_sids = [s["sids"] for s in body]
+    time_spans = [s["span"] for s in body]
     est_dur = round(sum(e - s for s, e in time_spans), 1)
-    script = "\n".join(seg["text"] for seg in segments)
-    return {
-        "title": topic.get("title", ""),
-        "one_argument": topic.get("one_argument", ""),
-        "hook_line": topic.get("hook_line", ""),
-        "audience": topic.get("audience", ""),
-        "mainstream": topic.get("mainstream", ""),
-        "title_suggestion": str(data.get("title_suggestion", "")).strip(),
-        "orig_keep_sids": topic.get("keep_sids", []),   # 旧局部窗口结果，留作对照
-        "segments": segments,
-        "keep_sids": keep_sids,                          # 扁平区间，喂 cut 管线用
-        "time_spans": time_spans,
-        "est_dur": est_dur,
-        "script": script,
-        "human_status": "pending",                       # 人工定稿：pending|keep|cut|edited
-    }
+    script_raw = "\n".join(s["text"] for s in body)
+    hook_options = gen_hook_options(core, body, sents, persona_text, providers=providers)
+    script_refined = refine_script(script_raw, core, providers=providers)
+    clip = dict(core)
+    clip.update({"hook_options": hook_options, "segments": body, "keep_sids": keep_sids,
+                 "time_spans": time_spans, "est_dur": est_dur,
+                 "script_raw": script_raw, "script_refined": script_refined,
+                 "human_status": core.get("human_status", "pending")})
+    return clip
 
 
 def _slug(s: str, n: int = 24) -> str:
-    keep = "".join(c for c in (s or "") if c.isalnum() or c in "（）()·-_") [:n]
+    keep = "".join(c for c in (s or "") if c.isalnum() or c in "（）()·-_")[:n]
     return keep or "clip"
 
 
-def write_review_md(out: Path, idx: int, clip: dict) -> None:
-    """每条一份人工评审稿：结构清晰，方便逐条留/删/改。"""
+HUMAN_HEADER = "## 人工定稿（在此处改）"
+
+
+def write_review_md(out: Path, idx: int, clip: dict, human_block: str | None = None) -> None:
+    """四级流水线版式：①开场钩子 ②正文论证结构 ③组装脚本 ④精修脚本 → 人工定稿。"""
     d = out / "candidates"; d.mkdir(parents=True, exist_ok=True)
-    role_cn = {"hook": "钩子", "argument": "核心论点", "evidence": "论据/举例", "closing": "收尾"}
-    lines = [
-        f"# {idx:02d}. {clip['title']}",
-        "",
-        f"- **核心论点**：{clip['one_argument']}",
-        f"- **原钩子**：{clip['hook_line']}",
-        f"- **受众/流量**：{clip['audience']} ｜ {clip['mainstream']}",
-        f"- **估时**：{clip['est_dur']}s ｜ 段数：{len(clip['segments'])}",
-    ]
-    if clip["title_suggestion"]:
-        lines.append(f"- **AI 建议新标题**：{clip['title_suggestion']}")
-    lines += ["", "## 全局取证 · 论证结构", ""]
-    for seg in clip["segments"]:
-        s, e = seg["span"]
-        lines += [
-            f"### [{role_cn.get(seg['role'], seg['role'])}] 句号 {seg['sids'][0]}–{seg['sids'][1]}  "
-            f"（{s:.1f}–{e:.1f}s）",
-            f"> {seg['text']}",
-            f"*取证理由：{seg['reason']}*",
-            "",
-        ]
-    lines += [
-        "## 组装后脚本（候选）", "", clip["script"], "",
-        "---",
-        "## 人工定稿（在此处改）",
-        "- 状态（留 keep / 删 cut / 改 edited）：**pending**",
-        "- 备注：",
-        "",
-        f"> 对照·旧局部窗口选段句号：{clip['orig_keep_sids']}",
-    ]
-    (d / f"clip_{idx:02d}_{_slug(clip['title'])}.md").write_text("\n".join(lines), encoding="utf-8")
+    role_cn = {"argument": "核心论点", "evidence": "论据/举例", "closing": "收尾"}
+    L = [f"# {idx:02d}. {clip['title']}", "",
+         f"- **核心论点**：{clip['one_argument']}",
+         f"- **受众/流量**：{clip.get('audience','')} ｜ {clip.get('mainstream','')}",
+         f"- **正文估时(精修前)**：{clip['est_dur']}s ｜ 正文段数：{len(clip['segments'])}"]
+    if clip.get("title_suggestion"):
+        L.append(f"- **AI 建议新标题**：{clip['title_suggestion']}")
+    L.append(f"- **原钩子(参考)**：{clip.get('hook_line','')}")
+
+    L += ["", "## ① 开场钩子（短·炸·挑一个；钩子唯一出处）",
+          "（钩子=短片段拼接，每片段标来源句号；⚠=非逐字子串需人工核对）", ""]
+    if clip.get("hook_options"):
+        for h in clip["hook_options"]:
+            srcs = " + ".join(f"#{f['sid']}「{f['text']}」" + ("" if f["verbatim"] else "⚠")
+                              for f in h["fragments"])
+            L.append(f"- **{h['stitched']}**")
+            L.append(f"  - 片段：{srcs}")
+            if h["why"]:
+                L.append(f"  - 理由：{h['why']}")
+    else:
+        L.append("-（未生成，待补）")
+
+    L += ["", "## ② 正文 · 论证结构（取证依据·句号可回查时间·不含钩子）", ""]
+    for s in clip["segments"]:
+        a, b = s["span"]
+        L += [f"### [{role_cn.get(s['role'], s['role'])}] 句号 {s['sids'][0]}–{s['sids'][1]}（{a:.1f}–{b:.1f}s）",
+              f"> {s['text']}", f"*取证理由：{s.get('reason','')}*", ""]
+
+    L += ["## ③ 组装脚本（原始拼接·带口水·未删）", "", "〔开场：从 ① 挑一个钩子〕", clip["script_raw"], ""]
+    L += ["## ④ 精修脚本（去口水/去重复/开篇独立/结尾干脆·待人工核对忠实度）", "",
+          "〔开场：从 ① 挑一个钩子〕", clip.get("script_refined") or "（未生成）", "", "---"]
+
+    if human_block:
+        L.append(human_block.rstrip())
+    else:
+        L += [HUMAN_HEADER, "- 选定钩子：", "- 状态（留 keep / 删 cut / 改 edited）：**pending**",
+              "- 备注：", "", f"> 对照·旧局部窗口选段句号：{clip.get('orig_keep_sids','')}"]
+    (d / f"clip_{idx:02d}_{_slug(clip['title'])}.md").write_text("\n".join(L), encoding="utf-8")
+
+
+def _core_from_topic(topic: dict) -> dict:
+    return {"title": topic.get("title", ""), "one_argument": topic.get("one_argument", ""),
+            "hook_line": topic.get("hook_line", ""), "audience": topic.get("audience", ""),
+            "mainstream": topic.get("mainstream", ""), "orig_keep_sids": topic.get("keep_sids", []),
+            "human_status": "pending"}
 
 
 def _parse_only(only: str | None) -> set[int] | None:
-    """'6-22' / '8' → 要处理的 1-based 选题序号集合（None=全部）。"""
     if not only:
         return None
     only = only.strip()
@@ -220,77 +280,123 @@ def _parse_only(only: str | None) -> set[int] | None:
     return {int(only)}
 
 
-def run(words_json: str, selection_json: str, out_dir: str, persona: str = "zh_main",
-        host: str = "张和", providers=None, limit=None, only: str | None = None) -> dict:
+def _existing_human_block(out: Path, idx: int) -> str | None:
+    """迁移时保留人工定稿区（尤其用户已写的反馈）。"""
+    for p in (out / "candidates").glob(f"clip_{idx:02d}_*.md"):
+        m = re.search(re.escape(HUMAN_HEADER) + r".*", p.read_text(encoding="utf-8"), re.DOTALL)
+        if m:
+            return m.group(0)
+    return None
+
+
+def _write_golden(out: Path, by_idx: dict, words_json, selection_json, persona, host, log):
+    clips = [by_idx[i] for i in sorted(by_idx)]
+    golden = {"source_words": str(words_json), "selection": str(selection_json),
+              "persona": persona, "host": host, "method": "global_evidence/四级流水线",
+              "human_status": "pending", "clips": clips}
+    (out / "golden_candidate.json").write_text(json.dumps(golden, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out / "_run.log").write_text("\n".join(log) + "\n", encoding="utf-8")
+    return golden
+
+
+def run(words_json, selection_json, out_dir, persona="zh_main", host="张和",
+        providers=None, limit=None, only=None) -> dict:
+    """全新生成：每条做 ②正文 + ①钩子 + ④精修。--only 合并进已存 golden。"""
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     _, sents = segment.sentences_from_wordfile(words_json, host=host)
     persona_text = load_persona(persona)
     topics = load_topics(selection_json)
     if limit:
         topics = topics[:limit]
-    want = _parse_only(only)                  # None=全部；否则只重跑这些序号，其余保留旧结果
+    want = _parse_only(only)
     full_view = render_full(sents)
     todo = [i for i in range(1, len(topics) + 1) if want is None or i in want]
-    print(f"[全局取证] {len(sents)} 句 / 处理 {len(todo)} 条（共{len(topics)}）/ 语料 {len(full_view)} 字",
-          file=sys.stderr)
+    print(f"[全局取证] {len(sents)}句 / 处理{len(todo)}条(共{len(topics)}) / 语料{len(full_view)}字", file=sys.stderr)
 
-    # 合并模式：--only 时复用旧 golden_candidate.json，只替换重跑的条目
     gpath = out / "golden_candidate.json"
     by_idx: dict[int, dict] = {}
     if want is not None and gpath.exists():
         for pos, c in enumerate(json.loads(gpath.read_text(encoding="utf-8")).get("clips", []), 1):
-            idx = c.get("idx") or pos      # 旧版无 idx 字段 → 按位置(选题序)兜底
-            c["idx"] = idx
-            by_idx[idx] = c
-
+            c["idx"] = c.get("idx") or pos
+            by_idx[c["idx"]] = c
     log = []
     for i in todo:
-        topic = topics[i - 1]
-        title = topic.get("title", f"clip{i}")
-        print(f"  ({i}/{len(topics)}) {title[:28]}…", file=sys.stderr)
+        topic = topics[i - 1]; title = topic.get("title", f"clip{i}")
+        print(f"  ({i}/{len(topics)}) {title[:26]}…", file=sys.stderr)
         try:
-            clip = select_evidence(topic, sents, persona_text, full_view, providers=providers)
-        except Exception as ex:  # noqa: BLE001  每条独立容错：一条失败不拖累整批
-            print(f"      ✗ 失败跳过：{str(ex)[:160]}", file=sys.stderr)
-            log.append(f"{i:02d} ✗ {title} :: {str(ex)[:160]}")
-            continue
-        clip["idx"] = i
-        by_idx[i] = clip
+            body, extra = select_body(topic, sents, persona_text, full_view, providers=providers)
+            core = _core_from_topic(topic); core.update(extra)
+            clip = finalize_clip(core, body, sents, persona_text, providers=providers)
+        except Exception as ex:  # noqa: BLE001
+            print(f"      ✗ {str(ex)[:150]}", file=sys.stderr); log.append(f"{i:02d} ✗ {title}"); continue
+        clip["idx"] = i; by_idx[i] = clip
         write_review_md(out, i, clip)
-        log.append(f"{i:02d} ✓ {title} :: {len(clip['segments'])}段 {clip['est_dur']}s")
+        log.append(f"{i:02d} ✓ {title} :: 正文{len(body)}段/{clip['est_dur']}s 钩子{len(clip['hook_options'])}个")
+    golden = _write_golden(out, by_idx, words_json, selection_json, persona, host, log)
+    print(f"[done] 共{len(golden['clips'])}条（重跑{len(todo)}）→ {gpath}", file=sys.stderr)
+    return golden
 
-    clips = [by_idx[i] for i in sorted(by_idx)]
-    golden = {
-        "source_words": str(words_json),
-        "selection": str(selection_json),
-        "persona": persona, "host": host,
-        "method": "global_evidence/论证结构化精选",
-        "human_status": "pending",       # 整体定稿状态
-        "clips": clips,
-    }
-    gpath.write_text(json.dumps(golden, ensure_ascii=False, indent=2), encoding="utf-8")
-    (out / "_run.log").write_text("\n".join(log) + "\n", encoding="utf-8")
-    print(f"[done] 共 {len(clips)} 条（本次重跑 {len(todo)}）→ {gpath}", file=sys.stderr)
+
+def migrate(words_json, out_dir, persona="zh_main", host="张和", providers=None, only=None) -> dict:
+    """不重跑正文：对已存 golden 每条，拆掉旧钩子段→正文，补①钩子+④精修+换新版式，保留人工定稿区。"""
+    out = Path(out_dir)
+    gpath = out / "golden_candidate.json"
+    if not gpath.exists():
+        raise FileNotFoundError(f"没有可迁移的 {gpath}")
+    _, sents = segment.sentences_from_wordfile(words_json, host=host)
+    persona_text = load_persona(persona)
+    want = _parse_only(only)
+    src = json.loads(gpath.read_text(encoding="utf-8"))
+    by_idx: dict[int, dict] = {}
+    log = []
+    for pos, c in enumerate(src.get("clips", []), 1):
+        idx = c.get("idx") or pos
+        if want is not None and idx not in want:
+            by_idx[idx] = c; continue            # 不在范围：原样保留
+        # 拆钩子：旧 segments 里 role!=hook 的即正文；时间从 sents 回填（旧 span 已带）
+        body = [s for s in c.get("segments", []) if s.get("role") != "hook"]
+        for s in body:
+            s.setdefault("reason", "")
+        core = {"title": c.get("title", ""), "one_argument": c.get("one_argument", ""),
+                "hook_line": c.get("hook_line", ""), "audience": c.get("audience", ""),
+                "mainstream": c.get("mainstream", ""), "orig_keep_sids": c.get("orig_keep_sids", []),
+                "title_suggestion": c.get("title_suggestion", ""), "human_status": c.get("human_status", "pending")}
+        print(f"  ({idx}) {core['title'][:26]}… 正文{len(body)}段", file=sys.stderr)
+        try:
+            clip = finalize_clip(core, body, sents, persona_text, providers=providers)
+        except Exception as ex:  # noqa: BLE001
+            print(f"      ✗ {str(ex)[:150]}", file=sys.stderr); by_idx[idx] = c; log.append(f"{idx:02d} ✗"); continue
+        clip["idx"] = idx; by_idx[idx] = clip
+        write_review_md(out, idx, clip, human_block=_existing_human_block(out, idx))
+        log.append(f"{idx:02d} ✓ 正文{len(body)}段 钩子{len(clip['hook_options'])}个 精修{len(clip['script_refined'])}字")
+    golden = _write_golden(out, by_idx, src.get("source_words", words_json),
+                           src.get("selection", ""), persona, host, log)
+    print(f"[migrate done] {len(golden['clips'])}条 → {gpath}", file=sys.stderr)
     return golden
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(prog="global_evidence",
-                                 description="全局取证·金标准切片脚本生成器（评测基准，不进生产）")
-    ap.add_argument("--words", required=True, help="火山字级词表 words.json（含原生 sentences）")
-    ap.add_argument("--selection", required=True, help="已选定选题 _selection.json")
-    ap.add_argument("--out", required=True, help="产物目录（建议 var/<account>/eval/<run>）")
+    ap = argparse.ArgumentParser(prog="global_evidence", description="全局取证·金标准四级流水线（评测基准，不进生产）")
+    ap.add_argument("--words", required=True)
+    ap.add_argument("--selection", default="")
+    ap.add_argument("--out", required=True)
     ap.add_argument("--persona", default="zh_main")
     ap.add_argument("--host", default="张和")
     ap.add_argument("--providers", default="kimi,minimax")
-    ap.add_argument("--limit", type=int, default=None, help="只跑前 N 条选题（先小跑省钱）")
-    ap.add_argument("--only", default=None,
-                    help="只重跑这些选题序号（如 6-22 或 8），合并进已存 golden_candidate.json，其余保留")
+    ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--only", default=None, help="只处理这些选题序号（如 6-22 或 8）")
+    ap.add_argument("--migrate", action="store_true",
+                    help="不重跑正文：对已存 golden 补①钩子+④精修+换新版式（保留人工定稿区）")
     a = ap.parse_args()
     load_env_file(_discover_env_file())
     providers = [p.strip() for p in a.providers.split(",") if p.strip()]
-    run(a.words, a.selection, a.out, persona=a.persona, host=a.host,
-        providers=providers, limit=a.limit, only=a.only)
+    if a.migrate:
+        migrate(a.words, a.out, persona=a.persona, host=a.host, providers=providers, only=a.only)
+    else:
+        if not a.selection:
+            ap.error("全新生成需要 --selection（或加 --migrate 走迁移）")
+        run(a.words, a.selection, a.out, persona=a.persona, host=a.host,
+            providers=providers, limit=a.limit, only=a.only)
     return 0
 
 

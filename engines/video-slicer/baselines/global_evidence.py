@@ -157,6 +157,23 @@ def select_body(topic: dict, sents, persona_text: str, full_view: str,
     return body, {"title_suggestion": str(data.get("title_suggestion", "")).strip()}
 
 
+def _parse_sid_range(sid) -> tuple[int, int] | None:
+    """把 fragment 的 sid 容错解析成 (a,b)：支持 int、'761' 或区间 '761-763'。"""
+    if isinstance(sid, int):
+        return sid, sid
+    if isinstance(sid, str) and sid.strip():
+        s = sid.strip()
+        try:
+            if "-" in s:
+                a, b = s.split("-", 1)
+                a, b = int(a), int(b)
+                return (a, b) if a <= b else (b, a)
+            return int(s), int(s)
+        except ValueError:
+            return None
+    return None
+
+
 def _sentence_view(sents, body, extra_spans=None) -> str:
     """钩子候选池：正文覆盖句(±3) ∪ 选题原始选段区(orig_keep_sids, ±2)，逐句列出。
     纳入 orig 区是因为很多选题的招牌钩子句在正文取证段之外（如"传统脚本已死"在全场很早处），

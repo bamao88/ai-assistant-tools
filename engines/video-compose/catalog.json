@@ -13,7 +13,8 @@
         "pages_gen",
         "srt_fix",
         "script_clean",
-        "subtitle_align"
+        "subtitle_align",
+        "subtitle_protect"
       ]
     },
     "video-framework-render": {
@@ -123,6 +124,16 @@
       "stage": "subtitle",
       "layer": "backbone",
       "required": "required"
+    },
+    "subtitle_protect": {
+      "engine": "video-slicer",
+      "group": "also_provides",
+      "kind": "内容决策",
+      "tier": null,
+      "desc": "④别动清单钉回+结构自检：subtitle_ai_fix(LLM) 之后，按别动清单(keeplist.json)把被 LLM 改掉的自造词强制钉回(如爱马仕)；并做 1:1 条数核对+无空格吞字自检。",
+      "stage": "subtitle",
+      "layer": "backbone",
+      "required": "optional"
     },
     "framework_reframe": {
       "engine": "video-framework-render",

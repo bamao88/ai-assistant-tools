@@ -1,0 +1,9 @@
+{
+  "_schema": "video-framework-layout/v1",
+  "name": "clip_cut",
+  "desc": "裁剪版竖版 1080×1920（六环⑤铸造·裁剪版风格）。药丸字幕几何 = vertical(720×1280) ×1.5，复用 make_subtitles 同一份几何，弃 0618test/build_subs.py 的第二份。无 PIP/无框架页，只用 sub 几何把药丸字幕烧到裁切身子。",
+  "template": "clip_cut",
+  "canvas": {"w": 1080, "h": 1920},
+  "geom": {},
+  "sub": {"FS": 54, "CY": 1725, "PAD": 33, "H": 90, "R": 33}
+}

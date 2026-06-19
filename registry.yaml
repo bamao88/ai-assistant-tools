@@ -270,7 +270,7 @@ engines:
   - id: video-slicer
     path: engines/video-slicer
     runtime: "python — video_slicer 包"
-    purpose: "积木厂·剪辑策略原子：cut_sentence(句级·线上)/cut_word(词级·方案B twostage) 共存 + 内容决策 pages_gen/srt_fix + transcribe(字级转写·火山主/阿里兜底) + segment(静音分句) + script_clean(字级去口水) + cut_video(切片) + run_cut(字级线端到端:源视频→去口水切片)；定制层 personas/zh_main.md + profiles/zh_main/ + references/字级去口水与承接句保护.md；capabilities.json 声明。无独立触发 skill"
+    purpose: "积木厂·剪辑策略原子：cut_sentence(句级·线上)/cut_word(词级·方案B twostage) 共存 + 内容决策 pages_gen/srt_fix + transcribe(字级转写·火山主/阿里兜底) + segment(静音分句) + script_clean(字级去口水) + cut_video(切片) + run_cut(字级线端到端) + ④承重墙 subtitle_align(读剪辑账本搬字幕时间·remap_time 重放)/subtitle_protect(别动清单钉回+结构自检)；定制层 personas/zh_main.md + profiles/zh_main/{...,keeplist.json} + references/字级去口水与承接句保护.md；capabilities.json 声明(带六环 stage 标签)。无独立触发 skill"
   - id: video-clip
     path: engines/video-clip
     runtime: "python (.venv: pillow+opencv) — atoms/*.py（ffmpeg；endcard 渲 html 卡需 node/puppeteer；首次跑 requirements.txt）"

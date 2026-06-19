@@ -1,18 +1,22 @@
 {
-  "_schema": "video-capabilities/v1",
+  "_schema": "video-capabilities/v2",
+  "_stage_schema": "六环阶段标签：stage=transcribe|select|trim|subtitle|cast|assemble · layer=backbone|source_adapt|self_check · required=required|optional · substep(仅trim)=3a|3b|3c|3d。catalog 汇总在 video-compose（build_catalog.py 传字段，atoms+also_provides 都索引）。",
   "engine": "video-slicer",
   "role": "积木厂：提供「剪辑策略」原子（AI 读文字选段 → 切点）。只产原子，不指挥。",
   "deps": ["python", "LLM via .env (Kimi/MiniMax)", "ffmpeg(切片)", "paraformer-v2 + 阿里云 OSS (词级，可选)"],
   "atoms": {
     "cut_sentence": {
-      "kind": "剪辑策略", "tier": "句级·线上稳定",
+      "kind": "剪辑策略", "stage": "select", "layer": "backbone", "required": "required",
+      "tier": "句级·线上稳定",
       "desc": "单阶段：一次 LLM 读整场逐字稿同时定选题 + 句级时间段（腾讯 minutes 句时间）。线上生产范式，不依赖字级。",
       "entry": "video_slicer.planner",
       "baseline": "baselines/select_clips.py (方案A 基准·只出选题层候选)",
-      "out": "选段清单 segments(句级秒/MM:SS)"
+      "out": "选段清单 segments(句级秒/MM:SS)",
+      "todo": "WS-1 补「开篇去转折」口径(去掉钩子句前承接上文的铺垫)"
     },
     "cut_word": {
-      "kind": "剪辑策略", "tier": "词级·方案B·端到端跑通",
+      "kind": "剪辑策略", "stage": "select", "layer": "backbone", "required": "optional",
+      "tier": "词级·方案B·端到端跑通",
       "desc": "两阶段（选题→定脚本）+ 字级时间戳，支持句中精剪/跳接。与 cut_sentence 共存，AI 按视频选用。",
       "entry": "video_slicer.twostage.pipeline（minutes 输入）",
       "end_to_end_文案": "video_slicer.twostage.run_volc（火山转录 → 选片 → 去口水文案，不渲染）",
@@ -30,10 +34,11 @@
     }
   },
   "also_provides": {
-    "transcribe": {"desc": "音频/视频 → 字级词表 JSON（火山 seedasr v3 主·阿里 paraformer 兜底·公网/OSS 上传）。字级线地基，输出对齐 twostage/resolve schema。", "entry": "video_slicer.transcribe", "creds": "var/credentials/aliyun.env (VOLCENGINE_API_KEY / DASHSCOPE_API_KEY)"},
-    "pages_gen": {"desc": "逐字稿 → 框架页 pages JSON（LLM）", "entry": "video_slicer.pages_gen", "profile": "profiles/zh_main/pages_system_prompt.txt"},
-    "srt_fix": {"desc": "clip 字幕 LLM 纠错（术语+口语，1:1 保时间轴）", "entry": "video_slicer.srt_fix", "profile": "profiles/zh_main/srt_fix_system_prompt.txt"},
-    "script_clean": {"desc": "字级去口水执行器：原始口语脚本 → 删语气词/卡顿/重复/残句 + 🚨承接句保护 + ASR纠错（会删词，产脚本）。执行 references/字级去口水与承接句保护.md。", "entry": "video_slicer.script_clean", "rules": "references/字级去口水与承接句保护.md"}
+    "transcribe": {"kind": "转写", "stage": "transcribe", "layer": "backbone", "required": "required", "desc": "音频/视频 → 字级词表 JSON（火山 seedasr v3 主·阿里 paraformer 兜底·公网/OSS 上传）。字级线地基，输出对齐 twostage/resolve schema。", "entry": "video_slicer.transcribe", "creds": "var/credentials/aliyun.env (VOLCENGINE_API_KEY / DASHSCOPE_API_KEY)"},
+    "pages_gen": {"kind": "内容决策", "stage": "cast", "layer": "backbone", "required": "optional", "desc": "逐字稿 → 框架页 pages JSON（LLM）。仅⑤铸造·PPT风格用。", "entry": "video_slicer.pages_gen", "profile": "profiles/zh_main/pages_system_prompt.txt"},
+    "srt_fix": {"kind": "内容决策", "stage": "subtitle", "layer": "backbone", "required": "optional", "desc": "clip 字幕 LLM 纠错（术语+口语，1:1 保时间轴）。= subtitle_ai_fix。", "entry": "video_slicer.srt_fix", "profile": "profiles/zh_main/srt_fix_system_prompt.txt"},
+    "script_clean": {"kind": "内容决策", "stage": "trim", "layer": "backbone", "required": "optional", "substep": "3b", "desc": "字级去口水执行器：原始口语脚本 → 删语气词/卡顿/重复/残句 + 🚨承接句保护 + ASR纠错（会删词，产脚本）。执行 references/字级去口水与承接句保护.md。", "entry": "video_slicer.script_clean", "rules": "references/字级去口水与承接句保护.md", "status": "v2 法 owner 暂缓"},
+    "subtitle_align": {"kind": "内容决策", "stage": "subtitle", "layer": "backbone", "required": "required", "desc": "读③剪辑账本(cut manifest)把逐字账本里每个选中字搬到成片时间(同一把剪刀，不重转写/不从源重映射)。复用现成 transcribe.segment/align/resolve 字级机器。", "entry": "video_slicer.subtitle_align", "status": "WS-2 新建★(承重墙④)"}
   },
-  "note": "cut_sentence/cut_word 共存（迁移计划 §3.4 / D6）；transcribe/pages_gen/srt_fix 为内容决策（D1）。字级去口水判断知识在 references/字级去口水与承接句保护.md。catalog 汇总在 video-compose。"
+  "note": "cut_sentence/cut_word 共存（迁移计划 §3.4 / D6）；transcribe/pages_gen/srt_fix 为内容决策（D1）。字级去口水判断知识在 references/字级去口水与承接句保护.md。catalog 汇总在 video-compose。六环 stage 标签见 _stage_schema。subtitle_align(④承重墙)落 video-slicer 因复用此处字级机器。"
 }

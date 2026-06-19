@@ -3,6 +3,7 @@
 
 迁移计划 §3.4 ④：依赖单向 video-compose → 各引擎；各引擎互不依赖。
 - --plan <recipe>：解析并打印有序步骤（每步原子 + 所属引擎 + entry），完全可验证。
+    flat chain/steps 配方：逐步打印；stages 配方(zh_clip_cut)：按六环分组 + 源适配挂载点 + 自检门。
 - --run  <recipe> [--selection sel.json] [--profile zh_main]：执行。
     delegate 配方（zh_business）→ 执行已装配的 run_pipeline（过渡期，见 recipes.json note）。
     chain 配方 → 按 dispatch 逐原子调用（atom 级编排；部分原子 arg 由调用方补全）。
@@ -16,14 +17,17 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ENGINES = HERE.parent  # engines/
 
-# 原子 → 引擎执行入口（依赖单向 compose→各引擎）
+# 原子 → 引擎执行入口（依赖单向 compose→各引擎）。PLANNED 内的原子尚未落地(WS-2~3)，仅供 --plan 审链显示挂载点。
 DISPATCH = {
+    "transcribe":     ("video-slicer", "python -m video_slicer.transcribe"),
     "cut_sentence":   ("video-slicer", "python -m video_slicer.planner"),
     "cut_word":       ("video-slicer", "python -m video_slicer.twostage.pipeline"),
     "pages_gen":      ("video-slicer", "python -m video_slicer.pages_gen"),
     "srt_fix":        ("video-slicer", "python -m video_slicer.srt_fix"),
     "subtitle_ai_fix":("video-slicer", "python -m video_slicer.srt_fix"),
+    "subtitle_align": ("video-slicer", "python -m video_slicer.subtitle_align"),
     "framework_reframe": ("video-framework-render", "python -m video_framework_render.render"),
+    "subtitles":      ("video-framework-render", "python -m video_framework_render.render (make_subtitles)"),
     "raw":            ("video-framework-render", "(直出·不改造)"),
     "concat":         ("video-clip", "python atoms/concat.py"),
     "prepend_hook":   ("video-clip", "python atoms/prepend_hook.py"),
@@ -35,7 +39,22 @@ DISPATCH = {
     "name_mask":      ("video-clip", "python atoms/name_mask.py"),
     "face_locate":    ("video-clip", "python atoms/face_locate.py"),
     "cover_frame":    ("video-clip", "python atoms/cover_frame.py"),
+    "rough_cut":      ("video-clip", "python atoms/rough_cut.py"),
+    "trim_silence":   ("video-clip", "python atoms/trim_silence.py"),
+    "reframe_crop":   ("video-clip", "python atoms/reframe_crop.py"),
+    "denoise_voice":  ("video-clip", "python atoms/denoise_voice.py"),
+    "align_check":    ("video-clip", "python atoms/align_check.py"),
+    "len_check":      ("video-clip", "python atoms/len_check.py"),
 }
+# 尚未落地的原子（WS-2~3 新建）；--plan 标 [待建] 以示挂载点已规划但未实现。
+PLANNED = {"rough_cut", "trim_silence", "subtitle_align", "reframe_crop",
+           "denoise_voice", "align_check", "len_check"}
+
+STAGE_LABELS = {
+    "transcribe": "① 转写", "select": "② 选片", "trim": "③ 裁剪(时间轴)★",
+    "subtitle": "④ 字幕(文字)★", "cast": "⑤ 铸造(风格化)", "assemble": "⑥ 组装成片",
+}
+STAGE_ORDER = ["transcribe", "select", "trim", "subtitle", "cast", "assemble"]
 
 
 def load(name):
@@ -51,13 +70,43 @@ def resolve(recipe_name):
     return r, steps
 
 
+def _atom_of(step: str) -> str:
+    return step.split("(")[0].split("=")[0].split(":")[-1].strip()
+
+
+def _dispatch_str(atom: str) -> str:
+    eng, entry = DISPATCH.get(atom, ("?", "?"))
+    tag = " [待建]" if atom in PLANNED else ""
+    return f"[{eng}] {entry}{tag}"
+
+
 def plan(recipe_name):
     r, steps = resolve(recipe_name)
     print(f"# recipe: {recipe_name} ({r['kind']}) — {r['label']}")
-    for i, s in enumerate(steps, 1):
-        atom = s.split("(")[0].split("=")[0].split(":")[-1].strip()
-        eng, entry = DISPATCH.get(atom, ("?", "?"))
-        print(f"  {i}. {s:42} → [{eng}] {entry}")
+    stages = r.get("stages")
+    if stages:                                   # 六环分组审链（zh_clip_cut）
+        if r.get("status") == "scaffold":
+            print("  [scaffold] 空框架：阶段链/挂载点已声明，部分原子待 WS-2~3 落地。")
+        if r.get("manifest"):
+            print(f"  承重墙: {r['manifest']}")
+        src = r.get("source_adapt", {})
+        print("  ◇ 源适配(按源类型挂载，主要挂③):")
+        for st, atoms in src.items():
+            shown = "、".join(atoms) if atoms else "—（不挂）"
+            print(f"      {st:12} → {shown}")
+        sc = r.get("self_check", {})
+        for stage in STAGE_ORDER:
+            atoms = stages.get(stage)
+            if not atoms:
+                continue
+            print(f"  {STAGE_LABELS.get(stage, stage)}  [{stage}]")
+            for s in atoms:
+                print(f"      {s:36} → {_dispatch_str(_atom_of(s))}")
+            for chk in sc.get(stage, []):
+                print(f"      ⓘ 自检 {chk}")
+        return
+    for i, s in enumerate(steps, 1):             # flat chain/steps（旧配方）
+        print(f"  {i}. {s:42} → {_dispatch_str(_atom_of(s))}")
     if r.get("kind") == "delegate":
         print(f"  ⇒ delegate: {r['delegate']}")
 
@@ -76,10 +125,14 @@ def run(recipe_name, selection, profile):
             print("⇒ delegate:", " ".join(cmd))
             return subprocess.run(cmd).returncode
         raise SystemExit(f"delegate 配方 {recipe_name} 暂无执行绑定")
-    # chain：打印逐原子调用计划（atom arg 由调用方补全；端到端执行待帧验证就绪）
+    if r.get("status") == "scaffold":
+        print(f"chain 配方 {recipe_name} 仍是 scaffold（空框架），尚不能 --run。先看 --plan 审链；原子随 WS-2~3 落地。")
+        plan(recipe_name)
+        return 0
+    # chain：打印逐原子调用计划（atom arg 由调用方补全；端到端执行待各原子落地）
     print(f"chain 配方 {recipe_name}：")
     plan(recipe_name)
-    print("注：chain 级端到端执行待 G4 帧验证就绪；当前可用 --plan 审链 + 各引擎原子单独调用。")
+    print("注：chain 级端到端执行待各原子落地；当前可用 --plan 审链 + 各引擎原子单独调用。")
     return 0
 
 

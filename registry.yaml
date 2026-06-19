@@ -282,7 +282,7 @@ engines:
   - id: video-compose
     path: engines/video-compose
     runtime: "python — selector.py/run.py/build_catalog.py（无重依赖；调度各引擎）"
-    purpose: "组合层（薄·唯一对外入口，只指挥不产原子）：catalog.json(跨引擎汇总17原子) + recipes.json(zh_business 竖版/landscape_business 横版/raw_quickcut…) + selector(选配方) + run(跨引擎编排)；依赖单向 compose→各引擎。架构主轴 §3.4/D7"
+    purpose: "组合层（薄·唯一对外入口，只指挥不产原子）：catalog.json(跨引擎汇总30原子·带六环 stage 标签) + recipes.json(zh_business PPT版/zh_clip_cut 裁剪版真chain/landscape_business 横版/raw_quickcut…) + selector(选配方·按六环分组) + run(跨引擎编排·真chain 委派 clip_cut_run.py) + clip_cut_run.py(裁剪版链式执行器·剪辑账本流转)；依赖单向 compose→各引擎。六环主链=转写→选片→裁剪→字幕→铸造→组装；架构主轴 §3.4/D7"
   - id: tencent-meeting
     path: engines/tencent-meeting
     runtime: "python — scripts/mcp_cli.py（官方 MCP 桥接；legacy 下载脚本保留）"

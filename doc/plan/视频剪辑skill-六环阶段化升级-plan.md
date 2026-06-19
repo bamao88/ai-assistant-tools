@@ -265,3 +265,40 @@ registry.yaml                            机器可读引擎清单(结构变更�
 4. **自检门报数**：③门A/B+len_check、④门D 都吐数字证据，超阈值当场停。
 5. **零回归**：`zh_business` 不动——用引擎 venv 重放 `var/zh_main/baseline/primaries/job.json` 与 G4 基线逐帧/逐字节比对，0 差异。
 6. **收口**：`scripts/check-tools.py` 0 error；`doc/video-skill-architecture.md` 的流程图/六环/子步/配方/新原子/源类型与实际一致。
+
+---
+
+## 九、Preflight 执行契约（2026-06-19 锁定 · 待 owner 批准）
+
+> 大白话：这一节是"动工前的施工合同"——把要做什么、不碰什么、怎么算做完、怎么验、谁来跑，都钉死，免得开工后边做边改口径。owner 说 LGTM/批准/go ahead 即开工。
+
+```text
+Preflight status: DRAFT
+Task source: plan path
+Canonical source: doc/plan/视频剪辑skill-六环阶段化升级-plan.md
+Route: durable $intuitive-flow（主会话监督 + skill-runner/tmux worker 按 WS 执行）
+Goal: 把"录屏裁剪版竖版切片"沉淀成正式配方 zh_clip_cut，用剪辑账本根治音画对齐，六环阶段化归位所有原子，且 zh_business G4 零回归。
+
+Scope: WS-1 阶段骨架(catalog 六环标签+selector 分组+zh_clip_cut 空框架) / WS-2 承重墙③④(剪辑账本+rough_cut+trim_silence 吐区间+speed_adapt 固定档+subtitle_align 读账本+复用 subtitles 渲染+align_check/len_check) / WS-3 源适配(reframe_crop+name_mask 多块+denoise_voice 可选) / WS-4 字幕④(术语表+subtitle_ai_fix 1:1+别动清单+分句) / WS-5 铸造⑤+组装⑥(裁剪版渲药丸烧+钩子片+prepend_hook 翻页+title_bar+concat) / WS-6 串 chain+收口+架构文档+registry+check-tools+G4 回归。
+Non-goals: 不碰 zh_business / framework 渲染代码(render.py 全 6 阶段渲染逻辑不动)；不改 G4 基线本身；不做 3b 精剪去口水(script_clean v2，owner 暂缓)；不改业务侧选题/文案流程；不动其它账号 profile。
+Context: must-read=本计划 + doc/video-skill-architecture.md + var/zh_main/baseline/{G4-result.md,STAGE0-baseline.md,primaries/,_g4_replay/}(G4 口径=确定性产物逐字节/逐像素一致+成片 SSIM 可解释，非整片字节相同) + var/zh_main/0618test/{assemble,trim_silence,build_subs,build_subs_retime,finalize}.py(产品化来源·消重对照) + 三引擎 capabilities.json + video-compose/{catalog,recipes,selector,run}.py；useful=现有 recipe zh_business 作 chain 写法范例、clip_01 基准 78.683s 素材；avoid-unless-needed=其它账号 baseline、历史分计划(已被本计划取代)。
+
+Acceptance:
+- SUCCESS: run.py --run zh_clip_cut 端到端一键出片；clip_01 身子时长 == 基准 78.683s；align_check 报后半段偏移 ±0.2s、门A 互相关>0.99；len_check 身子时长==基准；抽头/中/尾 3 帧字幕贴口型(人工判)；源适配三类各跑一条(干净口播不挂/录屏挂裁切+多块挡UI 顶帧确认盖住/带噪挂 denoise 无"叮")；selector --list 按六环分组、run.py --plan zh_clip_cut 审出完整链含挂载点+自检门；var/ 无重复脚本(废弃或标例外)；check-tools.py 0 error；架构文档+registry 同步。
+- BLOCKED_NEEDS_DECISION: none（口径与边界已在本计划钉死）
+- BLOCKED_NEEDS_LOCAL_VALIDATION: G4 回归必须本地用 video-framework-render/.venv(pillow+opencv+puppeteer+Hannotate/PingFang 字体)重放 baseline/primaries 比对——若当前环境无 venv/字体则此门挂起；denoise_voice 需 demucs audio venv，缺失则原子优雅跳过(非阻断)。
+- INTERMEDIATE_ONLY: 仅 owner 显式同意时——可按 WS 逐段验收交付(如先交 WS-1+2 承重墙)，未跑完 6 WS 不算全绿。
+- No regressions: zh_business 走 G4 replay——确定性产物(框架页 PNG/zh.ass/时长/画幅)逐字节/逐像素一致 + 成片 SSIM≥0.98 且差异仅 x264 重编码可解释；现有 recipe(landscape_business/raw_quickcut/simple_concat/chaptered_growth) 解析不破。
+
+Verification:
+  deterministic = python3 scripts/check-tools.py(0 error) · selector.py --list(六环分组) · run.py --plan zh_clip_cut(审链通过)
+  integration = align_check/len_check 在 clip_01 吐数字证据 · 字幕 1:1 条数核对 · 别动清单("爱马仕"未被改)核对 · catalog build_catalog.py 重建无错
+  product-run = run.py --run zh_clip_cut 端到端出片(clip_01 78.683s 身子) · 源适配三类各一条
+  local-live-manual = G4 replay 逐帧比对(本地 venv，必跑·完成门) · 抽 3 帧字幕对口型(人工判) · 录屏顶帧挡块确认(人工判) · 带噪片听感无"叮"(人工/可选 demucs)
+  optional = denoise_voice(demucs 装了才跑) · script_clean v2(暂缓)
+Execution: main=主会话守 root goal+路由+验 worker 产物+G4 终判+语义提交；worker=skill-runner/tmux 按 WS 一段一 worker(WS-2/WS-5 体量大优先隔离)；worker-goal=每 worker 一个 bounded 子目标(如"WS-2 承重墙③④：建剪辑账本+5原子+自检门，clip_01 复跑身子78.683s+门A/D出数")，结束交 handoff 不动 root goal。
+To execute: /goal execute doc/plan/视频剪辑skill-六环阶段化升级-plan.md with intuitive-flow
+Approval: LGTM/批准/go ahead 即开工；要改则指出改哪段。
+```
+
+**Plan-file recommendation**：本契约已写入本计划第九节（canonical source），批准后即按此执行，免得后续上下文压缩丢了口径。

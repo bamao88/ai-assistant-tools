@@ -54,13 +54,15 @@ def main():
            (["--crop-vf", job["crop_vf"]] if job.get("crop_vf") else []) +
            (["--mask-boxes", job["mask_boxes"]] if job.get("mask_boxes") else []))
 
-    # 干净人声：denoise(可选·缺失优雅跳过) 否则抽原音轨
+    # 干净人声 REF（静音检测+换轨）：优先用 job 提供的现成 vocals；否则 denoise(缺失优雅跳过抽原音)
     vocals = out / "vocals.wav"
-    print("源适配·带噪 denoise_voice（可选）" if job.get("denoise") else "抽原音轨当人声 REF")
-    if job.get("denoise"):
-        sh([sys.executable, CLIP / "denoise_voice.py", "--in", body, "--out", vocals])
+    if job.get("vocals"):
+        print("用 job 提供的现成干净人声 REF")
+        sh(["ffmpeg", "-y", "-loglevel", "error", "-i", job["vocals"],
+            "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", vocals])
     else:
-        sh([sys.executable, CLIP / "denoise_voice.py", "--in", body, "--out", vocals])  # 无 demucs 自动抽原音
+        print("源适配·带噪 denoise_voice（demucs·缺失优雅跳过抽原音轨）")
+        sh([sys.executable, CLIP / "denoise_voice.py", "--in", body, "--out", vocals])
 
     print("③ 裁剪 3c 去长静音（吐区间记账·同步裁人声）")
     trimmed = out / "trimmed.mp4"; vocals_t = out / "vocals_trimmed.wav"

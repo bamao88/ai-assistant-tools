@@ -58,7 +58,7 @@ def main():
             "zh_ass_sha": sha(GOLDEN / "zh.ass"),
             "final_protected_sha": sha(GOLDEN / "final_protected.srt"),
         },
-        "catalog": {"n_atoms": 30, "all_staged": True, "planned_in_plan": 0},
+        "catalog": {"n_atoms": n_atoms, "all_staged": n_staged == n_atoms, "planned_in_plan": 0},
         "gates": {"len_tol": 0.15, "align_seam_pct_min": 100, "align_drift_ok": True},
     }
     if G4.exists():

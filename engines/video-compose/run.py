@@ -26,6 +26,7 @@ DISPATCH = {
     "srt_fix":        ("video-slicer", "python -m video_slicer.srt_fix"),
     "subtitle_ai_fix":("video-slicer", "python -m video_slicer.srt_fix"),
     "subtitle_align": ("video-slicer", "python -m video_slicer.subtitle_align"),
+    "subtitle_protect": ("video-slicer", "python -m video_slicer.subtitle_protect"),
     "framework_reframe": ("video-framework-render", "python -m video_framework_render.render"),
     "subtitles":      ("video-framework-render", "python -m video_framework_render.render (make_subtitles)"),
     "raw":            ("video-framework-render", "(直出·不改造)"),

@@ -51,9 +51,10 @@ def good_ts(dur, intervals, lo=0.0):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="遮学员名闪帧(区域黑帧检测+定格覆盖)")
+    ap = argparse.ArgumentParser(description="遮挡：隐私遮名(黑帧检测+定格) 或 录屏多块黑挡(--black)")
     ap.add_argument("input"); ap.add_argument("output")
-    ap.add_argument("--region", required=True, help="检测/覆盖区域 WxH+X+Y")
+    ap.add_argument("--region", required=True, action="append", help="区域 WxH+X+Y(可重复传多块)")
+    ap.add_argument("--black", action="store_true", help="录屏多块模式：无条件黑块盖住所有 --region")
     ap.add_argument("--fill", help="覆盖用定格图(默认自动从干净帧抠该区域)")
     ap.add_argument("--mask", help="给覆盖图加 alpha 的灰度遮罩(如圆形)")
     ap.add_argument("--trim", type=float, default=0.0, help="裁掉片头 N 秒")
@@ -66,7 +67,19 @@ def main():
         raise SystemExit(f"输入不存在: {src}")
     out = ensure_parent(a.output)
     _w, _h, dur, has_audio = probe(src)
-    rw, rh, rx, ry = parse_region(a.region)
+
+    if a.black:                                       # B 录屏多块：无条件黑块(drawbox)
+        boxes = [parse_region(r) for r in a.region]   # (w,h,x,y)
+        vf = "".join(f"drawbox=x={x}:y={y}:w={w}:h={h}:color=black:t=fill," for (w, h, x, y) in boxes) + "null"
+        cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-vf", vf,
+               *x264(audio=has_audio), "-movflags", "+faststart", str(out)]
+        r = run(cmd)
+        if r.returncode != 0:
+            raise SystemExit(f"ffmpeg 失败：{r.stderr[-500:]}")
+        print(f"DONE name_mask(black)  {out}  黑挡{len(boxes)}块")
+        return
+
+    rw, rh, rx, ry = parse_region(a.region[0])        # A 隐私遮名：单块黑帧检测+定格
 
     intervals = detect_black(src, (rw, rh, rx, ry), a.pic_th, a.pix_th)
     iv = [(s, e) for (s, e) in intervals if e > a.trim]   # 片头被裁掉的黑帧不用管

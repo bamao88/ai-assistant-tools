@@ -46,9 +46,8 @@ DISPATCH = {
     "align_check":    ("video-clip", "python atoms/align_check.py"),
     "len_check":      ("video-clip", "python atoms/len_check.py"),
 }
-# 尚未落地的原子（WS-3 新建）；--plan 标 [待建] 以示挂载点已规划但未实现。
-# WS-2 已落地：rough_cut/trim_silence/subtitle_align/align_check/len_check。
-PLANNED = {"reframe_crop", "denoise_voice"}
+# WS-1~3 原子均已落地；PLANNED 空集（保留机制供未来新挂载点用）。
+PLANNED = set()
 
 STAGE_LABELS = {
     "transcribe": "① 转写", "select": "② 选片", "trim": "③ 裁剪(时间轴)★",

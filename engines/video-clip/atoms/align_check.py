@@ -56,19 +56,38 @@ def parse_srt(path):
     return cues
 
 
-def nearest_voice_onset(t, voiced):
-    """字幕起点 t 到最近人声区间起点的有符号偏差(s)；正=字幕早于起音。"""
-    best = None
-    for vs, ve in voiced:
-        if vs <= t <= ve:
-            return t - vs           # 落在人声内：到本区间起音的距离
-        d = vs - t                  # 到后续区间起音
-        if best is None or abs(d) < abs(best):
-            best = d
-        d2 = t - ve
-        if abs(d2) < abs(best):
-            best = d2
-    return best if best is not None else 0.0
+def _envelope(intervals, dur, dt):
+    """把区间列表栅格化成 0/1 包络（dt 步长）。"""
+    n = int(dur / dt) + 1
+    env = [0] * n
+    for s, e in intervals:
+        i0 = max(0, int(s / dt)); i1 = min(n, int(e / dt) + 1)
+        for i in range(i0, i1):
+            env[i] = 1
+    return env
+
+
+def lag_sweep(sub_env, voi_env, dt, max_lag=1.0):
+    """把字幕包络相对人声包络平移 ±max_lag，找「两条包络最吻合」的平移量(系统性偏移)。
+    最佳平移≈0 → 字幕没整体漂移；这是「能量包络互相关」的离散实现，对连续语流稳健。"""
+    n = min(len(sub_env), len(voi_env))
+    L = int(max_lag / dt)
+    best_lag_bins, best_agree = 0, -1.0
+    agree0 = None
+    for lag in range(-L, L + 1):
+        match = tot = 0
+        for i in range(n):
+            j = i + lag
+            if 0 <= j < n:
+                tot += 1
+                if sub_env[i] == voi_env[j]:
+                    match += 1
+        agree = match / tot if tot else 0.0
+        if lag == 0:
+            agree0 = agree
+        if agree > best_agree:
+            best_agree, best_lag_bins = agree, lag
+    return best_lag_bins * dt, best_agree, agree0
 
 
 def final_seams(manifest):

@@ -274,7 +274,7 @@ registry.yaml                            机器可读引擎清单(结构变更�
 - **承重墙 ③④**：`run.py --run zh_clip_cut --job`（给现成干净人声）身子 **78.683s 分毫不差**；抽头/中/尾 3 帧字幕「火山引擎阿里云也在/是因为我可以给你做的更灵活/我进入下一个时代了」全部对上；门A 去静音接缝 6/6 落停顿、门D 无可判定漂移、len_check 偏差 +0.000s。
 - **G4 零回归**：zh_business 重放——5/5 框架页 PNG 逐像素一致(mean-abs-diff=0.0000)、zh.ass byte-identical、accel.mp4 720×1280·101.729s、SSIM=1.000000。**未碰渲染代码**。
 - **一键出片**：`run.py --run zh_clip_cut --job job.json` 端到端跑通六环（③裁剪→④字幕→⑤铸造→⑥组装）出成片；`clip_cut_run.py` 串链、剪辑账本 `cut_manifest.json` 在原子间流转。
-- **收口**：catalog 30 原子全带六环 stage 标签；架构文档 + registry.yaml 同步；`check-tools.py` 0 error；0618test 手搓脚本标 SUPERSEDED。
+- **收口**：catalog 31 原子全带六环 stage 标签；架构文档 + registry.yaml 同步；`check-tools.py` 0 error；0618test 手搓脚本标 SUPERSEDED。
 
 **全部 local-validation 已补跑（2026-06-19 当天）**：
 - **带噪去噪真跑** ✅：demucs 4.0.1 既装在 `var/zh_main/0618test/.audio_venv`，`denoise_voice` 已自动探测；实跑 htdemucs 出干净人声 107.712s（与 6-18 基线逐位一致），全链 `denoise:true` → 身子 78.683s 精确 PASS。

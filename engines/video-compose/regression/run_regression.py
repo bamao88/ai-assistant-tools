@@ -215,8 +215,11 @@ def t3(work, keep_llm, skip_slow):
         rec("G4 zh_business 零回归(跳过)", True, "skipped" if skip_slow else "无 g4/venv")
     # ① 火山转录短视频
     if not skip_slow:
-        out = work / "short_words.json"
-        r = _run([sys.executable, "-m", "video_slicer.transcribe", str(SHORT_VIDEO), "--out", str(out)], cwd=SLICER)
+        od = work / "transcribe"; od.mkdir(exist_ok=True)
+        creds = REPO / "var/credentials/aliyun.env"
+        r = _run([sys.executable, "-m", "video_slicer.transcribe", "--audio", str(SHORT_VIDEO),
+                  "--out-dir", str(od), "--env-file", str(creds)], cwd=SLICER)
+        out = od / "words.json"
         ok = out.exists()
         if ok:
             try:

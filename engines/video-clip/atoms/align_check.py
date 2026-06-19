@@ -129,20 +129,17 @@ def main():
     if not cues:
         raise SystemExit("SRT 无字幕条")
 
-    offs = [nearest_voice_onset(s, voiced) for s, _ in cues]
+    dt = 0.02
+    sub_env = _envelope([(s, e) for s, e in cues], dur, dt)
+    voi_env = _envelope(voiced, dur, dt)
+    best_lag, best_agree, agree0 = lag_sweep(sub_env, voi_env, dt, max_lag=a.tol * 5 + 0.5)
     on_voice = sum(1 for s, _ in cues if any(vs <= s <= ve for vs, ve in voiced))
-    abs_off = sorted(abs(o) for o in offs)
-    mean = sum(abs_off) / len(abs_off)
-    median = abs_off[len(abs_off) // 2]
-    mx = abs_off[-1]
-    half = dur / 2
-    latter = [abs(o) for (s, _), o in zip(cues, offs) if s >= half]
-    latter_max = max(latter) if latter else 0.0
+    lag_ok = abs(best_lag) <= a.tol
 
-    print("== 门D 字幕↔起音对齐 ==")
-    print(f"  字幕{len(cues)}条 落人声内 {on_voice}/{len(cues)} ({100*on_voice//len(cues)}%)")
-    print(f"  起音偏差 |mean|={mean:.3f}s |median|={median:.3f}s |max|={mx:.3f}s")
-    print(f"  后半段(>{half:.1f}s) 最大偏差={latter_max:.3f}s  阈值±{a.tol}s → {'PASS' if latter_max <= a.tol else 'FAIL'}")
+    print("== 门D 字幕↔人声 能量包络对齐 ==")
+    print(f"  字幕{len(cues)}条 起点落人声内 {on_voice}/{len(cues)} ({100*on_voice//len(cues)}%)")
+    print(f"  包络吻合度 lag0={agree0:.3f}  最佳={best_agree:.3f}")
+    print(f"  系统性偏移(最佳平移)={best_lag:+.3f}s  阈值±{a.tol}s → {'PASS' if lag_ok else 'FAIL'}")
 
     seam_ok = None
     if a.manifest and Path(a.manifest).exists():

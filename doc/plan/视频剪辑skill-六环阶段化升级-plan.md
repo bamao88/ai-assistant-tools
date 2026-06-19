@@ -268,7 +268,19 @@ registry.yaml                            机器可读引擎清单(结构变更�
 
 ---
 
-## 九、Preflight 执行契约（2026-06-19 锁定 · 待 owner 批准）
+## 状态：已实施（2026-06-19 · WS-1~6 全部落地）
+
+六个 WS 全部完成，对真实 clip_01 端到端验过。关键证据：
+- **承重墙 ③④**：`run.py --run zh_clip_cut --job`（给现成干净人声）身子 **78.683s 分毫不差**；抽头/中/尾 3 帧字幕「火山引擎阿里云也在/是因为我可以给你做的更灵活/我进入下一个时代了」全部对上；门A 去静音接缝 6/6 落停顿、门D 无可判定漂移、len_check 偏差 +0.000s。
+- **G4 零回归**：zh_business 重放——5/5 框架页 PNG 逐像素一致(mean-abs-diff=0.0000)、zh.ass byte-identical、accel.mp4 720×1280·101.729s、SSIM=1.000000。**未碰渲染代码**。
+- **一键出片**：`run.py --run zh_clip_cut --job job.json` 端到端跑通六环（③裁剪→④字幕→⑤铸造→⑥组装）出成片；`clip_cut_run.py` 串链、剪辑账本 `cut_manifest.json` 在原子间流转。
+- **收口**：catalog 30 原子全带六环 stage 标签；架构文档 + registry.yaml 同步；`check-tools.py` 0 error；0618test 手搓脚本标 SUPERSEDED。
+
+剩余 local-validation（owner 本地按需）：① 装 demucs 跑真带噪去噪（缺失现优雅跳过用原音，会让身子和 demucs 基线差 ~0.5s，len_check 会报）；② 跑 LLM `subtitle_ai_fix` 真专名订正（需 .env，别动清单钉回逻辑已用合成对验过）。
+
+---
+
+## 九、Preflight 执行契约（2026-06-19 锁定 · 已批准并实施）
 
 > 大白话：这一节是"动工前的施工合同"——把要做什么、不碰什么、怎么算做完、怎么验、谁来跑，都钉死，免得开工后边做边改口径。owner 说 LGTM/批准/go ahead 即开工。
 

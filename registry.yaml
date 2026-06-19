@@ -274,7 +274,7 @@ engines:
   - id: video-clip
     path: engines/video-clip
     runtime: "python (.venv: pillow+opencv) — atoms/*.py（ffmpeg；endcard 渲 html 卡需 node/puppeteer；首次跑 requirements.txt）"
-    purpose: "积木厂·叠加/通用剪辑原子库（拼接/进度条/片尾/变速/字幕/遮名/封面/人脸）；capabilities.json 声明 9 原子；总能力表+配方已上移 video-compose（真源唯一）；回归测试 test_atoms.sh"
+    purpose: "积木厂·叠加/裁剪/自检原子库：通用叠加(拼接/进度条/片尾/变速/字幕/封面/标题/人脸/遮名) + ③裁剪承重墙(rough_cut 3a切段拼身子/trim_silence 3c去长静音吐区间/speed_adapt 3d固定档换轨) + 源适配(reframe_crop 裁外框/name_mask --black 多块挡UI/denoise_voice demucs可选) + 自检门(align_check 门A切点+门D字幕对齐/len_check 身子时长) + _manifest.py(剪辑账本读写+remap_time 重放·承重墙数据模型)；capabilities.json 声明(带六环 stage 标签)；总能力表+配方在 video-compose；回归测试 test_atoms.sh"
   - id: video-framework-render
     path: engines/video-framework-render
     runtime: "python (独立 .venv: pillow+opencv-python-headless) — video_framework_render.render 模块（ffmpeg+libass；node puppeteer 经 PUPPETEER_PATH；字体 Hannotate/PingFang SC）"

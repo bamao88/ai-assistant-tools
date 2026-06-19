@@ -62,15 +62,20 @@ tools/engines/
 ├── video-framework-render/   积木厂 · 框架页渲染（竖版 720×1280 / 横版 1280×720 同源·独立 .venv: pillow+opencv）
 │   ├── video_framework_render/render.py        6 阶段原子 + TEMPLATES(vertical 框架页 / landscape 方框) + PIP 构图锁定/批量标定(--calibrate)
 │   ├── video_framework_render/render_page.js   puppeteer 渲 HTML→PNG（画幅参数化，默认 720×1280）
-│   ├── layouts/              vertical.json / landscape.json（CANVAS/GEOM/SUB 几何外置，--layout 选）
+│   ├── layouts/              vertical.json / landscape.json / clip_cut.json(裁剪版 1080×1920=vertical×1.5)（几何外置，--layout 选）
+│   ├── video_framework_render/subtitles_cli.py  把药丸渲染(make_subtitles)暴露成独立入口给裁剪版⑤复用（不改渲染逻辑·G4 零触碰）
 │   ├── capabilities.json     声明：framework_reframe / compose / accelerate / subtitles / reframe_locate / raw
 │   ├── profiles/zh_main/     fixes.json（账号 ASR 术语表）
 │   └── requirements.txt      pillow + opencv-python-headless（首跑建 .venv）
 │
-└── video-clip/               积木厂 · 通用叠加原子（独立 .venv）
-    ├── atoms/*.py            concat / prepend_hook / progress_bar / endcard / name_mask / subtitle_burn / subtitle_ai_fix / speed_adapt / face_locate / cover_frame / title_bar
+└── video-clip/               积木厂 · 通用叠加/裁剪/自检原子（独立 .venv）
+    ├── atoms/*.py            通用叠加: concat / prepend_hook / progress_bar / endcard / subtitle_burn / subtitle_ai_fix / cover_frame / title_bar / face_locate
+    │                          ③裁剪(承重墙): rough_cut(3a切段拼身子) / trim_silence(3c去长静音吐区间) / speed_adapt(3d固定档+换轨)
+    │                          源适配(录屏/带噪): reframe_crop(裁外框) / name_mask(--black 多块挡UI) / denoise_voice(demucs可选)
+    │                          自检门: align_check(门A切点+门D字幕对齐) / len_check(身子时长防烧错)
+    │                          剪辑账本: _manifest.py(账本读写+remap_time 重放·非原子·承重墙数据模型)
     ├── assets/fonts/         自带字体（title_bar 用思源宋体超粗体 SourceHanSerifCN-Heavy.otf）
-    └── capabilities.json     声明 11 个叠加原子
+    └── capabilities.json     声明叠加+③裁剪+源适配+自检 原子（带六环 stage 标签）
 ```
 
 **铁律**：

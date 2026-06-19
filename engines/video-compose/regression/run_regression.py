@@ -140,7 +140,6 @@ def t1(work, skip_slow):
     rec("len_check 身子核对 PASS", r.returncode == 0, r.stdout.strip().splitlines()[-1] if r.stdout.strip() else "")
     r = _run([sys.executable, CLIP / "align_check.py", "--body", GOLDEN / "final.mp4", "--srt", GOLDEN / "clip.srt",
               "--manifest", GOLDEN / "cut_manifest.json"])
-    seam_ok = "6/6" in r.stdout or "落静音处 6/6" in r.stdout
     rec("align_check 门A/D PASS", r.returncode == 0 and "PASS" in r.stdout, "门A接缝+门D无漂" if r.returncode == 0 else "FAIL")
     # name_mask --black: golden body → 尺寸不变
     out = work / "masked.mp4"

@@ -161,7 +161,7 @@ def t1(work, skip_slow):
 
 
 # ───────────────────────── T2 阶段集成 ─────────────────────────
-def t2(work, skip_slow):
+def t2(work):
     print("== T2 阶段集成（喂阶段入口 golden）==")
     # ③ 裁剪链（省 demucs·给现成 vocals）→ 78.683
     job = work / "job_t2.json"

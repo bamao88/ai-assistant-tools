@@ -45,6 +45,8 @@
         "subtitle_ai_fix",
         "face_locate",
         "name_mask",
+        "reframe_crop",
+        "denoise_voice",
         "cover_frame"
       ],
       "also_provides": []
@@ -320,12 +322,38 @@
       "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "name_mask.py IN OUT --region WxH+X+Y [--fill img] [--mask alpha.png] [--trim 0]",
+      "desc": "name_mask.py IN OUT --region WxH+X+Y[ --region ...] [--black] [--fill img] [--mask alpha.png] [--trim 0]",
       "stage": "trim",
       "layer": "source_adapt",
       "required": "optional",
       "source_types": [
         "screencast"
+      ]
+    },
+    "reframe_crop": {
+      "engine": "video-clip",
+      "group": "atoms",
+      "kind": "改造",
+      "tier": null,
+      "desc": "reframe_crop.py --source X (--crop W:H:X:Y | --detect) [--target 1080x1920] [--apply OUT]",
+      "stage": "trim",
+      "layer": "source_adapt",
+      "required": "optional",
+      "source_types": [
+        "screencast"
+      ]
+    },
+    "denoise_voice": {
+      "engine": "video-clip",
+      "group": "atoms",
+      "kind": "改造",
+      "tier": null,
+      "desc": "denoise_voice.py --in 身子 --out 人声.wav [--venv .venv-audio] [--model htdemucs]",
+      "stage": "trim",
+      "layer": "source_adapt",
+      "required": "optional",
+      "source_types": [
+        "noisy"
       ]
     },
     "cover_frame": {

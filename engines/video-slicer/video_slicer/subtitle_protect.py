@@ -80,8 +80,8 @@ def main():
     print(f"  别动清单钉回 {len(rep['restored'])} 条" + (f"：{[r['term'] for r in rep['restored']]}" if rep['restored'] else ""))
     for r in rep["restored"]:
         print(f"    #{r['i']} 「{r['llm']}」→ 钉回「{r['restored']}」(保护词 {r['term']})")
-    print(f"  无空格吞字 → {'PASS' if not rep['swallow_warn'] else f'{len(rep[chr(39)+chr(115)+chr(119)])} 条疑似吞字'}" if False else
-          f"  无空格吞字 → {'PASS' if not rep['swallow_warn'] else str(len(rep['swallow_warn']))+' 条疑似吞字(警告)'}")
+    sw = rep["swallow_warn"]
+    print(f"  无空格吞字 → {'PASS' if not sw else f'{len(sw)} 条疑似吞字(警告)'}")
     for w in rep["swallow_warn"]:
         print(f"    #{w['i']} {w['pre_chars']}字→{w['post_chars']}字  「{w['pre']}」→「{w['post']}」")
     write_srt(final, a.out)

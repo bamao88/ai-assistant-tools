@@ -45,6 +45,8 @@ DISPATCH = {
     "denoise_voice":  ("video-clip", "python atoms/denoise_voice.py"),
     "align_check":    ("video-clip", "python atoms/align_check.py"),
     "len_check":      ("video-clip", "python atoms/len_check.py"),
+    "reframe_crop":   ("video-clip", "python atoms/reframe_crop.py"),
+    "denoise_voice":  ("video-clip", "python atoms/denoise_voice.py"),
 }
 # WS-1~3 原子均已落地；PLANNED 空集（保留机制供未来新挂载点用）。
 PLANNED = set()

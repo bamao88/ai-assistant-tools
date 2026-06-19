@@ -15,18 +15,29 @@ import argparse, os, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 
+_REPO = Path(__file__).resolve().parents[3]   # tools/
+
+
 def _demucs_python(venv):
-    """返回能跑 demucs 的 python 解释器；找不到返回 None。"""
+    """返回能跑 demucs 的 python 解释器；按序探测多个已知位置，找不到返回 None。"""
     cands = []
     if venv:
         cands.append(Path(venv) / "bin" / "python")
+    env = os.environ.get("VIDEO_AUDIO_VENV")
+    if env:
+        cands.append(Path(env) / "bin" / "python")
+    # 已知安装位置：video-clip 规范 audio venv + 6-18 既有 .audio_venv（demucs 已装在此）
+    cands.append(_REPO / "engines" / "video-clip" / ".venv-audio" / "bin" / "python")
+    cands.append(_REPO / "var" / "zh_main" / "0618test" / ".audio_venv" / "bin" / "python")
     cands.append(Path(sys.executable))
+    seen = set()
     for py in cands:
-        if not Path(py).exists():
+        sp = str(py)
+        if sp in seen or not Path(py).exists():
             continue
-        r = subprocess.run([str(py), "-c", "import demucs"], capture_output=True)
-        if r.returncode == 0:
-            return str(py)
+        seen.add(sp)
+        if subprocess.run([sp, "-c", "import demucs"], capture_output=True).returncode == 0:
+            return sp
     return None
 
 

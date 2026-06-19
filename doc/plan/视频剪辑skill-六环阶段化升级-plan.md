@@ -276,7 +276,10 @@ registry.yaml                            机器可读引擎清单(结构变更�
 - **一键出片**：`run.py --run zh_clip_cut --job job.json` 端到端跑通六环（③裁剪→④字幕→⑤铸造→⑥组装）出成片；`clip_cut_run.py` 串链、剪辑账本 `cut_manifest.json` 在原子间流转。
 - **收口**：catalog 30 原子全带六环 stage 标签；架构文档 + registry.yaml 同步；`check-tools.py` 0 error；0618test 手搓脚本标 SUPERSEDED。
 
-剩余 local-validation（owner 本地按需）：① 装 demucs 跑真带噪去噪（缺失现优雅跳过用原音，会让身子和 demucs 基线差 ~0.5s，len_check 会报）；② 跑 LLM `subtitle_ai_fix` 真专名订正（需 .env，别动清单钉回逻辑已用合成对验过）。
+**全部 local-validation 已补跑（2026-06-19 当天）**：
+- **带噪去噪真跑** ✅：demucs 4.0.1 既装在 `var/zh_main/0618test/.audio_venv`，`denoise_voice` 已自动探测；实跑 htdemucs 出干净人声 107.712s（与 6-18 基线逐位一致），全链 `denoise:true` → 身子 78.683s 精确 PASS。
+- **LLM 真专名订正** ✅：真 Kimi/MiniMax 跑 `subtitle_ai_fix`，30→30 条 1:1 维持、口语清理/语法订正精准；`subtitle_protect` 1:1+无吞字 PASS、别动清单逻辑正确。
+- 仅 ① 火山转写未跑新实拍 smoke（key 已存、原子早先 spike 跑通；现成 words.json 可用）。
 
 ---
 

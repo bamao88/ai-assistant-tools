@@ -73,7 +73,7 @@ def lag_sweep(sub_env, voi_env, dt, max_lag=1.0):
     n = min(len(sub_env), len(voi_env))
     L = int(max_lag / dt)
     best_lag_bins, best_agree = 0, -1.0
-    agree0 = None
+    agree0 = 0.0
     for lag in range(-L, L + 1):
         match = tot = 0
         for i in range(n):

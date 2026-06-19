@@ -1,6 +1,6 @@
 {
-  "_schema": "video-catalog/v1",
-  "_doc": "总能力表（真源·跨引擎聚合，从各引擎 capabilities.json 汇总）。重建：python build_catalog.py。",
+  "_schema": "video-catalog/v2",
+  "_doc": "总能力表（真源·跨引擎聚合，从各引擎 capabilities.json 汇总）。重建：python build_catalog.py。六环阶段字段 stage/layer/required/substep/source_types 透传自各引擎。",
   "engines": {
     "video-slicer": {
       "role": "积木厂：提供「剪辑策略」原子（AI 读文字选段 → 切点）。只产原子，不指挥。",
@@ -12,7 +12,8 @@
         "transcribe",
         "pages_gen",
         "srt_fix",
-        "script_clean"
+        "script_clean",
+        "subtitle_align"
       ]
     },
     "video-framework-render": {
@@ -48,117 +49,248 @@
   "atoms_index": {
     "cut_sentence": {
       "engine": "video-slicer",
+      "group": "atoms",
       "kind": "剪辑策略",
       "tier": "句级·线上稳定",
-      "desc": "单阶段：一次 LLM 读整场逐字稿同时定选题 + 句级时间段（腾讯 minutes 句时间）。线上生产范式，不依赖字级。"
+      "desc": "单阶段：一次 LLM 读整场逐字稿同时定选题 + 句级时间段（腾讯 minutes 句时间）。线上生产范式，不依赖字级。",
+      "stage": "select",
+      "layer": "backbone",
+      "required": "required"
     },
     "cut_word": {
       "engine": "video-slicer",
+      "group": "atoms",
       "kind": "剪辑策略",
       "tier": "词级·方案B·端到端跑通",
-      "desc": "两阶段（选题→定脚本）+ 字级时间戳，支持句中精剪/跳接。与 cut_sentence 共存，AI 按视频选用。"
+      "desc": "两阶段（选题→定脚本）+ 字级时间戳，支持句中精剪/跳接。与 cut_sentence 共存，AI 按视频选用。",
+      "stage": "select",
+      "layer": "backbone",
+      "required": "optional"
+    },
+    "transcribe": {
+      "engine": "video-slicer",
+      "group": "also_provides",
+      "kind": "转写",
+      "tier": null,
+      "desc": "音频/视频 → 字级词表 JSON（火山 seedasr v3 主·阿里 paraformer 兜底·公网/OSS 上传）。字级线地基，输出对齐 twostage/resolve schema。",
+      "stage": "transcribe",
+      "layer": "backbone",
+      "required": "required"
+    },
+    "pages_gen": {
+      "engine": "video-slicer",
+      "group": "also_provides",
+      "kind": "内容决策",
+      "tier": null,
+      "desc": "逐字稿 → 框架页 pages JSON（LLM）。仅⑤铸造·PPT风格用。",
+      "stage": "cast",
+      "layer": "backbone",
+      "required": "optional"
+    },
+    "srt_fix": {
+      "engine": "video-slicer",
+      "group": "also_provides",
+      "kind": "内容决策",
+      "tier": null,
+      "desc": "clip 字幕 LLM 纠错（术语+口语，1:1 保时间轴）。= subtitle_ai_fix。",
+      "stage": "subtitle",
+      "layer": "backbone",
+      "required": "optional"
+    },
+    "script_clean": {
+      "engine": "video-slicer",
+      "group": "also_provides",
+      "kind": "内容决策",
+      "tier": null,
+      "desc": "字级去口水执行器：原始口语脚本 → 删语气词/卡顿/重复/残句 + 🚨承接句保护 + ASR纠错（会删词，产脚本）。执行 references/字级去口水与承接句保护.md。",
+      "stage": "trim",
+      "layer": "backbone",
+      "required": "optional",
+      "substep": "3b"
+    },
+    "subtitle_align": {
+      "engine": "video-slicer",
+      "group": "also_provides",
+      "kind": "内容决策",
+      "tier": null,
+      "desc": "读③剪辑账本(cut manifest)把逐字账本里每个选中字搬到成片时间(同一把剪刀，不重转写/不从源重映射)。复用现成 transcribe.segment/align/resolve 字级机器。",
+      "stage": "subtitle",
+      "layer": "backbone",
+      "required": "required"
     },
     "framework_reframe": {
       "engine": "video-framework-render",
+      "group": "atoms",
       "kind": "改造",
       "tier": null,
-      "desc": "口播 clip + pages spec → 手写框架页翻页 + 人像圆形PIP + 纠错字幕 + 自适应变速成片。同一份 pages 可出竖版(720×1280 框架页)或横版(1280×720 方框版式)，视觉 DNA 同源（配色/手写字/药丸字幕/圆窗）。"
+      "desc": "口播 clip + pages spec → 手写框架页翻页 + 人像圆形PIP + 纠错字幕 + 自适应变速成片。同一份 pages 可出竖版(720×1280 框架页)或横版(1280×720 方框版式)，视觉 DNA 同源（配色/手写字/药丸字幕/圆窗）。",
+      "stage": "cast",
+      "layer": "backbone",
+      "required": "optional"
     },
     "compose": {
       "engine": "video-framework-render",
+      "group": "atoms",
       "kind": "改造·原子",
       "tier": null,
-      "desc": "ffmpeg：PPT层翻页(slide) + 静态白环 + 人像圆形PIP + 字幕 → paginated.mp4。"
+      "desc": "ffmpeg：PPT层翻页(slide) + 静态白环 + 人像圆形PIP + 字幕 → paginated.mp4。",
+      "stage": "cast",
+      "layer": "backbone",
+      "required": "optional"
     },
     "accelerate": {
       "engine": "video-framework-render",
+      "group": "atoms",
       "kind": "改造·原子",
       "tier": null,
-      "desc": "按逐字稿语速对成片整体自适应变速 → accel.mp4。"
+      "desc": "按逐字稿语速对成片整体自适应变速 → accel.mp4。(PPT 风格内置变速；裁剪版走 video-clip/speed_adapt 固定档)",
+      "stage": "cast",
+      "layer": "backbone",
+      "required": "optional"
     },
     "subtitles": {
       "engine": "video-framework-render",
+      "group": "atoms",
       "kind": "叠加·原子",
       "tier": null,
-      "desc": "srt → 账号术语纠错(profiles/<p>/fixes.json) → 标定字宽居中药丸 ASS。"
+      "desc": "srt → 账号术语纠错(profiles/<p>/fixes.json) → 标定字宽居中药丸 ASS。裁剪版复用此药丸几何(绝不在 video-clip 再写第二份)。",
+      "stage": "cast",
+      "layer": "backbone",
+      "required": "optional"
     },
     "reframe_locate": {
       "engine": "video-framework-render",
+      "group": "atoms",
       "kind": "改造·原子",
       "tier": null,
-      "desc": "Haar 人脸重心定位(通用CV)，人像圆形水平居中。"
+      "desc": "Haar 人脸重心定位(通用CV)，人像圆形水平居中。",
+      "stage": "cast",
+      "layer": "backbone",
+      "required": "optional"
     },
     "raw": {
       "engine": "video-framework-render",
+      "group": "atoms",
       "kind": "改造",
       "tier": null,
-      "desc": "不改造直出（占位：未来 raw_quickcut recipe 用，不走框架页化）。"
+      "desc": "不改造直出（占位：未来 raw_quickcut recipe 用，不走框架页化）。",
+      "stage": "cast",
+      "layer": "backbone",
+      "required": "optional"
     },
     "concat": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "concat.py OUT --inputs a.mp4 b.mp4 ... [--target WxH] [--fps 25] [--reencode]"
+      "desc": "concat.py OUT --inputs a.mp4 b.mp4 ... [--target WxH] [--fps 25] [--reencode]",
+      "stage": "assemble",
+      "layer": "backbone",
+      "required": "optional"
     },
     "prepend_hook": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "prepend_hook.py 钩子.mp4 正文.mp4 OUT [--flip 0.30] [--trans slideleft] [--fps 30]"
+      "desc": "prepend_hook.py 钩子.mp4 正文.mp4 OUT [--flip 0.30] [--trans slideleft] [--fps 30]",
+      "stage": "assemble",
+      "layer": "backbone",
+      "required": "optional"
     },
     "progress_bar": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "progress_bar.py IN OUT --chapters N --index k [--label 文字] [--h 12] [--color FF6B5C]"
+      "desc": "progress_bar.py IN OUT --chapters N --index k [--label 文字] [--h 12] [--color FF6B5C]",
+      "stage": "assemble",
+      "layer": "backbone",
+      "required": "optional"
     },
     "endcard": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "endcard.py IN OUT --card PATH(.png/.jpg/.html) [--seconds 3] [--fade 0.5]"
+      "desc": "endcard.py IN OUT --card PATH(.png/.jpg/.html) [--seconds 3] [--fade 0.5]",
+      "stage": "assemble",
+      "layer": "backbone",
+      "required": "optional"
     },
     "speed_adapt": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0]"
+      "desc": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0]",
+      "stage": "trim",
+      "layer": "backbone",
+      "required": "required",
+      "substep": "3d"
     },
     "subtitle_burn": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "subtitle_burn.py IN OUT --srt x.srt [--fs 36] [--y h-130]"
+      "desc": "subtitle_burn.py IN OUT --srt x.srt [--fs 36] [--y h-130]",
+      "stage": "cast",
+      "layer": "backbone",
+      "required": "required"
     },
     "title_bar": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "title_bar.py IN OUT --text 标题 [--style bar|label] [--fs N] [--font PATH] [--block-h-frac 0.128] [--bar-color RRGGBB] [--text-color RRGGBB]"
+      "desc": "title_bar.py IN OUT --text 标题 [--style bar|label] [--fs N] [--font PATH] [--block-h-frac 0.128] [--bar-color RRGGBB] [--text-color RRGGBB]",
+      "stage": "assemble",
+      "layer": "backbone",
+      "required": "optional"
     },
     "subtitle_ai_fix": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "subtitle_ai_fix.py IN.srt OUT.srt [--hint ...]"
+      "desc": "subtitle_ai_fix.py IN.srt OUT.srt [--hint ...]",
+      "stage": "subtitle",
+      "layer": "backbone",
+      "required": "optional"
     },
     "face_locate": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "改造",
       "tier": null,
-      "desc": "face_locate.py IN [--target WxH] [--samples 40] -> JSON(face_cx/crop)"
+      "desc": "face_locate.py IN [--target WxH] [--samples 40] -> JSON(face_cx/crop)",
+      "stage": "cast",
+      "layer": "backbone",
+      "required": "optional"
     },
     "name_mask": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "name_mask.py IN OUT --region WxH+X+Y [--fill img] [--mask alpha.png] [--trim 0]"
+      "desc": "name_mask.py IN OUT --region WxH+X+Y [--fill img] [--mask alpha.png] [--trim 0]",
+      "stage": "trim",
+      "layer": "source_adapt",
+      "required": "optional",
+      "source_types": [
+        "screencast"
+      ]
     },
     "cover_frame": {
       "engine": "video-clip",
+      "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "cover_frame.py IN OUT.png [--at 0] [--overlay title.png]"
+      "desc": "cover_frame.py IN OUT.png [--at 0] [--overlay title.png]",
+      "stage": "assemble",
+      "layer": "backbone",
+      "required": "optional"
     }
   }
 }

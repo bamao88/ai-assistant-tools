@@ -135,5 +135,7 @@ python engines/video-compose/run.py --run zh_clip_cut \
 ## 相关真源
 
 - 决策 / 迁移历史 / 验收清单全文：[`video-tools-migration-plan.md`](./video-tools-migration-plan.md)
+- 六环阶段化 + 裁剪版 + 剪辑账本设计：[`doc/plan/视频剪辑skill-六环阶段化升级-plan.md`](./plan/视频剪辑skill-六环阶段化升级-plan.md)
 - 机器可读引擎清单：`registry.yaml`
-- G4 基线与回归证据：`var/zh_main/baseline/`
+- G4 基线与回归证据：`var/zh_main/baseline/`（裁剪版承重墙在 clip_01 上验证：身子 78.683s 精确 + 3 帧字幕对口型 + 门A 6/6）
+- 裁剪版手搓来源（已产品化·保留参考）：`var/zh_main/0618test/`（`assemble→rough_cut`、`trim_silence→trim_silence`、`build_subs→subtitle_align+subtitles`、`finalize→speed_adapt`）

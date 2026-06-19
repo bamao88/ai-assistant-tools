@@ -280,7 +280,7 @@ Route: durable $intuitive-flow（主会话监督 + skill-runner/tmux worker 按 
 Goal: 把"录屏裁剪版竖版切片"沉淀成正式配方 zh_clip_cut，用剪辑账本根治音画对齐，六环阶段化归位所有原子，且 zh_business G4 零回归。
 
 Scope: WS-1 阶段骨架(catalog 六环标签+selector 分组+zh_clip_cut 空框架) / WS-2 承重墙③④(剪辑账本+rough_cut+trim_silence 吐区间+speed_adapt 固定档+subtitle_align 读账本+复用 subtitles 渲染+align_check/len_check) / WS-3 源适配(reframe_crop+name_mask 多块+denoise_voice 可选) / WS-4 字幕④(术语表+subtitle_ai_fix 1:1+别动清单+分句) / WS-5 铸造⑤+组装⑥(裁剪版渲药丸烧+钩子片+prepend_hook 翻页+title_bar+concat) / WS-6 串 chain+收口+架构文档+registry+check-tools+G4 回归。
-Non-goals: 不碰 zh_business / framework 渲染代码(render.py 全 6 阶段渲染逻辑不动)；不改 G4 基线本身；不做 3b 精剪去口水(script_clean v2，owner 暂缓)；不改业务侧选题/文案流程；不动其它账号 profile。
+Non-goals: 不改⑤"PPT 风格"(=zh_business)的渲染实现——它和本轮新增的⑤"裁剪版"风格(=zh_clip_cut)是同一条六环主链下并列的两种风格，"冻结"只指 PPT 风格渲染代码+视觉输出已定型(render.py 全 6 阶段渲染逻辑不动、G4 基线不许回归)，概念上它仍是⑤的一个风格；不改 G4 基线本身；不做 3b 精剪去口水(script_clean v2，owner 暂缓)；不改业务侧选题/文案流程；不动其它账号 profile。
 Context: must-read=本计划 + doc/video-skill-architecture.md + var/zh_main/baseline/{G4-result.md,STAGE0-baseline.md,primaries/,_g4_replay/}(G4 口径=确定性产物逐字节/逐像素一致+成片 SSIM 可解释，非整片字节相同) + var/zh_main/0618test/{assemble,trim_silence,build_subs,build_subs_retime,finalize}.py(产品化来源·消重对照) + 三引擎 capabilities.json + video-compose/{catalog,recipes,selector,run}.py；useful=现有 recipe zh_business 作 chain 写法范例、clip_01 基准 78.683s 素材；avoid-unless-needed=其它账号 baseline、历史分计划(已被本计划取代)。
 
 Acceptance:

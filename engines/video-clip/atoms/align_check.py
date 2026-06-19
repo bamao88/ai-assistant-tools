@@ -151,8 +151,7 @@ def main():
             print("== 门A 去静音接缝↔停顿 ==")
             print(f"  接缝{len(seams)}处 落静音处 {in_sil}/{len(seams)} ({100*in_sil//len(seams)}%) → {'PASS' if seam_ok else 'WARN'}")
 
-    fail = latter_max > a.tol
-    sys.exit(2 if fail else 0)
+    sys.exit(0 if lag_ok else 2)
 
 
 if __name__ == "__main__":

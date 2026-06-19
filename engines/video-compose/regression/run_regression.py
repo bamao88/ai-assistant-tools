@@ -18,7 +18,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 EXP = json.loads((HERE / "expected.json").read_text(encoding="utf-8"))
-GOLDEN = Path(os.environ.get("REGRESSION_GOLDEN", REPO / EXP["golden_dir"]))
+GOLDEN = Path(os.environ.get("REGRESSION_GOLDEN") or REPO / EXP["golden_dir"])
 SRC = REPO / "var/zh_main/0619test/source"
 SPEC = REPO / "var/zh_main/0619test/clip_01_为什么你花500万做的AI我100万就能搞定.md/clip_01_spec.json"
 WORDS = SRC / "words.json"

@@ -25,7 +25,7 @@
     "zh_clip_cut": {
       "label": "张和业务流·录屏裁剪版竖版口播切片（⑤选裁剪版风格·与 zh_business 同六环主链）",
       "kind": "chain",
-      "status": "scaffold",
+      "runner": "clip_cut_run.py",
       "profile": "zh_main",
       "manifest": "剪辑账本(cut manifest)：③裁剪每个时间操作记一笔(选段keep+顺序/去口水区间/去静音保留区间/变速factor)，④字幕照账本重放搬时间(同一把剪刀，不重转写/不从源重映射)。承重墙——根治音画对齐。",
       "source_adapt": {

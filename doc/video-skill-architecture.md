@@ -111,6 +111,11 @@ python engines/video-compose/run.py --run zh_clip_cut \
 | **出横屏成片** | `run.py --run landscape_business --selection <sel>.json`（或渲染 `--layout landscape`）。横版=1280×720 方框版式，视觉 DNA 同竖版（配色/手写字/药丸/圆窗）。同一份 pages 既出竖版又出横版。 |
 | **给成片加顶部标题**（贴纸式白底黑字 / 旧黑底白字整条） | `engines/video-clip/atoms/title_bar.py IN OUT --text 标题`。两种样式：`--style bar`（默认·顶部黑底白字整条）；`--style label`（顶部黑色信箱块里**白底黑字圆角贴纸**·单行·块高自动探测顶部黑边）。字色/底色 `--bar-color`/`--text-color` 可覆盖。 |
 | **成片前置开篇钩子 + 翻页转场** | `engines/video-clip/atoms/prepend_hook.py 钩子 正文 OUT [--flip 0.30] [--trans slideleft]`。钩子→翻页(翻页期间正文定格暂停)→正文，自动统一画幅/帧率+音频过渡。与 `concat`（硬切拼接，无转场）互补。 |
+| **出一条裁剪版成片**（录屏裁剪版竖版切片） | `run.py --run zh_clip_cut --job job.json` 一键端到端。job 规格（源/选段spec、words.json、术语表、别动清单、标题、钩子、是否 denoise/ai_fix、基准时长、落点）见 `clip_cut_run.py --help`。剪辑账本(`cut_manifest.json`)在原子间流转，自动跑③④⑤⑥+自检门。 |
+| **改去长静音/变速口径**（裁剪版③） | 去静音：`trim_silence.py` 的 `--min-sil`(多长算长停顿,默认1.5s)/`--keep-pad`(保留缓冲)/`--noise`(静音阈)；变速：`speed_adapt.py --fixed 1.2`(整体倍速)。静音检测**用干净人声当参考最准**——job 给 `vocals` 现成人声、或 `denoise:true` 跑 demucs(需装 audio venv)。 |
+| **改裁剪版药丸字幕位置/大小** | 改 `video-framework-render/layouts/clip_cut.json` 的 `sub`(FS字号/CY纵向中心/H药丸高/R圆角)。它=竖版 vertical.json ×1.5；**复用同一份 make_subtitles 几何**，不在别处再写第二份。 |
+| **改录屏裁切框 / 挡 UI 块**（源适配） | 裁切框：`reframe_crop.py --source X (--crop W:H:X:Y | --detect)` 吐 crop_vf（录屏 UI 版式固定，通常存进 job spec 的 `crop_vf` 当常量）；挡块：`name_mask.py IN OUT --region WxH+X+Y --region ... --black`（多块黑挡）或直接写进 job spec 的 `mask_boxes`(rough_cut 切段同趟盖)。 |
+| **保护字幕里的自造词**（别动清单） | 往 `engines/video-slicer/profiles/zh_main/keeplist.json` 加词（如「爱马仕」「直觉机器」）。`subtitle_protect` 会在 LLM 订正后把被改掉的受保护词强制钉回，并做 1:1 条数 + 无空格吞字自检。 |
 | **整条切片"加标题+拼钩子"一键收尾**（标题取自选题文案） | 业务粘合脚本 `var/zh_main/0618test/finalize_clip.py <clip号>`：自动从对应 item `publish_copy.md`「标题候选」✅ 取标题 → `title_bar --style label` 烧标题 → `prepend_hook` 前置钩子。clip↔item 映射见该脚本与 `var/zh_main/0618test/doc/钩子+标题-成片收尾流程.md`。 |
 | **换/加转写后端**（字级线地基） | `video-slicer/video_slicer/transcribe/`：火山 seedasr v3 主 + 阿里 paraformer 兜底；上传公网默认、阿里 OSS 备选(`--uploader oss`)。火山 key 入 `var/credentials/aliyun.env`。输出对齐 `twostage/resolve.py` 词表 schema。 |
 | **改去口水/承接句判断**（字级线） | 改 `video-slicer/references/字级去口水与承接句保护.md`（删前保后 + 四类高危承接句红线，cut_word 去口水的判断基底）。 |

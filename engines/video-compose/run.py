@@ -113,8 +113,14 @@ def plan(recipe_name):
         print(f"  ⇒ delegate: {r['delegate']}")
 
 
-def run(recipe_name, selection, profile):
+def run(recipe_name, selection, profile, job=None):
     r, _ = resolve(recipe_name)
+    if r.get("runner"):                              # 真 chain：委派专属链式执行器（如 zh_clip_cut）
+        if not job:
+            raise SystemExit(f"{recipe_name} 需 --job <job.json>（规格见 {r['runner']} --help）")
+        runner = HERE / r["runner"]
+        print(f"⇒ runner: {runner.name} {job}")
+        return subprocess.run([sys.executable, str(runner), job]).returncode
     if r.get("kind") == "delegate":
         if recipe_name in ("zh_business", "landscape_business"):
             if not selection:

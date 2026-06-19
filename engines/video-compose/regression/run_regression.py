@@ -12,7 +12,7 @@
 用法: run_regression.py [t0|t1|t2|t3|all] [--golden DIR] [--keep-llm] [--skip-slow]
 """
 from __future__ import annotations
-import argparse, hashlib, json, os, re, subprocess, sys, tempfile
+import argparse, hashlib, json, os, subprocess, sys, tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent

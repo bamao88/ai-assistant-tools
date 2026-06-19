@@ -22,6 +22,33 @@
       "delegate": "assistant_zh/workflow/video_framework_slicer/run_pipeline.py --layout landscape",
       "note": "videocut-zh 集成 WS-4/5：与 zh_business 同前段（选片/去口水/pages），只把 framework_reframe 渲成 1280×720 方框版式（视觉 DNA 同源）。同一份 pages 既出竖版(zh_business)又出横版。字级线(火山转写→twostage)接通后可换 cut_word 前段；当前共用句级选段流。"
     },
+    "zh_clip_cut": {
+      "label": "张和业务流·录屏裁剪版竖版口播切片（⑤选裁剪版风格·与 zh_business 同六环主链）",
+      "kind": "chain",
+      "status": "scaffold",
+      "profile": "zh_main",
+      "manifest": "剪辑账本(cut manifest)：③裁剪每个时间操作记一笔(选段keep+顺序/去口水区间/去静音保留区间/变速factor)，④字幕照账本重放搬时间(同一把剪刀，不重转写/不从源重映射)。承重墙——根治音画对齐。",
+      "source_adapt": {
+        "clean_oral": [],
+        "screencast": ["reframe_crop", "name_mask"],
+        "noisy": ["denoise_voice"]
+      },
+      "stages": {
+        "transcribe": ["transcribe"],
+        "select": ["cut_sentence(开篇去转折)"],
+        "trim": ["rough_cut", "trim_silence", "speed_adapt(--fixed 1.2 --replace-audio)"],
+        "subtitle": ["subtitle_align(读账本)", "subtitle_ai_fix(1:1)"],
+        "cast": ["subtitles(药丸)", "subtitle_burn"],
+        "assemble": ["prepend_hook(钩子+翻页)", "title_bar(--style label)", "concat"]
+      },
+      "self_check": {
+        "trim": ["align_check(门A 切点/互相关)", "len_check(防烧错身子)"],
+        "subtitle": ["align_check(门D 起音点偏差/1:1条数)"],
+        "assemble": ["(衔接抽帧·画音连续)"]
+      },
+      "out": "clip.mp4",
+      "note": "WS-1 空框架(scaffold)：六环阶段链 + 源适配挂载点 + 自检门已声明，可 run.py --plan 审。trim/subtitle 的新原子(rough_cut/trim_silence/subtitle_align/align_check/len_check)随 WS-2 落地；源适配(reframe_crop/denoise_voice)随 WS-3。落地后由 run.py chain 端到端接管(本线无 G4 包袱，是真 chain)。"
+    },
     "raw_quickcut": {
       "label": "极简型·词级快剪 + 烧字幕（不框架页化）",
       "kind": "chain",

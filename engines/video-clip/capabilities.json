@@ -1,20 +1,21 @@
 {
-  "_schema": "video-capabilities/v1",
+  "_schema": "video-capabilities/v2",
+  "_stage_schema": "六环阶段标签：stage=transcribe|select|trim|subtitle|cast|assemble · layer=backbone|source_adapt|self_check · required=required|optional · substep(仅trim)=3a|3b|3c|3d · source_types(仅source_adapt)=[clean_oral,screencast,noisy]。catalog 汇总在 video-compose（build_catalog.py 传字段）。",
   "engine": "video-clip",
   "role": "积木厂：提供「叠加/通用剪辑」原子。只产原子，不指挥。原 catalog.json/recipes.json 的总表+配方已上移到 video-compose（真源唯一）。",
   "deps": ["ffmpeg(libass)", "python: opencv-python(face-locate)"],
   "atoms": {
-    "concat":         {"kind": "叠加", "file": "atoms/concat.py",         "sig": "concat.py OUT --inputs a.mp4 b.mp4 ... [--target WxH] [--fps 25] [--reencode]"},
-    "prepend_hook":   {"kind": "叠加", "file": "atoms/prepend_hook.py",   "sig": "prepend_hook.py 钩子.mp4 正文.mp4 OUT [--flip 0.30] [--trans slideleft] [--fps 30]", "note": "开篇钩子片 + 快速翻页转场(翻页期间正文定格暂停) + 正文；自动统一画幅/帧率、音频 acrossfade。和 concat(硬切拼接) 互补：本原子带转场+定格。"},
-    "progress_bar":   {"kind": "叠加", "file": "atoms/progress_bar.py",   "sig": "progress_bar.py IN OUT --chapters N --index k [--label 文字] [--h 12] [--color FF6B5C]"},
-    "endcard":        {"kind": "叠加", "file": "atoms/endcard.py",        "sig": "endcard.py IN OUT --card PATH(.png/.jpg/.html) [--seconds 3] [--fade 0.5]"},
-    "speed_adapt":    {"kind": "叠加", "file": "atoms/speed_adapt.py",    "sig": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0]", "ported_from": "slicer.py::accelerate"},
-    "subtitle_burn":  {"kind": "叠加", "file": "atoms/subtitle_burn.py",  "sig": "subtitle_burn.py IN OUT --srt x.srt [--fs 36] [--y h-130]", "ported_from": "slicer.py::make_subtitles"},
-    "title_bar":      {"kind": "叠加", "file": "atoms/title_bar.py",      "sig": "title_bar.py IN OUT --text 标题 [--style bar|label] [--fs N] [--font PATH] [--block-h-frac 0.128] [--bar-color RRGGBB] [--text-color RRGGBB]", "note": "两种样式：bar=顶部整条黑底白字(默认·照搬「标题黑色底色.png」)；label=顶部黑色信箱块内白底黑字圆角贴纸标签(单行·块高自动探测顶部黑边)。思源宋体超粗体自带 assets/fonts/SourceHanSerifCN-Heavy.otf；中文按字宽换行居中。"},
-    "subtitle_ai_fix":{"kind": "叠加", "file": "atoms/subtitle_ai_fix.py","sig": "subtitle_ai_fix.py IN.srt OUT.srt [--hint ...]", "note": "走 video-slicer LLM，需 .env", "ported_from": "srt_fix.py"},
-    "face_locate":    {"kind": "改造", "file": "atoms/face_locate.py",    "sig": "face_locate.py IN [--target WxH] [--samples 40] -> JSON(face_cx/crop)", "ported_from": "slicer.py::locate_face_cx + reframe_locate.py"},
-    "name_mask":      {"kind": "叠加", "file": "atoms/name_mask.py",      "sig": "name_mask.py IN OUT --region WxH+X+Y [--fill img] [--mask alpha.png] [--trim 0]", "ported_from": "make_publish.py"},
-    "cover_frame":    {"kind": "叠加", "file": "atoms/cover_frame.py",    "sig": "cover_frame.py IN OUT.png [--at 0] [--overlay title.png]"}
+    "concat":         {"kind": "叠加", "stage": "assemble", "layer": "backbone", "required": "optional", "file": "atoms/concat.py",         "sig": "concat.py OUT --inputs a.mp4 b.mp4 ... [--target WxH] [--fps 25] [--reencode]"},
+    "prepend_hook":   {"kind": "叠加", "stage": "assemble", "layer": "backbone", "required": "optional", "file": "atoms/prepend_hook.py",   "sig": "prepend_hook.py 钩子.mp4 正文.mp4 OUT [--flip 0.30] [--trans slideleft] [--fps 30]", "note": "开篇钩子片 + 快速翻页转场(翻页期间正文定格暂停) + 正文；自动统一画幅/帧率、音频 acrossfade。和 concat(硬切拼接) 互补：本原子带转场+定格。"},
+    "progress_bar":   {"kind": "叠加", "stage": "assemble", "layer": "backbone", "required": "optional", "file": "atoms/progress_bar.py",   "sig": "progress_bar.py IN OUT --chapters N --index k [--label 文字] [--h 12] [--color FF6B5C]"},
+    "endcard":        {"kind": "叠加", "stage": "assemble", "layer": "backbone", "required": "optional", "file": "atoms/endcard.py",        "sig": "endcard.py IN OUT --card PATH(.png/.jpg/.html) [--seconds 3] [--fade 0.5]"},
+    "speed_adapt":    {"kind": "叠加", "stage": "trim",     "layer": "backbone", "required": "required", "substep": "3d", "file": "atoms/speed_adapt.py",    "sig": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0]", "ported_from": "slicer.py::accelerate", "todo": "WS-2 升级：加固定倍速档(--fixed 1.2 --replace-audio)+换干净音轨"},
+    "subtitle_burn":  {"kind": "叠加", "stage": "cast",     "layer": "backbone", "required": "required", "file": "atoms/subtitle_burn.py",  "sig": "subtitle_burn.py IN OUT --srt x.srt [--fs 36] [--y h-130]", "ported_from": "slicer.py::make_subtitles"},
+    "title_bar":      {"kind": "叠加", "stage": "assemble", "layer": "backbone", "required": "optional", "file": "atoms/title_bar.py",      "sig": "title_bar.py IN OUT --text 标题 [--style bar|label] [--fs N] [--font PATH] [--block-h-frac 0.128] [--bar-color RRGGBB] [--text-color RRGGBB]", "note": "两种样式：bar=顶部整条黑底白字(默认·照搬「标题黑色底色.png」)；label=顶部黑色信箱块内白底黑字圆角贴纸标签(单行·块高自动探测顶部黑边)。思源宋体超粗体自带 assets/fonts/SourceHanSerifCN-Heavy.otf；中文按字宽换行居中。"},
+    "subtitle_ai_fix":{"kind": "叠加", "stage": "subtitle", "layer": "backbone", "required": "optional", "file": "atoms/subtitle_ai_fix.py","sig": "subtitle_ai_fix.py IN.srt OUT.srt [--hint ...]", "note": "走 video-slicer LLM，需 .env。1:1 等条只订正听错专名+删紧邻结巴，不碰时间/不增减条数。", "ported_from": "srt_fix.py"},
+    "face_locate":    {"kind": "改造", "stage": "cast",     "layer": "backbone", "required": "optional", "file": "atoms/face_locate.py",    "sig": "face_locate.py IN [--target WxH] [--samples 40] -> JSON(face_cx/crop)", "note": "⑤铸造·PPT版圆窗人脸定位用。", "ported_from": "slicer.py::locate_face_cx + reframe_locate.py"},
+    "name_mask":      {"kind": "叠加", "stage": "trim",     "layer": "source_adapt", "required": "optional", "source_types": ["screencast"], "file": "atoms/name_mask.py",      "sig": "name_mask.py IN OUT --region WxH+X+Y [--fill img] [--mask alpha.png] [--trim 0]", "ported_from": "make_publish.py", "todo": "WS-3 升级：单块→多块 + 抽帧判编辑/放映模式(门B)"},
+    "cover_frame":    {"kind": "叠加", "stage": "assemble", "layer": "backbone", "required": "optional", "file": "atoms/cover_frame.py",    "sig": "cover_frame.py IN OUT.png [--at 0] [--overlay title.png]"}
   },
-  "note": "命名规则见原 catalog；总能力表+配方在 video-compose/catalog.json + recipes.json。"
+  "note": "命名规则见原 catalog；总能力表+配方在 video-compose/catalog.json + recipes.json。六环 stage 标签见 _stage_schema。WS-2~5 新增原子(rough_cut/trim_silence/reframe_crop/denoise_voice/align_check/len_check)随各 WS 落地后在此声明。"
 }

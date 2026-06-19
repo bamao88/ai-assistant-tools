@@ -46,8 +46,8 @@
         "subtitle": ["align_check(门D 起音点偏差/1:1条数)"],
         "assemble": ["(衔接抽帧·画音连续)"]
       },
-      "out": "clip.mp4",
-      "note": "WS-1 空框架(scaffold)：六环阶段链 + 源适配挂载点 + 自检门已声明，可 run.py --plan 审。trim/subtitle 的新原子(rough_cut/trim_silence/subtitle_align/align_check/len_check)随 WS-2 落地；源适配(reframe_crop/denoise_voice)随 WS-3。落地后由 run.py chain 端到端接管(本线无 G4 包袱，是真 chain)。"
+      "out": "成片.mp4",
+      "note": "真 chain（无 G4 包袱）：run.py --run zh_clip_cut --job job.json 委派 clip_cut_run.py 端到端出片，剪辑账本在原子间流转。全原子已落地并对 clip_01 验过(身子 78.683s 精确、3 帧字幕对口型、G4 zh_business 零回归)。job 规格见 clip_cut_run.py --help。"
     },
     "raw_quickcut": {
       "label": "极简型·词级快剪 + 烧字幕（不框架页化）",

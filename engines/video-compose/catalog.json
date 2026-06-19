@@ -31,6 +31,10 @@
     "video-clip": {
       "role": "积木厂：提供「叠加/通用剪辑」原子。只产原子，不指挥。原 catalog.json/recipes.json 的总表+配方已上移到 video-compose（真源唯一）。",
       "atoms": [
+        "rough_cut",
+        "trim_silence",
+        "align_check",
+        "len_check",
         "concat",
         "prepend_hook",
         "progress_bar",
@@ -113,7 +117,7 @@
       "group": "also_provides",
       "kind": "内容决策",
       "tier": null,
-      "desc": "读③剪辑账本(cut manifest)把逐字账本里每个选中字搬到成片时间(同一把剪刀，不重转写/不从源重映射)。复用现成 transcribe.segment/align/resolve 字级机器。",
+      "desc": "读③剪辑账本(cut manifest)把逐字账本里每个选中字搬到成片时间(同一把剪刀·remap_time 链式重放，不重转写/不从源重映射)。沉淀 0618test/build_subs 的分句·字级定位，map_time 升级为全链 remap。",
       "stage": "subtitle",
       "layer": "backbone",
       "required": "required"
@@ -178,6 +182,48 @@
       "layer": "backbone",
       "required": "optional"
     },
+    "rough_cut": {
+      "engine": "video-clip",
+      "group": "atoms",
+      "kind": "剪辑",
+      "tier": null,
+      "desc": "rough_cut.py (--spec spec.json | --source X --keeps \"s,e ...\") --out body.mp4 --manifest m.json [--crop-vf ...] [--mask-boxes \"x,y,w,h;...\"]",
+      "stage": "trim",
+      "layer": "backbone",
+      "required": "required",
+      "substep": "3a"
+    },
+    "trim_silence": {
+      "engine": "video-clip",
+      "group": "atoms",
+      "kind": "剪辑",
+      "tier": null,
+      "desc": "trim_silence.py --ref 人声 --in 身子 --out OUT --manifest m.json [--apply-to src:dst] [--min-sil 1.5] [--keep-pad 0.4]",
+      "stage": "trim",
+      "layer": "backbone",
+      "required": "required",
+      "substep": "3c"
+    },
+    "align_check": {
+      "engine": "video-clip",
+      "group": "atoms",
+      "kind": "自检",
+      "tier": null,
+      "desc": "align_check.py --body 成片 --srt clip.srt [--manifest m.json] [--tol 0.2]",
+      "stage": "trim",
+      "layer": "self_check",
+      "required": "optional"
+    },
+    "len_check": {
+      "engine": "video-clip",
+      "group": "atoms",
+      "kind": "自检",
+      "tier": null,
+      "desc": "len_check.py 身子 --baseline 78.683 [--tol 0.15]",
+      "stage": "trim",
+      "layer": "self_check",
+      "required": "optional"
+    },
     "concat": {
       "engine": "video-clip",
       "group": "atoms",
@@ -223,7 +269,7 @@
       "group": "atoms",
       "kind": "叠加",
       "tier": null,
-      "desc": "speed_adapt.py IN OUT --srt x.srt [--target_cps 8] [--max_speed 2.0]",
+      "desc": "speed_adapt.py IN OUT (--srt x.srt 自适应档 | --fixed 1.2 [--replace-audio 人声.wav] [--manifest m.json] 固定档③3d)",
       "stage": "trim",
       "layer": "backbone",
       "required": "required",

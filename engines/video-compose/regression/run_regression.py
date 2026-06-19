@@ -247,7 +247,7 @@ def main():
         work = Path(td)
         for t in tiers:
             {"t0": lambda: t0(work), "t1": lambda: t1(work, a.skip_slow),
-             "t2": lambda: t2(work, a.skip_slow), "t3": lambda: t3(work, a.keep_llm, a.skip_slow)}[t]()
+             "t2": lambda: t2(work), "t3": lambda: t3(work, a.keep_llm, a.skip_slow)}[t]()
     n = len(RESULTS); p = sum(1 for _, ok, _ in RESULTS if ok)
     print(f"\n=== 回归结果: {p}/{n} PASS ===")
     for name, ok, _ in RESULTS:

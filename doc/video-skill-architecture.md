@@ -38,11 +38,12 @@
 
 tools/engines/
 ├── video-compose/            ★ 组合层 · 唯一对外入口（只指挥，不产原子）
-│   ├── catalog.json          总能力表（真源·跨引擎汇总，由 build_catalog.py 重建）
-│   ├── recipes.json          命名配方：zh_business(线上主路径) / raw_quickcut / simple_concat / chaptered_growth
-│   ├── selector.py           AI 读视频 → 选配方 / 自由组合
-│   ├── run.py                按配方解析能力链 → 跨引擎调原子（--plan 审链 / --run 跑）
-│   └── build_catalog.py      从各引擎 capabilities.json 重建 catalog
+│   ├── catalog.json          总能力表（真源·跨引擎汇总；每个原子带六环 stage 标签，由 build_catalog.py 重建）
+│   ├── recipes.json          命名配方：zh_business(PPT版) / zh_clip_cut(裁剪版·真chain) / landscape_business / raw_quickcut / simple_concat / chaptered_growth
+│   ├── selector.py           AI 读视频 → 选配方 / 自由组合（--list 按六环分组展示）
+│   ├── run.py                按配方解析能力链 → 跨引擎调原子（--plan 审链 / --run 跑；真chain 委派 runner）
+│   ├── clip_cut_run.py       zh_clip_cut 链式执行器（六环原子按序串起来端到端出片，剪辑账本流转）
+│   └── build_catalog.py      从各引擎 capabilities.json 重建 catalog（透传 stage/layer/required/substep/source_types）
 │
 ├── video-slicer/             积木厂 · 剪辑策略 + 内容决策（Python 包，纯 urllib LLM，无独立 venv）
 │   ├── capabilities.json     声明：cut_sentence(句级·线上) / cut_word(词级·方案B) 共存 + transcribe

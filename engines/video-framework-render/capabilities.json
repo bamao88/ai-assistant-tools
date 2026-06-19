@@ -28,7 +28,9 @@
     "subtitles": {
       "kind": "叠加·原子", "stage": "cast", "layer": "backbone", "required": "optional",
       "desc": "srt → 账号术语纠错(profiles/<p>/fixes.json) → 标定字宽居中药丸 ASS。裁剪版复用此药丸几何(绝不在 video-clip 再写第二份)。",
-      "entry": "video_framework_render.render:make_subtitles"
+      "entry": "video_framework_render.render:make_subtitles",
+      "standalone": "video_framework_render.subtitles_cli --srt 定稿.srt --out-dir OUT --layout clip_cut(裁剪版⑤复用·薄入口不改渲染逻辑·G4 零触碰)",
+      "layouts": "vertical(720×1280 框架页) / landscape(1280×720 方框) / clip_cut(1080×1920 裁剪版=vertical×1.5)"
     },
     "reframe_locate": {
       "kind": "改造·原子", "stage": "cast", "layer": "backbone", "required": "optional",

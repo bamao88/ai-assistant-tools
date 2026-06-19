@@ -112,7 +112,7 @@ def plan(recipe_name):
 
 
 def run(recipe_name, selection, profile):
-    r, steps = resolve(recipe_name)
+    r, _ = resolve(recipe_name)
     if r.get("kind") == "delegate":
         if recipe_name in ("zh_business", "landscape_business"):
             if not selection:

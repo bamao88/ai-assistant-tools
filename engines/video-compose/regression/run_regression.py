@@ -81,7 +81,7 @@ def t0(work):
     rec("check-tools 0 error", "0 errors" in r.stdout, r.stdout.strip().splitlines()[-1] if r.stdout.strip() else "?")
     # _manifest.remap_time 单元
     sys.path.insert(0, str(CLIP))
-    import _manifest as M
+    import _manifest as M  # type: ignore  # noqa: E402  (dynamic path)
     ops = [{"op": "rough_cut", "keeps": [[10, 20], [30, 40]]},
            {"op": "trim_silence", "keeps": [[0, 5], [6, 16]]},
            {"op": "speed", "factor": 2.0}]

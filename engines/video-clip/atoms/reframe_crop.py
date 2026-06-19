@@ -33,7 +33,7 @@ def cropdetect(src, sample_at=None):
         cnt[m.group(1)] = cnt.get(m.group(1), 0) + 1
     if not cnt:
         return None
-    return max(cnt, key=cnt.get)
+    return max(cnt, key=lambda k: cnt[k])
 
 
 def crop_vf(crop, target):

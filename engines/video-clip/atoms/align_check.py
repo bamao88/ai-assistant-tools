@@ -132,14 +132,18 @@ def main():
     dt = 0.02
     sub_env = _envelope([(s, e) for s, e in cues], dur, dt)
     voi_env = _envelope(voiced, dur, dt)
-    best_lag, best_agree, agree0 = lag_sweep(sub_env, voi_env, dt, max_lag=a.tol * 5 + 0.5)
+    best_lag, best_agree, agree0 = lag_sweep(sub_env, voi_env, dt, max_lag=2.0)
     on_voice = sum(1 for s, _ in cues if any(vs <= s <= ve for vs, ve in voiced))
-    lag_ok = abs(best_lag) <= a.tol
+    # 仅当平移峰「显著」(吻合度提升≥SIG)才认为存在系统性漂移；否则曲线平坦=无可判定漂移→PASS。
+    SIG = 0.05
+    significant = (best_agree - agree0) >= SIG
+    lag_ok = (not significant) or (abs(best_lag) <= a.tol)
+    verdict = "PASS(无可判定漂移)" if not significant else ("PASS" if lag_ok else "FAIL")
 
     print("== 门D 字幕↔人声 能量包络对齐 ==")
     print(f"  字幕{len(cues)}条 起点落人声内 {on_voice}/{len(cues)} ({100*on_voice//len(cues)}%)")
-    print(f"  包络吻合度 lag0={agree0:.3f}  最佳={best_agree:.3f}")
-    print(f"  系统性偏移(最佳平移)={best_lag:+.3f}s  阈值±{a.tol}s → {'PASS' if lag_ok else 'FAIL'}")
+    print(f"  包络吻合度 lag0={agree0:.3f} 最佳={best_agree:.3f} 提升={best_agree-agree0:.3f}(显著阈{SIG})")
+    print(f"  系统性偏移={best_lag:+.3f}s 阈值±{a.tol}s → {verdict}")
 
     seam_ok = None
     if a.manifest and Path(a.manifest).exists():

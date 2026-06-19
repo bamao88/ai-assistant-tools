@@ -31,6 +31,8 @@ def srt_cues(p):
 def main():
     man = json.loads((GOLDEN / "cut_manifest.json").read_text(encoding="utf-8"))
     ops = {o["op"]: o for o in man["ops"]}
+    cat = json.loads((HERE.parent / "catalog.json").read_text(encoding="utf-8"))["atoms_index"]
+    n_atoms = len(cat); n_staged = sum(1 for m in cat.values() if m.get("stage"))
     exp = {
         "_doc": "回归期望值·从 golden 计算·gen_expected.py 重建。tol 为允许偏差。",
         "golden_dir": str(GOLDEN.relative_to(REPO)),

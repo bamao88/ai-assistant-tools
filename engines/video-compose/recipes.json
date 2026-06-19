@@ -38,7 +38,7 @@
         "select": ["cut_sentence(开篇去转折)"],
         "trim": ["rough_cut", "trim_silence", "speed_adapt(--fixed 1.2 --replace-audio)"],
         "subtitle": ["subtitle_align(读账本)", "subtitle_ai_fix(1:1)", "subtitle_protect(别动清单钉回)"],
-        "cast": ["subtitles(药丸)", "subtitle_burn"],
+        "cast": ["subtitles(药丸·clip_cut版式·subtitles_cli)", "subtitle_burn(ass烧)"],
         "assemble": ["prepend_hook(钩子+翻页)", "title_bar(--style label)", "concat"]
       },
       "self_check": {

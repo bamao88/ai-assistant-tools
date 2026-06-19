@@ -1,0 +1,76 @@
+{
+  "_doc": "回归期望值·从 golden 计算·gen_expected.py 重建。tol 为允许偏差。",
+  "golden_dir": "var/zh_main/0619test/golden",
+  "tol": {
+    "dur": 0.12,
+    "ssim_min": 0.98
+  },
+  "durations": {
+    "body": 107.766,
+    "trimmed": 94.495,
+    "final": 78.683,
+    "vocals": 107.712,
+    "成片": 84.467
+  },
+  "manifest": {
+    "ops": [
+      "rough_cut",
+      "trim_silence",
+      "speed"
+    ],
+    "rough_cut_keeps": [
+      [
+        872.95,
+        902.3
+      ],
+      [
+        905.35,
+        921.3
+      ],
+      [
+        923.5,
+        934.7
+      ],
+      [
+        10562.3,
+        10613.5
+      ]
+    ],
+    "trim_silence_n_keeps": 6,
+    "trim_removed_sec": 13.286,
+    "speed_factor": 1.2,
+    "durations": {
+      "assembled": 107.766,
+      "trimmed": 94.495,
+      "final": 78.683
+    }
+  },
+  "subtitle": {
+    "clip_srt_cues": 30,
+    "clip_srt_sha": "79f60206aa4eb7e2",
+    "zh_ass_sha": "6d16f1cc571728c1",
+    "final_protected_sha": "35e240bd96264f68"
+  },
+  "catalog": {
+    "n_atoms": 30,
+    "all_staged": true,
+    "planned_in_plan": 0
+  },
+  "gates": {
+    "len_tol": 0.15,
+    "align_seam_pct_min": 100,
+    "align_drift_ok": true
+  },
+  "g4": {
+    "page_sha": [
+      "08845d73dbdc69c0",
+      "8b47f81e0203559c",
+      "72a4b5c1c17276c4",
+      "7951c793ffed9ebe",
+      "a63b6e175d9590cc"
+    ],
+    "zh_ass_sha": "20a364ab8b1961fb",
+    "accel_dur": 101.729,
+    "dims": "720x1280"
+  }
+}

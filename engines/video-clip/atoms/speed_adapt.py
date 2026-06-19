@@ -1,20 +1,67 @@
 #!/usr/bin/env python3
-"""speed-adapt —— 按逐字稿语速自适应变速（原子能力）。
+"""speed-adapt —— 变速原子。两档：
 
-读 SRT，逐句算字符语速(cps)：慢句加速、快句保护、句间停顿压缩；atempo 保音调。
-源自 assistant_zh/workflow/video_framework_slicer/slicer.py::accelerate，去耦合成通用原子。
-幂等、不改原片。可选输出变速分段映射(给 name-mask 之类做时间换算)。
+1) 自适应档(默认)：读 SRT 逐句算字符语速(cps)，慢句加速/快句保护/句间停顿压缩；atempo 保音调。
+   源自 assistant_zh/workflow/video_framework_slicer/slicer.py::accelerate（PPT 风格内置变速同源）。
+2) 固定档 --fixed F（③3d 裁剪版用）：整体匀速 F 倍，变速不变调；可选 --replace-audio 换干净人声轨。
+   ★承重墙：把变速 factor 记一笔进剪辑账本(cut manifest)，④ subtitle_align 重放字幕时间。
 
-用法:
-  speed_adapt.py IN.mp4 OUT.mp4 --srt x.srt
-  speed_adapt.py IN.mp4 OUT.mp4 --srt x.srt --target_cps 8 --max_speed 2.0 --gap_speed 2.0 --min_speed 1.0
+幂等、不改原片。用法:
+  speed_adapt.py IN.mp4 OUT.mp4 --srt x.srt                        # 自适应档
+  speed_adapt.py IN.mp4 OUT.mp4 --fixed 1.2 [--replace-audio 人声.wav] --manifest m.json   # 固定档
 """
 from __future__ import annotations
 import argparse, re, sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE))
 from vutil import run, ffprobe_dur, parse_srt, ensure_parent  # noqa: E402
+import _manifest  # noqa: E402
+
+ENC = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+       "-c:a", "aac", "-ar", "48000", "-ac", "2"]
+
+
+def _atempo_chain(factor: float) -> str:
+    """atempo 单级仅支持 0.5–2.0；超范围拆成多级连乘。"""
+    f = float(factor); parts = []
+    while f > 2.0:
+        parts.append("atempo=2.0"); f /= 2.0
+    while f < 0.5:
+        parts.append("atempo=0.5"); f /= 0.5
+    parts.append(f"atempo={f:.4f}")
+    return ",".join(parts)
+
+
+def run_fixed(inp, out, factor, replace_audio, manifest_path):
+    """固定倍速 F：视频 setpts/F、音频 atempo F(变速不变调)；--replace-audio 换轨。记账本 speed op。"""
+    out = ensure_parent(out)
+    dur = ffprobe_dur(inp)
+    atempo = _atempo_chain(factor)
+    if replace_audio:
+        fc = f"[0:v]setpts=PTS/{factor}[v];[1:a]{atempo}[a]"
+        cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(inp), "-i", str(replace_audio),
+               "-filter_complex", fc, "-map", "[v]", "-map", "[a]", "-shortest",
+               *ENC, "-movflags", "+faststart", str(out)]
+    else:
+        fc = f"[0:v]setpts=PTS/{factor}[v];[0:a]{atempo}[a]"
+        cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(inp),
+               "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
+               *ENC, "-movflags", "+faststart", str(out)]
+    r = run(cmd)
+    if r.returncode != 0:
+        raise SystemExit(f"ffmpeg 失败：{r.stderr[-600:]}")
+    od = ffprobe_dur(out)
+    if manifest_path:
+        man = _manifest.load(manifest_path) if Path(manifest_path).exists() else _manifest.new(inp)
+        _manifest.add_speed_op(man, "trimmed", "final", factor,
+                               replace_audio=str(replace_audio) if replace_audio else None)
+        man["durations"]["final"] = round(od, 3)
+        _manifest.save(man, manifest_path)
+    print(f"DONE speed_adapt(fixed {factor}x)  {out}  {dur:.3f}s→{od:.3f}s"
+          f"{'  换轨' if replace_audio else ''}{'  | 账本+1' if manifest_path else ''}")
 
 
 def build_segments(srt, dur, tgt, mx, gap, mn):

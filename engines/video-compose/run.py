@@ -149,12 +149,13 @@ def main():
     ap.add_argument("--plan", default=None, help="解析并打印 recipe 的能力链")
     ap.add_argument("--run", dest="run_recipe", default=None)
     ap.add_argument("--selection", default=None)
+    ap.add_argument("--job", default=None, help="真 chain 配方(zh_clip_cut)的 job 规格 JSON")
     ap.add_argument("--profile", default=None)
     a = ap.parse_args()
     if a.plan:
         plan(a.plan)
     elif a.run_recipe:
-        sys.exit(run(a.run_recipe, a.selection, a.profile))
+        sys.exit(run(a.run_recipe, a.selection, a.profile, a.job))
     else:
         ap.print_help()
 

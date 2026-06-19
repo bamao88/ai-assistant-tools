@@ -37,7 +37,7 @@ RESULTS = []
 
 def rec(name, ok, detail=""):
     RESULTS.append((name, ok, detail))
-    print(f"  {'✅' if ok else '❌'} {name}" + (f"  — {detail}" if detail else ""))
+    print(f"  {'✅' if ok else '❌'} {name}" + (f"  — {detail}" if detail else ""), flush=True)
     return ok
 
 

@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""name-mask —— 遮学员名闪帧（原子能力）。
+"""name-mask —— 遮挡原子。两用：
 
-某区域(如圆形人像 PIP)里出现近黑帧时(腾讯活跃说话人切到没开摄像头的学员=黑底+白名)，
-用一张定格画面盖住这些时间段，避免公开成片泄露学员姓名。
-源自 make_publish.py，把写死的 PIP 几何改成 --region 参数。幂等、不改原片。
+A) 隐私遮名(默认)：某区域(如圆形人像 PIP)出现近黑帧时(腾讯活跃说话人切到没开摄像头的学员=黑底+白名)，
+   用定格画面盖住这些时间段，避免成片泄露学员姓名。源自 make_publish.py。
+B) 录屏挡 UI 多块 --black(六环 WS-3 源适配·录屏)：无条件黑块盖住固定 UI(顶栏/Upgrade/缩略图)，
+   --region 可重复传多块。通常 rough_cut --mask-boxes 同趟更省；本原子用于切好后再补挡或单独挡。
 
-填充图来源(三选一，优先级从高到低)：--fill 指定 / 自动从干净帧抠该区域 / 失败则报错。
+填充图来源(隐私模式三选一)：--fill 指定 / 自动从干净帧抠该区域 / 失败则报错。
 可选 --mask 给填充图加圆形等 alpha。可选 --trim 裁掉片头 N 秒。
 
 用法:
-  name_mask.py IN.mp4 OUT.mp4 --region 250x250+435+850
-  name_mask.py IN.mp4 OUT.mp4 --region 250x250+435+850 --mask circle.png --trim 16.5
-  name_mask.py IN.mp4 OUT.mp4 --region 250x250+435+850 --fill goodface.png
+  name_mask.py IN OUT --region 250x250+435+850                       # A 隐私遮名(单块·黑帧检测+定格)
+  name_mask.py IN OUT --region 1080x152+0+0 --region 200x80+880+1700 --black   # B 录屏多块黑挡
+  name_mask.py IN OUT --region 250x250+435+850 --mask circle.png --trim 16.5
 """
 from __future__ import annotations
 import argparse, re, sys

@@ -46,8 +46,11 @@ tools/engines/
 │   └── build_catalog.py      从各引擎 capabilities.json 重建 catalog（透传 stage/layer/required/substep/source_types）
 │
 ├── video-slicer/             积木厂 · 剪辑策略 + 内容决策（Python 包，纯 urllib LLM，无独立 venv）
-│   ├── capabilities.json     声明：cut_sentence(句级·线上) / cut_word(词级·方案B) 共存 + transcribe
+│   ├── capabilities.json     声明：cut_sentence(句级·线上) / cut_word(词级·方案B) 共存 + transcribe + subtitle_align/subtitle_protect(④承重墙)
 │   ├── video_slicer/         planner + twostage + pages_gen(分页) + srt_fix(字幕纠错)
+│   │   ├── subtitle_align.py     ④读剪辑账本搬字幕时间（承重墙·复用字级机器·remap_time 链式重放）
+│   │   ├── subtitle_protect.py   ④别动清单钉回(自造词如「爱马仕」防 LLM 改) + 1:1/无吞字结构自检
+│   │   └── profiles/zh_main/keeplist.json  别动清单（受保护词数组）
 │   │   └── transcribe/       字级转写：火山 seedasr v3 主 / 阿里 paraformer 兜底；公网/OSS 上传
 │   │                          + align.py(句级带标点 ITN ↔ 字级时间 对齐) + segment.py(分句·优先原生语义句)
 │   ├── personas/zh_main.md   张和选题 persona（含问答可剪）

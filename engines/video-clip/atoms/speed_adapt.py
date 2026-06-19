@@ -84,9 +84,12 @@ def build_segments(srt, dur, tgt, mx, gap, mn):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="按语速自适应变速")
+    ap = argparse.ArgumentParser(description="变速：自适应档(--srt) 或 固定档(--fixed)")
     ap.add_argument("input"); ap.add_argument("output")
-    ap.add_argument("--srt", required=True)
+    ap.add_argument("--srt", help="自适应档：逐句 cps 变速")
+    ap.add_argument("--fixed", type=float, default=None, help="固定档：整体匀速 N 倍(③3d)")
+    ap.add_argument("--replace-audio", default=None, help="固定档：换干净人声轨(wav)")
+    ap.add_argument("--manifest", default=None, help="固定档：把 speed factor 记进剪辑账本")
     ap.add_argument("--target_cps", type=float, default=8.0)
     ap.add_argument("--max_speed", type=float, default=2.0)
     ap.add_argument("--gap_speed", type=float, default=2.0)
@@ -96,6 +99,11 @@ def main():
 
     if not Path(a.input).exists():
         raise SystemExit(f"输入不存在: {a.input}")
+    if a.fixed is not None:                            # 固定档(③3d 裁剪版)
+        run_fixed(a.input, a.output, a.fixed, a.replace_audio, a.manifest)
+        return
+    if not a.srt:
+        raise SystemExit("需 --srt(自适应档) 或 --fixed N(固定档)")
     if not Path(a.srt).exists():
         raise SystemExit(f"SRT 不存在: {a.srt}")
     out = ensure_parent(a.output)

@@ -285,7 +285,7 @@ registry.yaml                            机器可读引擎清单(结构变更�
 > 大白话：这一节是"动工前的施工合同"——把要做什么、不碰什么、怎么算做完、怎么验、谁来跑，都钉死，免得开工后边做边改口径。owner 说 LGTM/批准/go ahead 即开工。
 
 ```text
-Preflight status: DRAFT
+Preflight status: IMPLEMENTED（2026-06-19 批准并落地 WS-1~6；G4 零回归）
 Task source: plan path
 Canonical source: doc/plan/视频剪辑skill-六环阶段化升级-plan.md
 Route: durable $intuitive-flow（主会话监督 + skill-runner/tmux worker 按 WS 执行）

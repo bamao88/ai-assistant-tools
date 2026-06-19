@@ -88,10 +88,12 @@ tools/engines/
 
 ```bash
 cd /Volumes/ExtSSD2601/AI_Assistant/tools
-python engines/video-compose/selector.py --list                 # 看全部能力原子 + 配方
-python engines/video-compose/run.py --plan zh_business           # 审一条配方的能力链（每步原子→引擎→entry）
+python engines/video-compose/selector.py --list                 # 看全部能力原子(按六环分组) + 配方
+python engines/video-compose/run.py --plan zh_clip_cut           # 审裁剪版六环链（每环原子→引擎+源适配挂载点+自检门）
 python engines/video-compose/run.py --run zh_business \
-       --selection sel.json --profile zh_main                    # 端到端跑一条切片
+       --selection sel.json --profile zh_main                    # PPT版：端到端跑一条切片
+python engines/video-compose/run.py --run zh_clip_cut \
+       --job job.json                                            # 裁剪版：一键出片（job 规格见 clip_cut_run.py --help）
 ```
 
 ## 维护场景：要做某件事 → 改哪里

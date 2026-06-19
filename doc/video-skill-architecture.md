@@ -128,7 +128,7 @@ python engines/video-compose/run.py --run zh_clip_cut \
 ## 环境依赖（首跑准备）
 
 - `video-framework-render`：`python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`（pillow + opencv）；node puppeteer（`PUPPETEER_PATH` 或本机已装）；系统 ffmpeg(含 libass)；字体 Hannotate SC + PingFang SC。
-- `video-clip`：自带 `.venv`（pillow + opencv），首跑 `requirements.txt`。
+- `video-clip`：自带 `.venv`（pillow + opencv），首跑 `requirements.txt`。③裁剪/源适配/自检原子多数纯 ffmpeg+系统 python 即可。**带噪去噪可选**：`denoise_voice` 的 demucs 装在独立 audio venv（`python -m venv .venv-audio && .venv-audio/bin/pip install demucs`），没装则优雅跳过抽原音轨（不断流）。
 - `video-slicer`：纯标准库 + urllib LLM，用系统 python 即可；LLM 密钥走 `.env`（→ `var/credentials/llm.env`）。
 - `run_pipeline`（业务薄胶水）：用系统 python 跑（含 urllib LLM）；渲染子进程自动走 `video-framework-render/.venv`。
 

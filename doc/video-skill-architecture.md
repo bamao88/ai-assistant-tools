@@ -134,7 +134,7 @@ python engines/video-compose/run.py --run zh_clip_cut \
 | **跑一条切片验证** | 竖版 `run.py --run zh_business --selection <sel>.json --profile zh_main`；横版 `run.py --run landscape_business --selection <sel>.json`；产物 `var/<account>/.../accel.mp4`。 |
 | **改完验证不回归（G4）** | `var/zh_main/baseline/` 存了冻结基线（`primaries/` 含可重放 `job.json`）。用引擎 venv 重放该 job.json，与基线逐帧/逐字节比对。方法 + 上次结果见 `var/zh_main/baseline/{STAGE0-baseline.md,G4-result.md}`。**G4 已并入回归套件 T3**（见下行）。 |
 | **跑分层回归测试**（每个能力的回归） | `python engines/video-compose/regression/run_regression.py [t0\|t1\|t2\|t3\|all]`。四层：T0 纯数据·秒级·每次提交；T1 单原子·喂金标准；T2 阶段；T3 端到端+G4+①火山转录·发版前。喂冻结金标准夹具不重头跑。改了金标准跑 `gen_expected.py` 重算期望值。设计/逐能力清单见 `var/zh_main/0619test/doc/视频剪辑skill-回归测试计划.md`，套件说明见 `engines/video-compose/regression/README.md`。 |
-| **建/迭代金标准（评测基准）** | 选段质量的"标准答案"这条线在 `engines/video-slicer/baselines/`：`global_evidence.py`（**四级流水线**：①开场钩子短拼接 ②正文论证结构全局取证 ③组装脚本 ④精修去口水/去重复/开篇独立/结尾干脆，只产候选）+ `score.py`（vs 金标准 → 句号召回/F1 + 时间 IoU）。全新生成用 `--selection`，对已有结果换版式用 `--migrate`。产出②只回真实句号（可经 `resolve.py` 换算成秒）。流程/命令见 `baselines/README.md`；设计见 `doc/plan/视频剪辑skill-第二环选片-plan.md`。**不进生产管线**，是 prompt 迭代的对照尺子。 |
+| **建/迭代选片 Eval Harness** | **仅 prompt/架构优化时用**。代码+文档在 `eval/video-select/`（`runner.py`/`gates.py`/`score.py`/`doc/`）；生产选片在 `engines/video-select/`（日常六环②，不 import eval）。运行产物落 `var/<account>/eval/<run>/`。设计见 `doc/plan/视频剪辑skill-第二环选片-plan.md` §6。 |
 | **登记 / 结构变更后收口** | 改了引擎结构就更新 `registry.yaml`，跑 `python scripts/check-tools.py`（期望 0 error）。 |
 
 ## 环境依赖（首跑准备）

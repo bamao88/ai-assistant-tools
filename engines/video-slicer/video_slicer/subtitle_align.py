@@ -88,6 +88,9 @@ def sent_phrases(sent, words):
             continue
         else:
             if p < len(chars):
+                # 字与上一字间隔过大(长停顿/未转写区)→先断句，避免一条字幕横跨它（字幕字音脱节/卡屏根因）
+                if cur and chars[p][1] - cur[-1][2] > GAP_SPLIT:
+                    out.append((cur[0][1], cur[-1][2], "".join(c[0] for c in cur))); cur = []
                 cur.append((chars[p][0], chars[p][1], chars[p][2])); p += 1
     if cur:
         out.append((cur[0][1], cur[-1][2], "".join(c[0] for c in cur)))

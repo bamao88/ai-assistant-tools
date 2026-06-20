@@ -160,6 +160,8 @@ def main():
         print(f"  字幕{len(cues)}条 起点落人声内 {on_voice}/{len(cues)} ({100*on_voice//len(cues)}%)")
         print(f"  包络吻合度 lag0={agree0:.3f} 最佳={best_agree:.3f} 提升={best_agree-agree0:.3f}(显著阈{SIG})")
         print(f"  系统性偏移={best_lag:+.3f}s 阈值±{a.tol}s → {verdict}")
+    elif a.manifest:
+        _, sils, _ = voiced_intervals(a.body, a.noise)   # 门A 需要静音区间
     else:
         sils = []
 

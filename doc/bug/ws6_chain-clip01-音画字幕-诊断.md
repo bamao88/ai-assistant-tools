@@ -1,162 +1,103 @@
-# 诊断报告 + 修改计划：`ws6_chain/clip_01` 音画对不上 + 字幕错乱
+# 诊断 + 修改计划：`ws6_chain/clip_01` 音画对不上 + 字幕错乱
 
-> 对象：`var/zh_main/ws6_chain/clip_01/成片.mp4`（zh_clip_cut 裁剪版最新流程出片）
-> 状态：**诊断 + 重构计划（未改代码）**。
-> 写给非研发的 owner：每个技术名词都配大白话；传送带式逐工位讲。
+> 对象：`var/zh_main/ws6_chain/clip_01/成片.mp4`（zh_clip_cut 裁剪版最新流程出片）。
+> 状态：**诊断 + 重构计划（未改代码）**。写给非研发 owner：大白话 + 逐阶段说清。
 >
-> ⚠️ **重要修订（2026-06-20）**：早先把"音画不同步"归因到 ③粗剪的 `-ss 快寻`，**经实测推翻**。
-> 真凶是 ⑥组装的 `prepend_hook`（拼钩子转场）。详见 §三-病灶② 与 §五 实测。
+> **这份文档怎么读**：先看 §1「现状管线总表」搞清现在每个阶段在干嘛、产出什么文件、坏在哪；
+> 再看 §3「目标管线总表」看重构后顺序怎么变、每阶段产出什么、达成什么目标。
+> （之前出问题的根因之一就是**流程不透明、看不到每阶段产出**——本文用两张总表把它钉死。）
 
 ---
 
-## 一、现象（用户反馈）
+## 〇、现象（owner 反馈）
 
-1. **音频跟画面对不上**——人声口型不齐。
+1. **音频跟画面对不上**（人声口型不齐）。
 2. **字幕有很多错字**。
-3. **字幕显示了已经被切掉的内容**（视频音频都没了，字幕还挂在屏上）。
+3. **字幕显示了已经被切掉的内容**（视频音频都没了，字幕还挂屏上）。
 
-核对了现场产物、各环节代码、源逐字转写，并**实测跑了 `align_check` 自检门**。结论：**三个毛病出在两个不同环节**——音画问题在⑥组装、字幕问题在④字幕——彼此独立。
-
----
-
-## 二、这条片子的"配方单"（job `var/zh_main/ws6_chain_job.json`）
-
-| 字段 | 值 | 含义（大白话） |
-|---|---|---|
-| `speed` | 1.2 | 整体加速 1.2 倍 |
-| `denoise` | false | 不抽干净人声，直接用录屏原声当参考 |
-| `ai_fix` | false | 字幕**不过** AI 纠错，只过静态术语表 |
-| `vocals` | （无） | 不喂现成干净人声 |
-| `hook` | `开篇钩子_打字效果_人脸版.mp4` | 片头钩子（**画 5.800s / 音 5.208s，自身画音差 0.59s**） |
-| 源视频 | `源视频_20260613_Agent评测体系.mp4` | 3h20m 的 hevc 录屏 |
-| `spec` / `words` | `clip_01_spec.json` / `source/words.json` | 选段清单 / 逐字时间戳 |
+实测定位（跑 `align_check` 自检门）：音画问题在 **⑥组装**、字幕问题在 **④字幕**，两者独立；**③粗剪此前被误判，已排除**。
 
 ---
 
-## 三、传送带：每一个代码环节 + 病灶定位
+## 一、现状管线·逐阶段总表（出问题的版本）
 
-入口总指挥 `engines/video-compose/clip_cut_run.py`，五道工位写死在 `:36`：
-`STAGES = ["rough_cut", "trim", "subtitle", "cast", "assemble"]`。
+入口 `engines/video-compose/clip_cut_run.py`，顺序写死：`rough_cut → trim → subtitle → cast → assemble`。
 
-### 工位 A：③a 粗剪（`clip_cut_run.py:69-79` → `video-clip/atoms/rough_cut.py`）
-从 3h 源里把选中 4 段切出来、硬切拼成 `body.mp4`(107.766s)。`cut_seg`(49-53) 用 `-ss` 前置 + **libx264/aac 重编码**。
-> **此前的误判已撤回**：`-ss` 前置在**重编码**模式下，FFmpeg 2.1+ 默认 `accurate_seek`，会"快寻到关键帧→解码→丢弃多余帧→从精确点输出"，一般是帧精确的。实测 `final.mp4` 门S PASS（见§五）证明这条链音画是齐的。**粗剪不背音画锅。**
-
-### 工位 B：③ 去噪 + 去静音 + 变速（`clip_cut_run.py:82-95`）
-- 取参考音轨：`denoise:false` 无 `vocals` → `denoise_voice.py` 抽 `body.mp4` 原声成 `vocals.wav`。
-- `trim_silence.py`：在 `vocals.wav` 上找 >1.5s 静音 → 算保留区间 keeps（**assembled 时间轴**）→ `trim/atrim` 滤镜**精确**裁切、画音套同一刀 → `trimmed.mp4`(95.11s)。记账 `add_keep_op`(114)。
-- `speed_adapt.py:run_fixed`：`[0:v]setpts/1.2;[1:a]atempo 1.2`、画音同倍速 → `final.mp4`(79.196s)。
-> **这一环画音也同步**（final.mp4 门S PASS）。但它埋了字幕的雷：trim keeps 是 **assembled 时间轴**、而字幕的字时间是**源时间轴**，两套对不上 → 工位 C 被迫"换算"。
-
-### 工位 C：④ 字幕重放（`clip_cut_run.py:100-116` → `video-slicer/.../subtitle_align.py`）**← 病灶①（字幕）+③（错字）**
-`build`(133-161)：取完整转录 → 按 rough_cut 选句 → 按标点拆短语 → **`remap_time` 把每个短语 begin/end 一路套 `源→rough_cut→trim→speed`**。两颗坏螺丝：
-- **⚠️ 病灶①-1**（`subtitle_align.py:149`）`if bb is None: continue`：短语换算后落进 trim 删掉的缝里 → **整条字幕被丢**。实测源句1892「具体根据咱们客户情况…对吧」就这样消失。
-- **⚠️ 病灶①-2**（`subtitle_align.py:157-158`）`cues[i][1]=cues[i+1][0]`：**无上限**把前一条结尾延到下一条开头。上面丢出一个洞后，前一条「要不了300还有更便宜的」被拉长 **14 秒**(`clip.srt` 第27条 00:56→01:10) 补洞 → 字幕卡屏、显示已切掉内容。
-- **⚠️ 病灶③（错字·配置）**：`clip_cut_run.py:106` `ai_fix:false`，只靠静态术语表 `fixes.json`（已把 a景→Agent、Workbody→Workflow 等修对）→ **文字大多其实对**，残留＝未登记词。"字幕全错"的观感主体是病灶①的时间错位。
-
-### 工位 D：⑤ 铸造（`clip_cut_run.py:120-128`）
-`subtitles_cli` 渲药丸 `cast/zh.ass` → ffmpeg `ass=` 烧进 `final.mp4` → `body_subbed.mp4`，音轨 `-c:a copy`。**只是忠实烧字，不产生新错。**
-
-### 工位 E：⑥ 组装（`clip_cut_run.py:132-143`）**← 病灶②（音画）**
-`title_bar.py` 加标题 `titled.mp4`（实测画79.167/音79.189，齐）→ `prepend_hook.py` 拼钩子 + 翻页转场 `成片.mp4`。
-- **⚠️ 病灶②**：`prepend_hook` 处理一个**自身画≠音**的钩子（画 5.800s / 音 5.208s）时，**视频转场 `xfade` 按"画面长度"定位**(`offset=hook_dur-flip`)、**音频转场 `acrossfade` 按"音频末尾"接缝**，两者基准不一致，那 0.59s 漏了出来。实测 `成片.mp4` 门S **FAIL，画音差 0.510s**（正片人声超前）→ 这就是你看到的"人声口型对不上"。
-- `_norm`(28-44) 本想用 `apad`+`-shortest` 把钩子音频补到画面长度治本；**隔离复现里它确实补成功了（音→5.781s）**，但端到端 `成片` 仍 FAIL——说明问题不在 `_norm` 单步，而在 `xfade/acrossfade` 两条轨**基准不统一**这一步，钩子画音差没被吸收干净。
-
-### 自检门（`clip_cut_run.py:146-152`）
-`len_check` + `align_check`(门A/D/S)。**门S 其实抓到了 `成片` 的 0.510s FAIL**，但 `align_check` 是 `subprocess.run` **软调用、不 raise**，管线没被它拦停，照样出片。→ 门没起到"红线刹车"作用。
+| # | 阶段（做什么） | 调用 | **产出文件** | 实测时长/状态 | 现存 bug |
+|---|---|---|---|---|---|
+| 1 | ③a **粗剪**：从3h源切选中4段、硬切拼成身子 | `rough_cut.py` | `body.mp4`；账本 `cut_manifest.json`(记 rough_cut keeps·源时间轴) | 107.766s | ✅ 无（音画齐） |
+| 2 | ③ **取人声**：抽 body 原声当去静音参考 | `denoise_voice.py` | `vocals.wav` | 107.7s | ✅ 无 |
+| 3 | ③c **去长静音**：删>1.5s停顿，画音同一刀 | `trim_silence.py` | `trimmed.mp4` + `vocals_trimmed.wav`；账本记 trim keeps(assembled时间轴) | 95.11s | ✅ 无（画音齐） |
+| 4 | ③d **变速**：画音都1.2倍 | `speed_adapt.py` | `final.mp4`（**正片·还没字幕**）；账本记 speed factor | 79.196s，**门S PASS(差7ms)** | ✅ 无（音画齐） |
+| 5 | ④ **字幕搬时间**：把每个字从源时间换算到成片时间 | `subtitle_align.py` | `clip.srt` | 31条 | ⚠️**bug①**：换算落进删除区→整条丢；前一条无上限拉长补洞→卡屏14s |
+| 5b | ④ **字幕改文字**（仅 `ai_fix:true`，本次=false 跳过）：术语表+LLM只改字 | `subtitle_ai_fix.py`+`subtitle_protect.py` | `clip.aifix.srt`→`clip.final.srt` | 本次未跑 | ⚠️**bug③**：没开→残留 ASR 错字（已被静态 `fixes.json` 修掉大部分） |
+| 6 | ⑤ **铸造**：渲药丸字幕 + 烧进正片 | `subtitles_cli.py`+ffmpeg | `cast/zh.ass` + `body_subbed.mp4` | 79.2s | 忠实烧（不产生新错） |
+| 7 | ⑥ **加标题** | `title_bar.py` | `titled.mp4` | 画79.167/音79.189 | ✅ 无 |
+| 8 | ⑥ **拼钩子+翻页转场** | `prepend_hook.py` | `成片.mp4`（**最终交付**） | 84.97s，**门S FAIL(差0.510s)** | ⚠️**bug②**：钩子自身画(5.8)≠音(5.208)，转场画/音两个时钟→正片人声超前0.5s |
+| 9 | **自检门** | `len_check.py`/`align_check.py` | （只打印） | — | ⚠️**bug④**：门S 是软调用、FAIL 不停管线，带病照样出片 |
 
 ---
 
-## 四、一图钉死：毛病 ↔ 代码环节（已修订）
+## 二、四个 bug 的实测定位（钉死在阶段上）
 
-| 你的反馈 | 出问题的工位 | 精确代码位置 | 实测 |
+| bug | 阶段 | 精确代码位置 | 实测证据 |
 |---|---|---|---|
-| 人声口型对不上 | **E ⑥组装 prepend_hook** | `prepend_hook.py` xfade(按画长)/acrossfade(按音尾) 基准不一；钩子自身画5.8/音5.208 | `成片.mp4` 门S **FAIL 0.510s** |
-| 字幕卡屏14s / 显示切掉内容 | **C ④字幕** | `subtitle_align.py:149`(落删除区整条丢)+`:157-158`(无上限拉长补洞) | `clip.srt` 第27条撑14s；句1892消失 |
-| 字幕错字 | **C ④字幕(配置)** | `clip_cut_run.py:106` `ai_fix:false` | `fixes.json` 已修大部分 |
-| 门没刹车 | 自检门 | `clip_cut_run.py:149` `align_check` 软调用不 raise | 门S FAIL 但照样出片 |
+| ② 人声口型对不上 | ⑥ 拼钩子 | `prepend_hook.py`：`xfade` 按画面长度定位、`acrossfade` 按音频末尾接缝＝两个时钟 | `成片.mp4` 门S **FAIL 0.510s**；钩子画5.8/音5.208 |
+| ① 字幕卡屏14s/显示切掉内容 | ④ 字幕搬时间 | `subtitle_align.py:149`(落删除区整条丢) + `:157-158`(无上限拉长补洞) | `clip.srt` 第27条 00:56→01:10 撑14s；源句1892消失 |
+| ③ 字幕错字 | ④ 字幕改文字(配置) | `clip_cut_run.py:106` `ai_fix:false` | `fixes.json` 已修大部分，残留=未登记词 |
+| ④ 门不刹车 | 自检门 | `clip_cut_run.py:149` `align_check` 软调用不 raise | 门S FAIL 仍出片 |
 
-**~~粗剪 `-ss`~~ 已排除**：`final.mp4` 门S PASS（差 7ms）。
-
----
-
-## 五、实测证据（`align_check` + `ffprobe`）
-
-```
-final.mp4  门S 画音流时长: 视频79.196 / 音频79.189  差+0.007s  → PASS   ← 剪辑链音画齐
-成片.mp4   门S 画音流时长: 视频84.967 / 音频84.457  差+0.510s  → FAIL   ← 钩子转场引入desync
-钩子原文件  画5.800s / 音5.208s（自身差0.592s）
-钩子过_norm 画5.800s / 音5.781s（apad补齐成功 — 说明_norm单步没问题）
-clip.srt   第27条「要不了300还有更便宜的」00:56.4→01:10.6 撑14s；源句1892在SRT中消失
-```
+> **③粗剪 `-ss` 已排除**：`final.mp4` 门S PASS（差7ms·编码尾巴非错位）。重编码模式 FFmpeg 默认 accurate_seek 帧精确。
 
 ---
 
-## 六、修改计划（本次未动手，按你的方向 + 两个"不出问题"的现成方案）
+## 三、目标管线·逐阶段总表（重构后）
 
-> 我对照了你点名的 **videocut-zh**(`~/Downloads/videocut-zh`) 和本仓 **PPT框架页流程**(`zh_business`)——它俩都**不出**这两个毛病。原因正好印证你的判断。
+**核心改动**：把"字幕搬时间 + 烧字"**提到去静音/变速之前**——字幕烧成画面像素后，后面对视频怎么切、字幕一模一样跟着切（与 PPT 流程同构、与你说的"先做完脚本再后处理"一致）。
 
-### 它俩为什么不出问题（结论先行）
-
-| | videocut-zh | PPT框架页(zh_business) | 当前 clip_cut（出问题） |
+| # | 阶段（做什么） | **产出文件** | 该阶段达成目标 |
 |---|---|---|---|
-| 真源 | **一份 keep 清单**同时驱动剪视频和出字幕 | 一份 SRT，**先烧进整段视频**再处理 | 剪辑清单 + 转录**两份**，中间靠 remap 拼 |
-| 字幕与画面 | 同一清单、`out_time()` 机械换算一次 | **字幕先烧成画面像素**，之后跟着视频一起被切 | 视频先改、字幕**事后**重算到新时间轴 |
-| 顺序 | 选词→定 keep→（同一刀）切视频+出字幕 | 渲染→**做字幕→烧进视频**→**之后**才变速/切 | 切+去静音+变速→**之后**才算字幕→烧 |
-| 变速/去静音 | 没有 | **在"已烧字幕"的视频上**做，画音字一起切 | 在"还没字幕"的视频上做，逼出 remap |
-| 音画同步 | 构造上锁死 | 构造上锁死 | 多级 remap，易漂 |
-
-**一句话**：你说的"**先把带时间戳的脚本（含字幕）做完、字幕烧进画面，之后再去精减/去噪/变速**"——**PPT 流程就是这么干的，所以它从不音画/字幕错位**。当前 clip_cut 把顺序搞反了（先动视频、后补字幕），才逼出脆弱的 remap。
-
-### 计划 A：字幕重构（核心·治本）——把工位 C 提到工位 B 前面
-
-**新顺序**（你要的"B、C 交换"）：
-```
-③a 粗剪(切选段拼身子)
- → ④ 字幕(align：只做 源→assembled 一次简单换算 + LLM只改字不改时不增减)
- → ⑤ 烧字幕(把字幕烧成 assembled 视频的像素)
- → ③c 去静音 + ③d 变速(在"已带字幕"的视频上做，画+音+字幕同一刀一起切)
- → ⑥ 组装(标题+钩子)
-```
-**好处（为什么这样就根治）**：
-1. 字幕只需换算**一道**（源→assembled，就是 rough_cut 那份 keep，边界已知、不经过 trim/speed），**`remap_time` 那串多级重放、落删除区返回 None、无上限 seam-merge 全部不再需要**——病灶①两颗坏螺丝直接消失。
-2. 字幕一旦烧成像素，后面去静音/变速对视频怎么切，字幕就**一模一样**跟着切（它就是画面的一部分）——**音画字三者构造上锁死，永不漂**。这正是 PPT 流程的做法（`render.py`：先 `make_subtitles`+`compose` 烧字，再 `accelerate` 变速）。
-3. 去静音若切掉某句中间的停顿，烧在画面上的那句字幕也一起被切短——**屏上字幕永远等于此刻在讲的话**，不会再有"显示已切掉内容"。
-
-**落地要点**：
-- `subtitle_align` 简化为只读 rough_cut keeps 做一次 `源→assembled` 换算（删掉对 trim/speed 的重放、删掉 `:149` 丢弃 + `:157-158` 无上限补洞）。
-- `clip_cut_run.py` 的 `STAGES` 与执行顺序调整为 `rough_cut → subtitle → cast(烧) → trim → speed → assemble`；账本只需记 rough_cut（trim/speed 不再参与字幕换算）。
-- 字幕文字订正（LLM `subtitle_ai_fix` / 术语表 / 别动清单）**严格 1:1**：只换字，不改时间、不增减条目（**这条现有代码已做对，保留**）。
-
-### 计划 B：音画同步（prepend_hook）——独立小修
-
-- 让钩子进 `prepend_hook` 前**画音严格等长**：要么把钩子音频补齐到画面长度（或反之裁画到音长），要么让 `xfade` 的 `offset` 与 `acrossfade` 的接缝**用同一个基准**（按规整后的"画音等长"值）。目标：`成片` 门S 由 FAIL→PASS。
-- **把 `align_check` 门S 改成硬红线**：`clip_cut_run.py:149` 现在是软调用，应在 FAIL（画音差 > 阈值）时**直接报错停管线**，不许带病出片。
-
-### 计划 C：错字（可选）
-打开 `ai_fix:true` 走 LLM 1:1 纠错，或继续往 `fixes.json` 补未登记词。
+| 1 | ③a **粗剪**：切4段拼身子 | `body.mp4`(assembled时间轴)；账本只记 rough_cut | 身子干净、音画齐（现状已满足） |
+| 2 | ④ **字幕搬时间**：只做 `源→assembled` **一次**简单换算 | `clip.srt`(assembled时间轴) | 字幕时间一次锁定·**无丢句、无超长条**（删多级 remap + 删丢弃 + 删无上限补洞） |
+| 3 | ④ **字幕改文字**：术语表+LLM(可选) **严格1:1 只改字** | `clip.final.srt` | 错字修对·条数/时间不变（现有逻辑已对，保留） |
+| 4 | ⑤ **烧字幕**：把字幕烧进身子 | `body_subbed.mp4`(assembled·**带字幕像素**) | 画+字幕合体成一个不可分割对象 |
+| 5 | ③ **取人声** | `vocals.wav` | 去静音参考 |
+| 6 | ③c **去长静音**：在**带字幕**视频上删停顿，画+音+字幕**同一刀** | `trimmed_subbed.mp4` + `vocals_trimmed.wav` | 三轨一起切·门S PASS·**屏上字幕永远=此刻在讲的话** |
+| 7 | ③d **变速**：画+音+字幕都1.2倍 | `final_subbed.mp4`（带字幕正片） | 三轨同倍速·门S PASS |
+| 8 | ⑥ **加标题** | `titled.mp4` | 不动时间 |
+| 9 | ⑥ **拼钩子**：进转场前强制片段**画音严格等长**、转场**同一基准** | `成片.mp4`（最终交付） | **门S PASS**（音画不再超前） |
+| 10 | **自检门（硬红线）**：每个动时间轴的原子出口跑门S，FAIL **即停** | — | 带病片**出不了厂** |
 
 ---
 
-## 七、复现/验证清单
+## 四、核心原则（贯穿全流程的硬不变量——这次要结构性落实，不再打补丁）
 
-- **音画**：`align_check.py --body final.mp4`（应 PASS）vs `--body 成片.mp4`（现 FAIL 0.510s）；修完 `prepend_hook` 后 `成片` 应 PASS。
-- **字幕**：`grep` `clip.srt` 时长 >3s 的条（现有第27条14s）；重构后应无超长条、无被丢句。
-- **错字**：核对 `clip.srt` vs `words.json`，列 `fixes.json` 未覆盖词。
+> owner 反复强调、之前一直没落实到位的那条：
+
+- **INV-1 片段良构**：任一片段产出即 `画时长 == 音时长`（字幕若已存在也共享同一时间线）。
+- **INV-2 整体操作**：任何"动时间轴"的操作（拼接/转场/裁剪/变速）对一个片段**只用同一个时间映射**作用到所有轨——**绝不允许视频一个时钟、音频另一个时钟**（这正是 prepend_hook 的病根）。
+- **INV-3 硬门**：每个动时间轴的原子边界跑门S，`画音不等长`超阈值**直接报错停管线**，让原则没法再悄悄回退。
 
 ---
 
-## 附：参考实现与文件清单
+## 五、修完的总验收目标
+
+1. `align_check --body final_subbed.mp4` 和 `--body 成片.mp4` **都门S PASS**。
+2. `clip.srt` **无时长 >3s 的条、无被丢源句**；逐帧抽查第4段口型对齐。
+3. 故意喂一个画≠音的钩子，门S **红线停管线**（验 INV-3 真生效）。
+4. 跑回归 `engines/video-compose/regression/run_regression.py t3`（含 G4 + 门S）不回退。
+
+---
+
+## 待改文件 + 参考实现
 
 | 角色 | 路径 |
 |---|---|
-| 总指挥 | `engines/video-compose/clip_cut_run.py` |
-| ③a 粗剪 | `engines/video-clip/atoms/rough_cut.py` |
-| ③c 去静音 / ③d 变速 | `engines/video-clip/atoms/{trim_silence,speed_adapt}.py` |
-| 账本读写/重放 | `engines/video-clip/atoms/_manifest.py` |
-| ④ 字幕重放（病灶①③核心） | `engines/video-slicer/video_slicer/subtitle_align.py` |
-| ⑥ 拼钩子（病灶②核心） | `engines/video-clip/atoms/prepend_hook.py` |
-| 自检门 | `engines/video-clip/atoms/align_check.py` |
-| **参考A：单清单驱动** | `~/Downloads/videocut-zh/`（`scripts/cut_clip.py` trim/atrim+concat；`work_*/cut_build_mac.py` `out_time()` 机械换算） |
-| **参考B：先烧字幕后变速** | `engines/video-framework-render/video_framework_render/render.py`（`make_subtitles`→`compose`烧→`accelerate`变速） |
-| 现场产物 | `var/zh_main/ws6_chain/clip_01/` |
+| 总指挥（改顺序+门S硬raise） | `engines/video-compose/clip_cut_run.py` |
+| ④字幕搬时间（简化为单次换算） | `engines/video-slicer/video_slicer/subtitle_align.py` |
+| ⑥拼钩子（片段等长+转场同基准） | `engines/video-clip/atoms/prepend_hook.py` |
+| 自检门（门S 作可 raise 红线） | `engines/video-clip/atoms/align_check.py` |
+| ③去静音/变速 | `engines/video-clip/atoms/{trim_silence,speed_adapt}.py` |
+| **参考A：单清单驱动** | `~/Downloads/videocut-zh/`（`scripts/cut_clip.py` trim/atrim+concat；`cut_build_mac.py` `out_time()`） |
+| **参考B：先烧字幕后变速** | `engines/video-framework-render/.../render.py`（`make_subtitles`→`compose`烧→`accelerate`变速） |
+| 同步更新 | `doc/video-skill-architecture.md`（顺序/承重墙变更） |

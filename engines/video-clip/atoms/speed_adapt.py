@@ -120,7 +120,7 @@ def main():
     if not Path(a.input).exists():
         raise SystemExit(f"输入不存在: {a.input}")
     if a.fixed is not None:                            # 固定档(③3d 裁剪版)
-        run_fixed(a.input, a.output, a.fixed, a.replace_audio, a.manifest)
+        run_fixed(a.input, a.output, a.fixed, a.replace_audio, a.manifest, a.srt_in, a.srt_out)
         return
     if not a.srt:
         raise SystemExit("需 --srt(自适应档) 或 --fixed N(固定档)")

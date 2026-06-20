@@ -115,6 +115,9 @@ def t0(work):
     r = _run([sys.executable, CLIP / "reframe_crop.py", "--source", SRC / "源视频_20260613_Agent评测体系.mp4",
               "--crop", "894:1588:104:290"])
     rec("reframe_crop crop_vf", "crop=894:1588:104:290,scale=1080:1920" in r.stdout)
+    # 门S 成片画音流时长一致（片段画音整体红线·廉价 ffprobe，不碰视频）
+    r = _run([sys.executable, CLIP / "align_check.py", "--body", GOLDEN / "成片.mp4"])
+    rec("成片 门S 画音流时长一致", r.returncode == 0, "v≈a" if r.returncode == 0 else "画音流分叉!")
 
 
 # ───────────────────────── T1 单原子·复用 golden ─────────────────────────

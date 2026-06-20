@@ -42,30 +42,67 @@
 
 ---
 
-## 2. 整条流程:正确该分几个阶段(总览)
+## 2. 整条流程:步骤 / 输入输出 / 涉及文件
+
+### 2.1 文件流向图(每一步:输入文件 →〔工具·提示词〕→ 输出文件)
 
 ```
-原始视频
-   │
-[转写]  火山字级+语义句 → words.json(2048句,句/字级时间戳)   ← 上游,本文只用不改
-   │      ★「句号N ↔ 秒」「字 ↔ 毫秒」的锚点都在这,选段和字级去口水都靠它
-   │
-╔══════════════════ 本文范围:产出「成片脚本」金标准 ══════════════════╗
-   │
-[流程一·生成选题]  → 选题清单(做哪些题 + 每题的粗句号区间)
-   │
-[流程二·生成候选]  对每条选题产一份成片脚本:
-   │     ② 总编(全局取证+逻辑编排) → 选哪些句/段、怎么连(句级)
-   │     ③ 组装(代码)            → 把②选定原话粘成草稿
-   │     ④ 字级去口水(精简)       → 句内删哪些口水字词(字级)
-   │     ① 钩子                  → 选开场那句/几片段
-   │
-[人工定稿]  挑钩子 + 核对 + 拍板 → golden.json(成片脚本标准)
-   │
-╚══════════ 边界到此:脚本已定死"剪成什么内容" ══════════╝
-   │
-[下游执行]  按脚本 trim+concat + 裁框 + 挡块 + 字幕 + 画音对齐 → 成片   ← 不在本文
+┌─ 上游(只用不改) ──────────────────────────────────────────────┐
+│  [源视频.mp4]                                                   │
+│      │ 火山 ASR 转写                                             │
+│      ▼                                                          │
+│  [words.json]   句/字级时间戳 + 全文 ← 「句号↔秒」「字↔毫秒」锚点 │
+└─────────────────────────────────────────────────────────────────┘
+        │ (整场逐字稿,所有下游都读它)
+╔═ 本文范围:产出「成片脚本」金标准 ════════════════════════════════╗
+║                                                                  ║
+║ 【流程一 · 生成选题】                                             ║
+║   输入  [words.json] + [personas/zh_main.md]                     ║
+║     │  stage1_topics.py · STAGE1_TASK                            ║
+║     ▼                                                            ║
+║   输出  [_selection.json]  选题清单(题目 + rough_sid_spans 粗区间)║
+║   〔⚠ 现状还跑 stage2_script.py 定段→近视且被②覆盖,改造=停用〕     ║
+║                                                                  ║
+║ 【流程二 · 生成候选】 global_evidence.py 对每条选题循环:           ║
+║   输入  [_selection.json](取1条) + [words.json](全场) + [zh_main.md]║
+║     │                                                            ║
+║     ├─② 总编   select_body · BODY_TASK   →  segments(句级区间)    ║
+║     ├─③ 组装   代码(+resolve.py换秒)     →  keep_sids/time_spans/script_raw ║
+║     ├─④ 字级去口水 refine · REFINE_TASK  →  字级删除决策/script_refined ║
+║     └─① 钩子   gen_hook_options · HOOK_TASK → hook_options        ║
+║     ▼  (以上四步同一次运行内,汇总落盘)                            ║
+║   输出  [golden_candidate.json] + [candidates/clip_NN_*.md]      ║
+║                                                                  ║
+║ 【人工定稿】                                                      ║
+║   输入  [candidates/clip_NN_*.md] + [golden_candidate.json]      ║
+║     │  人工挑钩子 / 核对 / 改状态(留·删·改)                       ║
+║     ▼                                                            ║
+║   输出  [golden.json]  ← 成片脚本标准(最终交付)                   ║
+╚══════════ 边界到此:已定死「剪成什么内容」 ═══════════════════════╝
+        │ (golden.json)
+┌─ 下游执行(不在本文) ──────────────────────────────────────────┐
+│  按脚本 trim+concat + crop裁框 + mask挡块 + 字幕烧录 → [成片.mp4]  │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### 2.2 逐步骤主表(输入 / 工具·提示词 / 输出 / 涉及文件)
+
+> `R`=读取 ｜ `W`=写出 ｜ `内存`=同一次运行内的中间数据,不单独落文件。
+
+| # | 步骤 | 输入(数据) | 工具 · 提示词 | 输出(数据) | 涉及文件 |
+|---|---|---|---|---|---|
+| 0 | 转写(上游) | 源视频 | 火山 ASR | 句/字级时间戳 + 全文 | `源视频.mp4`(R) → `words.json`(W) |
+| 1 | **流程一·选题** | 整场编号逐字稿 | `stage1_topics.py` · **STAGE1_TASK** | 选题清单(题目+`rough_sid_spans`) | `words.json`(R)+`zh_main.md`(R) → `_selection.json`(W) |
+| 1b | ~~定段(停用)~~ | 选题粗区间±6句小窗 | ~~`stage2_script.py`·STAGE2_TASK~~ | ~~`keep_sids`(近视,被②覆盖)~~ | ~~`_selection.json`±窗(R)~~ |
+| 2 | **流程二·②总编** | 1条选题 + **全场**编号句 | `global_evidence.select_body` · **BODY_TASK** | `segments[{role,sids,reason}]` | `_selection.json`(R·1条)+`words.json`(R·全场)+`zh_main.md`(R) → 内存 |
+| 3 | **流程二·③组装** | ②的 segments + 句表 | `global_evidence`(代码)+`resolve.py` | `keep_sids`/`time_spans`/`est_dur`/`script_raw` | `words.json`(R·回查时间) → 内存 |
+| 4 | **流程二·④字级去口水** | ③的 script_raw + 字级时间戳 | `global_evidence.refine_script` · **REFINE_TASK** | 字级删除决策 → `script_refined` | `words.json`(R·字级) → 内存 |
+| 5 | **流程二·①钩子** | 1条选题 + 候选池句 | `global_evidence.gen_hook_options` · **HOOK_TASK** | `hook_options`(2-3个) | `words.json`(R·候选池)+`zh_main.md`(R) → 内存 |
+| 6 | **流程二·汇总落盘** | 步骤2-5全部(内存) | `global_evidence`(代码) | 候选切片(含①②③④) | 内存 → `golden_candidate.json`(W)+`candidates/clip_NN_*.md`(W) |
+| 7 | **人工定稿** | 候选 + 人工判断 | 人工 | 拍定的成片脚本 | `clip_NN_*.md`(R)+`golden_candidate.json`(R) → `golden.json`(W) |
+| 8 | 下游执行(不在本文) | 成片脚本 | `cut_video` 等 | 成片视频 | `golden.json`(R) → `成片.mp4`(W) |
+
+> 第 2-6 步是 `global_evidence.py` **同一次运行**里完成的:②③④①ↆ都是内存数据,最后第 6 步一次性写成两个文件(`golden_candidate.json` 机读真源 + `clip_NN_*.md` 人读评审稿)。各文件的完整路径见第 8 节目录树。
 
 ---
 

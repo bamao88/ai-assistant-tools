@@ -154,7 +154,7 @@ def main():
     ap.add_argument("--from", dest="from_stage", default=None, help="真 chain 从某阶段重跑(rough_cut|trim|subtitle|cast|assemble)")
     ap.add_argument("--cleanup-cache", action="store_true", help="真 chain 成功后清大视频缓存")
     ap.add_argument("--profile", default=None)
-    a, unknown = ap.parse_known_args()
+    a = ap.parse_args()
     extra = []
     if a.from_stage:
         extra += ["--from", a.from_stage]

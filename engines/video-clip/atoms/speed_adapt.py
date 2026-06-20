@@ -35,8 +35,24 @@ def _atempo_chain(factor: float) -> str:
     return ",".join(parts)
 
 
-def run_fixed(inp, out, factor, replace_audio, manifest_path):
-    """固定倍速 F：视频 setpts/F、音频 atempo F(变速不变调)；--replace-audio 换轨。记账本 speed op。"""
+def _srt_t(t):
+    h = int(t // 3600); m = int(t % 3600 // 60); s = t % 60
+    return f"{h:02d}:{m:02d}:{s:06.3f}".replace(".", ",")
+
+
+def scale_srt(srt_in, srt_out, factor):
+    """字幕便签同因子缩（WS-6 INV-2）：每条 cue 起止时间除以 factor（画/音 setpts/atempo 同步）。"""
+    cues = parse_srt(srt_in)
+    lines = []
+    for i, (t0, t1, txt) in enumerate(cues, 1):
+        lines += [str(i), f"{_srt_t(t0 / factor)} --> {_srt_t(t1 / factor)}", txt, ""]
+    ensure_parent(srt_out).write_text("\n".join(lines), encoding="utf-8")
+    return len(cues)
+
+
+def run_fixed(inp, out, factor, replace_audio, manifest_path, srt_in=None, srt_out=None):
+    """固定倍速 F：视频 setpts/F、音频 atempo F(变速不变调)；--replace-audio 换轨。记账本 speed op。
+    WS-6：若给 --srt-in/--srt-out，把字幕便签按同一 factor 缩，三轨同倍速。"""
     out = ensure_parent(out)
     dur = ffprobe_dur(inp)
     atempo = _atempo_chain(factor)

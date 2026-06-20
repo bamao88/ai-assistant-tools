@@ -1,19 +1,16 @@
-# video-slicer / baselines（已迁移）
+# video-slicer / baselines（已迁出 → video-select）
 
-> ⚠️ **本目录待废弃。** 评测/Harness 代码与文档已迁至 **`tools/eval/video-select/`**；生产选片在 **`tools/engines/video-select/`**。设计见 `doc/plan/视频剪辑skill-第二环选片-plan.md` §6。
+> ✅ **已迁移。** 第②环·选片的 Eval Harness（Runner + 门禁 + 打分 + 人工评审环）已独立成引擎
+> **`engines/video-select/`**。本目录的三件脚本是旧址副本，**不再维护**，新工作一律去 video-select。
 
-日常跑片**不需要**本目录。只有做提示词或架构优化时,才使用 `eval/video-select/`。
+| 旧址（本目录，停更） | 新址（正式真源） |
+|---|---|
+| `global_evidence.py`（总编/钩子/精修一把抓·内嵌 prompt） | `video-select/video_select/generate.py` + `prompts/{body-edit,refine-deduct,hook}.md` |
+| `select_clips.py`（方案A 单阶段） | `video-select/video_select/select_clips_a.py` |
+| `score.py`（逼近度打分） | `video-select/video_select/score.py` |
+| 选题 `twostage/stage1_topics.py` | `video-select/video_select/topics.py` + `prompts/topic-select.md` |
+| 定段 `twostage/stage2_script.py` | ⚠️ DEPRECATED·停用（选题到粗区间为止，边界交总编全局取证） |
+| 门禁（原手工 `_merge_segments.py`） | `video-select/video_select/gates.py`（精选合并代码化） |
 
-## 临时用法（迁移完成前）
-
-现有脚本仍可从此处运行,路径不变:
-
-```bash
-# 评测重跑（→ 将来 eval/video-select/runner.py）
-python global_evidence.py --words ... --selection ... --out var/.../eval/...
-
-# 打分（→ 将来 eval/video-select/score.py）
-python score.py --golden ... --candidate ... --out score_report.json
-```
-
-迭代经验文档真源将迁至 `eval/video-select/doc/金标准建设-经验与提示词总结.md`（当前仍在 `var/zh_main/eval/agent_eval_0613/doc/`）。
+设计真源：[`doc/plan/视频剪辑skill-第二环选片-plan.md`](../../../doc/plan/视频剪辑skill-第二环选片-plan.md)。
+迭代命令见 `engines/video-select/README.md`。

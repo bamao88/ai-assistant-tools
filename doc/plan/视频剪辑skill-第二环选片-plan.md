@@ -239,12 +239,12 @@ engines/
 ├── video-select/                         🆕 第②环·选片(Eval Harness + 成片脚本)
 │   ├── capabilities.json                 🆕 声明(stage=select)
 │   ├── README.md                         🆕 Harness 用法:Runner/门禁/打分/迭代闭环
-│   ├── prompts/                          🆕 ★所有提示词集中在此(独立文件·按功能命名·通用不分账号)
-│   │   ├── persona.md                    🆕←原 personas/zh_main.md(通用编辑判断:选题闸/标题硬要求/in-out/数量;贴在 选题·总编·钩子 前)
-│   │   ├── topic-select.md               🆕←原 STAGE1_TASK(选题)
-│   │   ├── body-edit.md                  🆕←原 BODY_TASK(总编·待升级)
+│   ├── prompts/                          🆕 ★②选片的提示词全在此(独立文件·按功能命名·都是通用的,无人设/账号概念)
+│   │   ├── topic-select.md               🆕←原 STAGE1_TASK(选题;含选题闸/富集度/数量纪律)
+│   │   ├── body-edit.md                  🆕←原 BODY_TASK(总编·待升级;含 in/out 与反串味)
 │   │   ├── refine-deduct.md              🆕←原 REFINE_TASK(字级去口水决策·待改;并入"承接句保护"红线)
-│   │   └── hook.md                       🆕←原 HOOK_TASK(钩子·待整句优先)
+│   │   └── hook.md                       🆕←原 HOOK_TASK(钩子·待整句优先;含标题/钩子硬要求)
+│   │      ▲ 原 zh_main "persona" 取消:那套编辑规则(选题闸/标题/in-out/数量)并入上面对应 prompt,不再单列人设、不分账号
 │   ├── video_select/                     🆕 代码包(只管逻辑;提示词一律从 prompts/ 读,不再内嵌字符串常量)
 │   │   ├── topics.py                     🆕←移自 twostage/stage1_topics.py(选题 Runner;读 topic-select.md)
 │   │   ├── generate.py                   🆕←移自 baselines/global_evidence.py(候选 Runner;读 body-edit/refine-deduct/hook)

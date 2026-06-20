@@ -222,7 +222,7 @@
       "group": "atoms",
       "kind": "自检",
       "tier": null,
-      "desc": "align_check.py --body 成片 --srt clip.srt [--manifest m.json] [--tol 0.2]",
+      "desc": "align_check.py --body 视频 [--srt clip.srt] [--manifest m.json] [--tol 0.2] [--av-tol 0.12]",
       "stage": "trim",
       "layer": "self_check",
       "required": "optional"

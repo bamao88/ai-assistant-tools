@@ -15,7 +15,7 @@ WS-6 伴随轨：钩子拼到正文前，正文画音整体后移 hook_dur（正
 字幕便签(.srt)用 --srt-in/--srt-out 整体 +hook_dur 偏移，与正文画音同步落到最终时间线，末步才烧字。
 """
 from __future__ import annotations
-import argparse, re, sys, tempfile
+import argparse, sys, tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -29,11 +29,12 @@ def _srt_t(t):
 
 def shift_srt(srt_in, srt_out, offset):
     """字幕便签整体 +offset 偏移（WS-6）：正文在最终时间线从 offset 起播，字幕随之后移。"""
+    cues = parse_srt(srt_in)
     lines = []
-    for i, (t0, t1, txt) in enumerate(parse_srt(srt_in), 1):
+    for i, (t0, t1, txt) in enumerate(cues, 1):
         lines += [str(i), f"{_srt_t(t0 + offset)} --> {_srt_t(t1 + offset)}", txt, ""]
     ensure_parent(srt_out).write_text("\n".join(lines), encoding="utf-8")
-    return len(lines and parse_srt(srt_in))
+    return len(cues)
 
 ENC = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
        "-c:a", "aac", "-ar", "48000", "-ac", "2"]

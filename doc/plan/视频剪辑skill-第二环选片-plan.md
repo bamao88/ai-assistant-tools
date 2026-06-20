@@ -319,9 +319,9 @@ python eval/video-select/run.py --suite agent_eval_0613   # → runner → gates
 
 ## 8. 当前状态
 
-- **Harness 已跑通(初版)**:agent_eval_0613 评测集上,Runner 已产出 22 条候选;Scorer(`score.py`)可对照参照打分;迭代经验记在 `var/.../doc/金标准建设-经验与提示词总结.md`。
-- **已做(临时补丁)**:对 22 条总编选段手工跑过去重/合并(`_merge_segments.py`),改 15 条、7 条不动、检查全绿。**临时性——prompt/门禁改好后重跑 Harness 会覆盖。**
-- **待做**:第 7 节( Harness 正式收口 + 引擎独立 + 停 stage2 + 总编 + 去口水决策 + 钩子整句 + `gates.py` 代码化)。
+- **Harness 已跑通(初版)**:agent_eval_0613 上 baselines 脚本可跑;迭代经验目前在 `var/.../doc/`(待迁入 `eval/video-select/doc/`)。
+- **已做(临时补丁)**:22 条总编选段手工 `_merge_segments.py`(待迁入 eval 或 gates 替代)。
+- **待做**:§7 目录拆分 + 生产引擎 + Harness 收口 + prompt 改造项。
 
 ---
 

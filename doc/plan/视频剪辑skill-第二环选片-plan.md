@@ -285,7 +285,7 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 |---|---|---|---|
 | 0 | **Eval Harness 成形** | baselines 散在 video-slicer、无统一门禁/闭环叙事 → `video-select` 内 Runner + `gates.py` + `score.py` + README 写清迭代命令 | 固定评测集上能一键 `generate → gates → score`;bad case 有落盘路径 |
 | 1 | **引擎独立** | 新建 `engines/video-select/`,移入 Harness 全套;import video-slicer 句/时间核心;`capabilities.json` 标 `stage=select`;`registry.yaml` + catalog 注册 | `check-tools.py` 0 error;Harness 能独立跑通、产出与原一致 |
-| 1b | **提示词集中化** | 把 5 条提示词从**代码常量**抽成 `prompts/` **独立文件**(`persona / topic-select / body-edit / refine-deduct / hook`),**按功能命名、去掉 `zh_main` 这类账号命名**;代码改成统一从 `prompts/` 读 | `prompts/` 下 5 个文件;代码里**无内嵌 prompt 字符串**;改 prompt 不用动代码 |
+| 1b | **提示词集中化** | 把 4 条提示词从**代码常量**抽成 `prompts/` **独立文件**(`topic-select / body-edit / refine-deduct / hook`),**按功能命名、无人设/账号概念**(原 zh_main persona 规则并入对应 prompt);代码改成统一从 `prompts/` 读 | `prompts/` 下 4 个文件;代码里**无内嵌 prompt 字符串**;改 prompt 不用动代码 |
 | 2 | **选题停用 stage2** | 选题只给粗区间;`stage2_script.py` 标 DEPRECATED | 选题产出只含 `rough_sid_spans`,无 `keep_sids` |
 | 3 | **总编 `BODY_TASK`** | 从"取证"升级"总编"(加逻辑连续+精选合并原则);**出口加阶段检查 hook**(无重叠/无相邻 gap≤2/源头连续必连,不过就挡) | 重跑 22 条:连续区间与手工合并版一致、检查 hook 全绿 |
 | 4 | **去口水 `REFINE_TASK`** | 从"出改写文本"改"出**字级删除决策**(删哪些字、带位置);删掉"顺语序/合并"(上交总编) | 产出能对回原视频字级时间、可直接驱动 ③ 执行 |

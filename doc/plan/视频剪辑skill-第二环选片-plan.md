@@ -299,9 +299,17 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 
 ## 8. 当前状态
 
-- **Harness 已跑通(初版)**:agent_eval_0613 评测集上,Runner 已产出 22 条候选;Scorer(`score.py`)可对照参照打分;迭代经验已记(**现仍在 `var/zh_main/eval/...`,待随引擎迁入 `video-select/eval/notes/`**)。
-- **已做(临时补丁)**:对 22 条总编选段手工跑过去重/合并(`_merge_segments.py`),改 15 条、7 条不动、检查全绿。**临时性——prompt/门禁改好后重跑 Harness 会覆盖。**
-- **待做**:第 7 节( Harness 正式收口 + 引擎独立 + 停 stage2 + 总编 + 去口水决策 + 钩子整句 + `gates.py` 代码化)。
+> 2026-06-21 更新:第 6/7 节已落地——引擎独立 + 提示词集中 + 门禁代码化 + 评测数据迁入,选题流程端到端跑通。
+
+- **引擎已独立**:`engines/video-select/` 成形(`video_select/{topics,generate,gates,score,select_clips_a}.py` + `prompts/{topic-select,body-edit,refine-deduct,hook}.md` + `capabilities.json` + `README.md`),单向 import video-slicer 句/时间核心。`registry.yaml` 已登记、`check-tools.py` 0 error。
+- **提示词集中化**:4 条提示词从代码常量抽成 `prompts/` 独立文件,按功能命名、无人设/账号概念(原 zh_main persona 规则并入);代码里无内嵌 prompt 字符串,改 prompt 不动代码。
+- **门禁代码化**:`gates.py` 把原手工 `_merge_segments.py` 收成正式门禁——`merge_segments`(精选合并:去重叠 + 合并相邻碎段,Runner 总编出口自动调) + `check_*`(无重叠 / 无相邻 gap≤2 / 正文≥60s / 字级决策可执行 / 零编造)。
+- **stage2 停用**:`video-slicer/.../stage2_script.py` 标 DEPRECATED(②选片流程不再用;仅为 video-slicer 自身 cut_word 生产原子保留)。选题(`topics.py`)只产 `rough_sid_spans`,不定段。
+- **去口水改字级删除决策**:`refine-deduct.md` 出 `{deletions:[{sid,text,kind}],preview}`(删哪些字、带位置、可执行),不再出改写纯文本;"顺语序/合并"上交总编。
+- **钩子整句优先**:`hook.md` 改"整句直用 🥇 / 整句剪头尾 🥈 / 短句拼接兜底 🥉",限定词不许丢。
+- **评测数据已迁入**:`eval/fixtures/agent_eval_0613/{selection.json,golden.json(冻结参照),words.json→软链}` + `eval/notes/金标准建设-经验与提示词总结.md`;`eval/runs/` gitignored。
+- **跑通验证**:`gates`/`score` 离线跑通(冻结 golden 22 条:score F1/IoU=1.0 自比对;gates 抓出 2 条正文<60s);`generate --limit 1` 真 LLM 端到端跑通(总编 5 段全局取证含跨远句、组装、21 处字级删除决策、3 个钩子带策略标签)。
+- **效果待迭代**(本轮不保证):总编偶尔超时长/选段偏长、去口水决策偶有非逐字子串(已被 gates 抓)。属于下一轮 prompt 迭代,不影响结构与流程。
 
 ---
 

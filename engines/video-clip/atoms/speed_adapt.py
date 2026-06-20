@@ -76,8 +76,10 @@ def run_fixed(inp, out, factor, replace_audio, manifest_path, srt_in=None, srt_o
                                replace_audio=str(replace_audio) if replace_audio else None)
         man["durations"]["final"] = round(od, 3)
         _manifest.save(man, manifest_path)
+    n_sub = scale_srt(srt_in, srt_out, factor) if (srt_in and srt_out) else None
     print(f"DONE speed_adapt(fixed {factor}x)  {out}  {dur:.3f}s→{od:.3f}s"
-          f"{'  换轨' if replace_audio else ''}{'  | 账本+1' if manifest_path else ''}")
+          f"{'  换轨' if replace_audio else ''}{'  | 账本+1' if manifest_path else ''}"
+          f"{f'  | 字幕同缩{n_sub}条' if n_sub is not None else ''}")
 
 
 def build_segments(srt, dur, tgt, mx, gap, mn):

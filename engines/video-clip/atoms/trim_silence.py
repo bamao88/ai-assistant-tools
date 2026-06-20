@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """trim_silence —— ③3c 去长静音：把超过 --min-sil 的停顿压短，自然停顿保留。★承重墙关键螺丝。
 
-六环阶段化升级 WS-2（产品化 var/zh_main/0618test/trim_silence.py）。
+六环阶段化升级 WS-2（产品化 var/zh_main/0618test/trim_silence.py）+ WS-6 伴随轨。
 在 REF 音频上做静音检测 → 算出「保留区间 keeps」(assembled 时间轴)，把同一套 keeps 应用到 IN(身子)，
 可选 --apply-to 同步应用到别的同轴文件(如干净人声 wav)，保证多文件同步。
-★唯一要拧紧的螺丝：keeps 吐进剪辑账本(cut manifest)，④ subtitle_align 才能拿到同一份重放字幕时间。
+★WS-6：字幕便签(.srt)也用**同一份 keeps**裁（--srt-in/--srt-out）——落删除段的字幕跟着删、跨切口的
+  裁到保留段，永不显示已删内容；画/音/字幕同一把刀（INV-2）。
+keeps 仍吐进剪辑账本(cut manifest)给门检用。
 
 REF 与 IN 必须同一时间轴(同长度)。用法:
   trim_silence.py --ref 人声.wav --in 身子.mp4 --out 身子_去静音.mp4 --manifest m.json \
-                  [--apply-to 人声.wav:人声_去静音.wav] [--min-sil 1.5] [--keep-pad 0.4] [--noise -30dB]
+                  [--apply-to 人声.wav:人声_去静音.wav] [--srt-in clip.srt --srt-out trimmed.srt] \
+                  [--min-sil 1.5] [--keep-pad 0.4] [--noise -30dB]
 """
 from __future__ import annotations
 import argparse, re, subprocess

@@ -151,12 +151,19 @@ def main():
     ap.add_argument("--run", dest="run_recipe", default=None)
     ap.add_argument("--selection", default=None)
     ap.add_argument("--job", default=None, help="真 chain 配方(zh_clip_cut)的 job 规格 JSON")
+    ap.add_argument("--from", dest="from_stage", default=None, help="真 chain 从某阶段重跑(rough_cut|trim|subtitle|cast|assemble)")
+    ap.add_argument("--cleanup-cache", action="store_true", help="真 chain 成功后清大视频缓存")
     ap.add_argument("--profile", default=None)
-    a = ap.parse_args()
+    a, unknown = ap.parse_known_args()
+    extra = []
+    if a.from_stage:
+        extra += ["--from", a.from_stage]
+    if a.cleanup_cache:
+        extra += ["--cleanup-cache"]
     if a.plan:
         plan(a.plan)
     elif a.run_recipe:
-        sys.exit(run(a.run_recipe, a.selection, a.profile, a.job))
+        sys.exit(run(a.run_recipe, a.selection, a.profile, a.job, extra))
     else:
         ap.print_help()
 

@@ -327,10 +327,10 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 
 ## 附录:当下提示词原文
 
-> 真源在代码里;此处便于对照。`persona zh_main` 贴在 STAGE1/BODY/HOOK 前,REFINE 不带。
+> 这是**改造前的现状原文**(真源在代码里),便于对照。改造后:提示词抽成 `prompts/` 4 个文件、persona 概念取消,下面这套编辑规则**并入对应 prompt**(见 §4/§6/§7)。
 
-### persona `zh_main`
-张和编辑判断,6 块:①选题闸5关(独立可懂/单一论点/看反认知度/价值一句话/炸点可前置) ②富集度排序(数据·转变故事·金句·背书·痛点 ≥3类优先) ③标题硬要求(挂流量锚/默认疑问反问) ④in/out纪律 ⑤数量纪律(覆盖优先18-25条) ⑥独家流量锚(前小米/出海CEO/一线Claude Code+Codex)。
+### 现状的"编辑判断"(原 `zh_main` persona,改造后并入 topic-select/hook)
+6 块,改造后归宿:①选题闸5关 →topic-select ②富集度排序 →topic-select ③标题硬要求 →topic-select+hook ④in/out纪律 →topic-select+body-edit ⑤数量纪律 →topic-select ⑥流量锚/权威背书举例 →topic-select+hook(作通用内容,不当账号专属)。
 
 ### 流程一 · `STAGE1_TASK`(选题,在用)
 ```

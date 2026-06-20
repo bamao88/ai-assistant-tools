@@ -331,7 +331,7 @@ python eval/video-select/run.py --suite agent_eval_0613   # → runner → gates
 - [ ] **Eval** `eval/video-select/` 独立成形,文档在 `eval/.../doc/`(不在 var、不在 engines);`run → gates → score` 可一键跑。
 - [ ] `engines/video-slicer/baselines/` 清空/改 stub,指向 `eval/video-select/`。
 - [ ] 固定评测集(agent_eval_0613·22 条)上:Runner 重跑可复现;`score_report.json` 可出基线分。
-- [ ] **门禁代码化**(`gates.py`):精选合并/无重叠/正文≥60s/字级决策可执行/零编造——22 条全绿(不靠手工 `_merge_segments.py`)。
+- [ ] **门禁代码化**(`eval/video-select/gates.py`):22 条全绿(不靠手工 `_merge_segments.py`)。
 - [ ] 选题停用 stage2,产出只含粗区间。
 - [ ] 总编 prompt 升级后重跑:连续区间与手工合并版一致或更好。
 - [ ] 去口水产出**可执行的字级删除决策**(对得回原视频时间)。

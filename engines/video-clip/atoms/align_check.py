@@ -126,32 +126,42 @@ def in_silence(t, sils, margin=0.12):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--body", required=True)
-    ap.add_argument("--srt", required=True)
+    ap.add_argument("--srt", default=None, help="字幕(门D 字幕↔人声对齐)；不给则跳过门D")
     ap.add_argument("--manifest", default=None)
     ap.add_argument("--tol", type=float, default=0.2, help="后半段最大允许偏差秒")
+    ap.add_argument("--av-tol", type=float, default=0.12, help="画音流时长一致阈值(门S)")
     ap.add_argument("--noise", default="-30dB")
     a = ap.parse_args()
 
-    voiced, sils, dur = voiced_intervals(a.body, a.noise)
-    cues = parse_srt(Path(a.srt))
-    if not cues:
-        raise SystemExit("SRT 无字幕条")
+    # ── 门S 画音流时长一致（片段画音整体原则的廉价红线）──
+    # 任何动时间轴的操作若只动一条流(如转场只挪画面/声音)，画音流总时长会分叉 → 这里报红。
+    vd, ad = _stream_dur(a.body, "v"), _stream_dur(a.body, "a")
+    av_ok = abs(vd - ad) <= a.av_tol
+    print("== 门S 画音流时长一致(片段画音整体) ==")
+    print(f"  视频流={vd:.3f}s 音频流={ad:.3f}s 差={vd-ad:+.3f}s 阈值±{a.av_tol}s → {'PASS' if av_ok else 'FAIL'}")
 
-    dt = 0.02
-    sub_env = _envelope([(s, e) for s, e in cues], dur, dt)
-    voi_env = _envelope(voiced, dur, dt)
-    best_lag, best_agree, agree0 = lag_sweep(sub_env, voi_env, dt, max_lag=2.0)
-    on_voice = sum(1 for s, _ in cues if any(vs <= s <= ve for vs, ve in voiced))
-    # 仅当平移峰「显著」(吻合度提升≥SIG)才认为存在系统性漂移；否则曲线平坦=无可判定漂移→PASS。
-    SIG = 0.05
-    significant = (best_agree - agree0) >= SIG
-    lag_ok = (not significant) or (abs(best_lag) <= a.tol)
-    verdict = "PASS(无可判定漂移)" if not significant else ("PASS" if lag_ok else "FAIL")
-
-    print("== 门D 字幕↔人声 能量包络对齐 ==")
-    print(f"  字幕{len(cues)}条 起点落人声内 {on_voice}/{len(cues)} ({100*on_voice//len(cues)}%)")
-    print(f"  包络吻合度 lag0={agree0:.3f} 最佳={best_agree:.3f} 提升={best_agree-agree0:.3f}(显著阈{SIG})")
-    print(f"  系统性偏移={best_lag:+.3f}s 阈值±{a.tol}s → {verdict}")
+    lag_ok = True
+    if a.srt:
+        voiced, sils, dur = voiced_intervals(a.body, a.noise)
+        cues = parse_srt(Path(a.srt))
+        if not cues:
+            raise SystemExit("SRT 无字幕条")
+        dt = 0.02
+        sub_env = _envelope([(s, e) for s, e in cues], dur, dt)
+        voi_env = _envelope(voiced, dur, dt)
+        best_lag, best_agree, agree0 = lag_sweep(sub_env, voi_env, dt, max_lag=2.0)
+        on_voice = sum(1 for s, _ in cues if any(vs <= s <= ve for vs, ve in voiced))
+        # 仅当平移峰「显著」(吻合度提升≥SIG)才认为存在系统性漂移；否则曲线平坦=无可判定漂移→PASS。
+        SIG = 0.05
+        significant = (best_agree - agree0) >= SIG
+        lag_ok = (not significant) or (abs(best_lag) <= a.tol)
+        verdict = "PASS(无可判定漂移)" if not significant else ("PASS" if lag_ok else "FAIL")
+        print("== 门D 字幕↔人声 能量包络对齐 ==")
+        print(f"  字幕{len(cues)}条 起点落人声内 {on_voice}/{len(cues)} ({100*on_voice//len(cues)}%)")
+        print(f"  包络吻合度 lag0={agree0:.3f} 最佳={best_agree:.3f} 提升={best_agree-agree0:.3f}(显著阈{SIG})")
+        print(f"  系统性偏移={best_lag:+.3f}s 阈值±{a.tol}s → {verdict}")
+    else:
+        sils = []
 
     seam_ok = None
     if a.manifest and Path(a.manifest).exists():

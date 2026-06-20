@@ -279,7 +279,7 @@ doc/plan/视频剪辑skill-第二环选片-plan.md            本计划(第②�
 doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(架构随改随更)
 ```
 
-> **图例**:🆕新建 ｜ ➡️移走 ｜ ⚠️停用 ｜ ♻️复用(import) ｜ ✅留 ｜ 🔶同步 ｜ 📦产物。
+> **图例**:🆕新建 ｜ ➡️移走 ｜ ⚠️停用 ｜ ♻️复用(import) ｜ ✅留 ｜ 🔶同步 ｜ 📥版本化入库 ｜ 🚫不入库(gitignored)。
 
 ---
 

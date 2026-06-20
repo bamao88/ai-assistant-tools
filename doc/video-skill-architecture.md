@@ -64,7 +64,7 @@ tools/engines/
 │   ├── personas/zh_main.md   张和选题 persona（含问答可剪）
 │   ├── references/           字级去口水与承接句保护.md（删前保后+承接句红线，cut_word 判断基底）
 │   ├── profiles/zh_main/     {pages,srt_fix}_system_prompt.txt（账号 prompt 定制）
-│   ├── baselines/            方案A 选段基准 + 金标准/评测基准（global_evidence 生成器 + score 打分器·对照用）
+│   ├── baselines/            ⚠️ 待清空；评测已迁至 eval/video-select/（不进生产/registry）
 │   └── .env                  → 符号链 var/credentials/llm.env（LLM provider 密钥，tools 侧真源）
 │
 ├── video-framework-render/   积木厂 · 框架页渲染（竖版 720×1280 / 横版 1280×720 同源·独立 .venv: pillow+opencv）

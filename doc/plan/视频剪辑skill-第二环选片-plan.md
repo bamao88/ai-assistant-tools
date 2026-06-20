@@ -299,7 +299,7 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 
 ## 8. 当前状态
 
-- **Harness 已跑通(初版)**:agent_eval_0613 评测集上,Runner 已产出 22 条候选;Scorer(`score.py`)可对照参照打分;迭代经验记在 `var/.../doc/金标准建设-经验与提示词总结.md`。
+- **Harness 已跑通(初版)**:agent_eval_0613 评测集上,Runner 已产出 22 条候选;Scorer(`score.py`)可对照参照打分;迭代经验已记(**现仍在 `var/zh_main/eval/...`,待随引擎迁入 `video-select/eval/notes/`**)。
 - **已做(临时补丁)**:对 22 条总编选段手工跑过去重/合并(`_merge_segments.py`),改 15 条、7 条不动、检查全绿。**临时性——prompt/门禁改好后重跑 Harness 会覆盖。**
 - **待做**:第 7 节( Harness 正式收口 + 引擎独立 + 停 stage2 + 总编 + 去口水决策 + 钩子整句 + `gates.py` 代码化)。
 

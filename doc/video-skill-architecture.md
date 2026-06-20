@@ -56,7 +56,7 @@ tools/engines/
 ├── video-slicer/             积木厂 · 剪辑策略 + 内容决策（Python 包，纯 urllib LLM，无独立 venv）
 │   ├── capabilities.json     声明：cut_sentence(句级·线上) / cut_word(词级·方案B) 共存 + transcribe + subtitle_align/subtitle_protect(④承重墙)
 │   ├── video_slicer/         planner + twostage + pages_gen(分页) + srt_fix(字幕纠错)
-│   │   ├── subtitle_align.py     ④读剪辑账本搬字幕时间（承重墙·复用字级机器·remap_time 链式重放）
+│   │   ├── subtitle_align.py     ④把字幕从源时间搬到「拼好身子」时间·一次换算(承重墙·便签上车·砍掉旧版多级回算)·按字级停顿断句
 │   │   ├── subtitle_protect.py   ④别动清单钉回(自造词如「爱马仕」防 LLM 改) + 1:1/无吞字结构自检
 │   │   └── profiles/zh_main/keeplist.json  别动清单（受保护词数组）
 │   │   └── transcribe/       字级转写：火山 seedasr v3 主 / 阿里 paraformer 兜底；公网/OSS 上传

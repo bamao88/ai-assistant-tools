@@ -209,7 +209,13 @@ engines/
 │   ├── run.py                          跑配方(chain 执行 + 剪辑账本流转)   🔶
 │   └── build_catalog.py                重建总表
 │
-├── video-slicer/                       积木厂·剪辑策略+内容决策   [①转写 ②选片 ④字幕搬时间]
+├── video-select/                       第②环·选片 = Eval Harness + 成片脚本   [②选片]
+│   ├── prompts/                        4 条提示词(topic-select/body-edit/refine-deduct/hook) ✅
+│   ├── video_select/                   topics(选题)/generate(候选)/gates(门禁)/score(打分) ✅ [②]
+│   └── eval/                           Harness 数据(fixtures 入库/runs 不入库/notes 经验) ✅
+│   ▲ ②选片已从 video-slicer 独立到此(详见 第二环选片-plan);video-slicer 仅留 cut_word 生产原子
+│
+├── video-slicer/                       积木厂·剪辑策略+内容决策   [①转写 ④字幕搬时间]
 │   ├── capabilities.json               声明(加 stage 标签)                 🔶
 │   └── video_slicer/
 │       ├── planner.py                  cut_sentence 句级选段              ✅ [②]

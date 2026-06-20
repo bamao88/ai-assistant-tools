@@ -122,7 +122,7 @@
 ║   [words.json] + [_selection.json 选题清单]                         ║
 ║                                                                    ║
 ║ 〖流程一 · 生成选题〗(Runner 第 1 段)                               ║
-║   输入 [words.json] + [prompts/persona.md]                         ║
+║   输入 [words.json](提示词 topic-select.md)                        ║
 ║     │ 选题(stage1) · STAGE1_TASK                                   ║
 ║     ▼                                                              ║
 ║   输出 [选题清单 _selection.json]  题目 + rough_sid_spans(粗区间)   ║

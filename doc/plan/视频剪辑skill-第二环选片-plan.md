@@ -195,15 +195,16 @@
 
 ```
 engines/
-├── video-select/                         🆕 第②环·选片(成片脚本/金标准)
+├── video-select/                         🆕 第②环·选片(Eval Harness + 成片脚本)
 │   ├── capabilities.json                 🆕 声明(stage=select)
-│   ├── README.md                         🆕 选片口径 + 金标准 schema + 打分法
+│   ├── README.md                         🆕 Harness 用法:Runner/门禁/打分/迭代闭环
 │   ├── video_select/                     🆕 包
 │   │   ├── topics.py                     🆕←移自 twostage/stage1_topics.py(选题·STAGE1_TASK)
-│   │   ├── generate.py                   🆕←移自 baselines/global_evidence.py
+│   │   ├── generate.py                   🆕←移自 baselines/global_evidence.py(Runner)
 │   │   │                                    (总编·BODY_TASK + 组装草稿 + 字级去口水决策·REFINE_TASK + 钩子·HOOK_TASK)
-│   │   ├── score.py                      🆕←移自 baselines/score.py(候选 vs 金标准打分)
-│   │   └── select_clips_a.py             🆕←移自 baselines/select_clips.py(方案A单阶段选题·备用基准)
+│   │   ├── gates.py                      🆕 阶段检查 hook(精选合并/时长/可执行/零编造…)
+│   │   ├── score.py                      🆕←移自 baselines/score.py(Scorer:候选 vs 冻结参照)
+│   │   └── select_clips_a.py             🆕←移自 baselines/select_clips.py(方案A·备用对照)
 │   ├── personas/zh_main.md               🆕←移自 video-slicer/personas/(选片人设:选题闸/标题硬要求/in-out/数量)
 │   ├── profiles/zh_main/                 🆕←移自 video-slicer/profiles/(账号定制)
 │   └── references/

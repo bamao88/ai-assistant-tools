@@ -120,9 +120,10 @@ def _srt_t(t):
 
 
 def build(manifest, words_data, fixes=None):
+    """源逐字账本 → assembled(拼好身子) 时间轴的分句 SRT cue。只套③粗剪 rough_cut 一次映射。"""
     ops = manifest["ops"]
     sents, words = words_data["sentences"], words_data["words"]
-    keeps = rough_cut_keeps(ops)
+    keeps = rough_cut_keeps(ops)          # 源时间轴上的选段（assembled 由它们顺序拼成）
     fixes = fixes or {}
 
     cues = []
@@ -133,18 +134,23 @@ def build(manifest, words_data, fixes=None):
                 txt = txt.replace(k, fixes[k])
             if not txt:
                 continue
-            bb = remap_time(ops, pb)
-            be = remap_time(ops, pe, is_end=True)
-            if bb is None:
+            bb = _through_keeps(pb, keeps)             # 源 → assembled，一次换算
+            be = _through_keeps(pe, keeps)
+            if be is None:                             # 句末正好落选段右边界(切点)：回退微小量夹回段内
+                be = _through_keeps(pe - 0.03, keeps)
+            if bb is None:                             # 该短语整体落在③未选区 → 本就不该出现，丢
                 continue
             if be is None or be <= bb:
                 be = bb + 0.4
             cues.append([bb, be, txt, idx])
     cues.sort(key=lambda x: x[0])
     cues = cleanup(cues)
-    # 无缝：每条结尾延到下一条开头（不留空档；修「句末=切点」被判 None 提前消失）
+    # 衔接补洞：只把「小空档(≤MAX_FILL)」补到下一条开头，避免相邻条之间闪烁；
+    # 长停顿不在这里硬撑（那正是旧版卡屏14s的根因）——留给 ③c 去静音按同一把刀把字幕一起裁掉。
     for i in range(len(cues) - 1):
-        cues[i][1] = cues[i + 1][0]
+        gap = cues[i + 1][0] - cues[i][1]
+        if 0 < gap <= MAX_FILL:
+            cues[i][1] = cues[i + 1][0]
     if cues:
         cues[-1][1] = cues[-1][1] + 0.5
     return cues

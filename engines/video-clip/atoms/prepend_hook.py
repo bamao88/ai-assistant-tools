@@ -109,6 +109,10 @@ def main():
         _run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(hook), "-i", str(body2),
               "-filter_complex", fc, "-map", "[v]", "-map", "[a]", *ENC,
               "-movflags", "+faststart", str(out)])
+    # 字幕便签整体 +hook_dur 偏移：正文在最终时间线的起播点 = off+flip = hook_dur（翻页期间正文定格）
+    if a.srt_in and a.srt_out:
+        n = shift_srt(a.srt_in, a.srt_out, hook_dur)
+        print(f"  字幕便签 +{hook_dur:.3f}s 偏移 {Path(a.srt_in).name}→{Path(a.srt_out).name}  {n}条")
     w, h, dur, _a = probe(out)
     print(f"DONE  {out}  {w}x{h}  {dur:.1f}s  (钩子{hook_dur:.1f}s + 翻页{flip}s定格 + 正文)")
 

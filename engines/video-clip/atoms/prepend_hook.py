@@ -28,14 +28,22 @@ def _run(cmd):
 
 
 def _norm(src, dst, W, H, fps, has_audio):
-    """统一到 W×H/fps、yuv420p；缺音轨补静音轨，便于后续 acrossfade。"""
+    """统一到 W×H/fps、yuv420p，并把片段规整成「画音严格等长的整体」。
+
+    ★片段画音整体原则：片段是不可分割的画音对象，转场/拼接必须按它「同一条时间线」摆。
+    源素材常画音不等长（如钩子画 5.800s / 音 5.208s）；这里把音频补静音到视频时长
+    （apad 无限补 + -shortest 锁到视频长度），让对象天生合格——之后 xfade(按视频)和
+    acrossfade(按音频末尾)就落在同一个边界，正片不会被错位（这是 0619 正片声音超前 0.59s 的根因修复）。"""
     vf = (f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
           f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},format=yuv420p")
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(src)]
-    if not has_audio:
-        cmd += ["-f", "lavfi", "-t", "0.1", "-i", "anullsrc=r=48000:cl=stereo",
-                "-shortest", "-map", "0:v", "-map", "1:a"]
-    cmd += ["-vf", vf, "-r", str(fps), *ENC, str(dst)]
+    if has_audio:
+        # 音频补齐到视频时长：apad 无限补静音，-shortest 让输出在视频流结束时收尾 → 画音等长
+        cmd += ["-vf", vf, "-af", "apad", "-r", str(fps), "-shortest", *ENC, str(dst)]
+    else:
+        # 缺音轨：补一条与视频等长的静音轨（anullsrc 无限 + -shortest 锁到视频长）
+        cmd += ["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
+                "-vf", vf, "-r", str(fps), "-shortest", "-map", "0:v", "-map", "1:a", *ENC, str(dst)]
     _run(cmd)
 
 

@@ -48,7 +48,9 @@
 
 **为什么要重做这一环**:
 1. **质量不可取**:现在选片产出的候选**切太碎 / 句间跳得大 / 两刀挨太近吞掉中间 / 重复段**——没有 Harness,改 prompt 只能凭感觉。
-2. **代码没独立、阶段认知不清**:②选片的逻辑(选题、总编、去口水决策、钩子、打分、门禁、人设)**全混在 `engines/video-slicer/` 里**(散在 `baselines/` 和 `twostage/`),看不出它是独立的一环,也串不成闭环。**本计划要独立成 `engines/video-select/`,并把 baselines 收成正式的 Eval Harness。**
+2. **代码没独立、生产与 Eval 混在一起**:②生产逻辑与 baselines 评测脚本**同堆在 `engines/video-slicer/`**,日常跑片和改 prompt 共用一套目录,认知混乱。**本计划拆成两条线:**
+   - **生产** → `engines/video-select/`(六环日常用)
+   - **Eval Harness** → `eval/video-select/`(仅优化时用;文档+门禁+打分+重跑脚本,与生产代码分目录)
 
 ---
 

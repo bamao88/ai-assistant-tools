@@ -72,6 +72,8 @@ def main():
     ap.add_argument("--flip", type=float, default=0.30, help="翻页时长(秒)，越小越快(默认0.30)")
     ap.add_argument("--trans", default="slideleft", help="xfade 转场名(默认slideleft)")
     ap.add_argument("--fps", type=int, default=30, help="统一目标帧率(默认30)")
+    ap.add_argument("--srt-in", dest="srt_in", default=None, help="正文字幕便签(final 轴)，整体 +hook_dur 偏移")
+    ap.add_argument("--srt-out", dest="srt_out", default=None, help="偏移后字幕便签(成片轴)，给末步烧字")
     a = ap.parse_args()
 
     for p in (a.hook, a.body):

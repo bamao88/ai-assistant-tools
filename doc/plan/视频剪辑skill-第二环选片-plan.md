@@ -186,7 +186,7 @@
 
 | 阶段 | 输入 | 输出 |
 |---|---|---|
-| **选题** | 整场编号逐字稿 + 人设 | 选题清单:`title / one_argument / hook_line / audience / mainstream / why / rough_sid_spans` |
+| **选题** | 整场编号逐字稿 | 选题清单:`title / one_argument / hook_line / audience / mainstream / why / rough_sid_spans` |
 
 - 它只决定**"做哪些题、大概在哪几句"**,不给精确边界、不给时间戳。
 

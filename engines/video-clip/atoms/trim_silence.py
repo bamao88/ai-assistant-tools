@@ -90,6 +90,61 @@ def apply_keeps(inp, outp, keeps):
           *maps, *enc, str(outp)])
 
 
+# ── 字幕便签同刀裁（WS-6 INV-2）：用裁视频/音频的同一份 keeps 裁 .srt ──
+_SRT_RE = re.compile(r"(\d+):(\d+):(\d+[.,]\d+)\s*-->\s*(\d+):(\d+):(\d+[.,]\d+)")
+
+
+def _srt_secs(x):
+    h, m, s = x.strip().replace(",", ".").split(":")
+    return int(h) * 3600 + int(m) * 60 + float(s)
+
+
+def _srt_t(t):
+    h = int(t // 3600); m = int(t % 3600 // 60); s = t % 60
+    return f"{h:02d}:{m:02d}:{s:06.3f}".replace(".", ",")
+
+
+def _parse_srt(path):
+    cues = []
+    for blk in re.split(r"\n\s*\n", Path(path).read_text(encoding="utf-8").strip()):
+        L = [x for x in blk.split("\n") if x.strip()]
+        mm = next((i for i, x in enumerate(L) if "-->" in x), None)
+        if mm is None:
+            continue
+        g = _SRT_RE.search(L[mm])
+        if not g:
+            continue
+        b = _srt_secs(":".join(g.groups()[0:3])); e = _srt_secs(":".join(g.groups()[3:6]))
+        cues.append((b, e, " ".join(L[mm + 1:]).strip()))
+    return cues
+
+
+def cut_srt(cues, keeps):
+    """用同一份 keeps 把字幕便签裁到 trimmed 时间轴：
+    每条 cue 与各保留段求交，落删除段→丢；跨切口→裁到保留段；删去的静音让相邻片段在输出轴上天然接续。"""
+    out = []
+    for (cb, ce, text) in cues:
+        nb = ne = None; off = 0.0
+        for s, e in keeps:
+            ov_s = max(cb, s); ov_e = min(ce, e)
+            if ov_s < ov_e:
+                ob = off + (ov_s - s); oe = off + (ov_e - s)
+                if nb is None:
+                    nb = ob
+                ne = oe
+            off += (e - s)
+        if nb is not None and ne is not None and ne > nb:
+            out.append((nb, ne, text))
+    return out
+
+
+def write_srt(cues, out):
+    lines = []
+    for i, (b, e, text) in enumerate(cues, 1):
+        lines += [str(i), f"{_srt_t(b)} --> {_srt_t(e)}", text, ""]
+    Path(out).write_text("\n".join(lines), encoding="utf-8")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ref", required=True, help="静音检测参考音频(同轴)")
@@ -97,6 +152,8 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--apply-to", action="append", default=[], help='"src:dst" 同步应用同一 keeps(可多次)')
+    ap.add_argument("--srt-in", dest="srt_in", default=None, help="字幕便签(assembled 轴)，同刀裁到 trimmed 轴")
+    ap.add_argument("--srt-out", dest="srt_out", default=None, help="裁后字幕便签(trimmed 轴)")
     ap.add_argument("--min-sil", type=float, default=1.5)
     ap.add_argument("--keep-pad", type=float, default=0.4)
     ap.add_argument("--noise", default="-30dB")
@@ -111,6 +168,10 @@ def main():
     for pair in a.apply_to:
         src, dst = pair.split(":", 1)
         apply_keeps(src, dst, keeps)
+    if a.srt_in and a.srt_out:                       # 字幕便签同刀裁（INV-2）
+        cut = cut_srt(_parse_srt(a.srt_in), keeps)
+        write_srt(cut, a.srt_out)
+        print(f"  字幕同刀裁 {Path(a.srt_in).name}→{Path(a.srt_out).name}  {len(cut)}条")
 
     out_dur = _dur(a.out)
     man = _manifest.load(a.manifest) if Path(a.manifest).exists() else _manifest.new(a.inp)

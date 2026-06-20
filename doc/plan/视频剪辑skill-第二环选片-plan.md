@@ -327,7 +327,9 @@ python eval/video-select/run.py --suite agent_eval_0613   # → runner → gates
 
 ## 9. 验收门(怎么算 Harness 闭环跑通)
 
-- [ ] `engines/video-select/` 独立成形,**Eval Harness** 能脱离 baselines/ 单独跑(`generate → gates → score`);`check-tools.py` 0 error;registry/catalog/架构文档同步。
+- [ ] **生产** `engines/video-select/` 独立成形,日常选片不依赖 eval;`check-tools.py` 0 error;registry 只登记生产引擎。
+- [ ] **Eval** `eval/video-select/` 独立成形,文档在 `eval/.../doc/`(不在 var、不在 engines);`run → gates → score` 可一键跑。
+- [ ] `engines/video-slicer/baselines/` 清空/改 stub,指向 `eval/video-select/`。
 - [ ] 固定评测集(agent_eval_0613·22 条)上:Runner 重跑可复现;`score_report.json` 可出基线分。
 - [ ] **门禁代码化**(`gates.py`):精选合并/无重叠/正文≥60s/字级决策可执行/零编造——22 条全绿(不靠手工 `_merge_segments.py`)。
 - [ ] 选题停用 stage2,产出只含粗区间。

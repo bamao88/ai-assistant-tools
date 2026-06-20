@@ -307,12 +307,13 @@ python eval/video-select/run.py --suite agent_eval_0613   # → runner → gates
 
 | # | 改什么 | 现状 → 目标 | 验收 |
 |---|---|---|---|
-| 0 | **Eval Harness 成形** | baselines 散在 video-slicer、无统一门禁/闭环叙事 → `video-select` 内 Runner + `gates.py` + `score.py` + README 写清迭代命令 | 固定评测集上能一键 `generate → gates → score`;bad case 有落盘路径 |
-| 1 | **引擎独立** | 新建 `engines/video-select/`,移入 Harness 全套;import video-slicer 句/时间核心;`capabilities.json` 标 `stage=select`;`registry.yaml` + catalog 注册 | `check-tools.py` 0 error;Harness 能独立跑通、产出与原一致 |
-| 2 | **选题停用 stage2** | 选题只给粗区间;`stage2_script.py` 标 DEPRECATED | 选题产出只含 `rough_sid_spans`,无 `keep_sids` |
-| 3 | **总编 `BODY_TASK`** | 从"取证"升级"总编"(加逻辑连续+精选合并原则);**出口加阶段检查 hook**(无重叠/无相邻 gap≤2/源头连续必连,不过就挡) | 重跑 22 条:连续区间与手工合并版一致、检查 hook 全绿 |
-| 4 | **去口水 `REFINE_TASK`** | 从"出改写文本"改"出**字级删除决策**(删哪些字、带位置);删掉"顺语序/合并"(上交总编) | 产出能对回原视频字级时间、可直接驱动 ③ 执行 |
-| 5 | **钩子 `HOOK_TASK`** | "短句拼接"→"整句优先、拼接兜底" | 钩子不丢限定词、不失真 |
+| 0 | **目录拆分** | baselines 混在 `video-slicer/` → 生产进 `engines/video-select/`;Harness+文档进 `eval/video-select/`;`var/` 只留运行产物 | 日常命令不 import eval;优化命令不污染生产 registry |
+| 1 | **Eval Harness 成形** | 散脚本 + 文档在 var → `eval/video-select/` 内 `run.py` + gates + score + README + doc | 固定评测集上一键 `run → gates → score` |
+| 2 | **生产引擎独立** | 新建 `engines/video-select/`(仅 select/topics/persona);注册 registry;import video-slicer 核心 | `check-tools.py` 0 error;日常选片可独立跑通 |
+| 3 | **选题停用 stage2** | 选题只给粗区间;`stage2_script.py` 标 DEPRECATED | 选题产出只含 `rough_sid_spans`,无 `keep_sids` |
+| 4 | **总编 `BODY_TASK`** | 从"取证"升级"总编"(加逻辑连续+精选合并原则);门禁进 `eval/.../gates.py` | 重跑 22 条:连续区间与手工合并版一致、gates 全绿 |
+| 5 | **去口水 `REFINE_TASK`** | 从"出改写文本"改"出**字级删除决策**(删哪些字、带位置);删掉"顺语序/合并"(上交总编) | 产出能对回原视频字级时间、可直接驱动 ③ 执行 |
+| 6 | **钩子 `HOOK_TASK`** | "短句拼接"→"整句优先、拼接兜底" | 钩子不丢限定词、不失真 |
 
 ---
 

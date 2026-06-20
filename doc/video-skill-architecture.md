@@ -141,7 +141,8 @@ python engines/video-compose/run.py --run zh_clip_cut \
 | **跑一条切片验证** | 竖版 `run.py --run zh_business --selection <sel>.json --profile zh_main`；横版 `run.py --run landscape_business --selection <sel>.json`；产物 `var/<account>/.../accel.mp4`。 |
 | **改完验证不回归（G4）** | `var/zh_main/baseline/` 存了冻结基线（`primaries/` 含可重放 `job.json`）。用引擎 venv 重放该 job.json，与基线逐帧/逐字节比对。方法 + 上次结果见 `var/zh_main/baseline/{STAGE0-baseline.md,G4-result.md}`。**G4 已并入回归套件 T3**（见下行）。 |
 | **跑分层回归测试**（每个能力的回归） | `python engines/video-compose/regression/run_regression.py [t0\|t1\|t2\|t3\|all]`。四层：T0 纯数据·秒级·每次提交；T1 单原子·喂金标准；T2 阶段；T3 端到端+G4+①火山转录·发版前。喂冻结金标准夹具不重头跑。改了金标准跑 `gen_expected.py` 重算期望值。设计/逐能力清单见 `var/zh_main/0619test/doc/视频剪辑skill-回归测试计划.md`，套件说明见 `engines/video-compose/regression/README.md`。 |
-| **建/迭代选片 Eval Harness** | **仅 prompt/架构优化时用**。代码+文档在 `eval/video-select/`（`runner.py`/`gates.py`/`score.py`/`doc/`）；生产选片在 `engines/video-select/`（日常六环②，不 import eval）。运行产物落 `var/<account>/eval/<run>/`。设计见 `doc/plan/视频剪辑skill-第二环选片-plan.md` §6。 |
+| **改②选片提示词**（选题口径 / 总编精选合并 / 字级去口水决策 / 钩子整句优先） | 改 `engines/video-select/prompts/` 对应 `.md`（topic-select / body-edit / refine-deduct / hook），**改 prompt 不动代码**。改完重跑 Harness（下行）验收。 |
+| **建/迭代选片 Eval Harness** | 全在 `engines/video-select/`（不再有顶层 `eval/`）：代码 `video_select/`、Harness 数据 `eval/`（fixtures 入库 / runs 不入库 / words 软链 / notes 经验）。一键闭环（在引擎下跑）：`python -m video_select.generate`（Runner）→ `python -m video_select.gates`（门禁）→ `python -m video_select.score`（逼近度，候选 vs 冻结 golden）。命令样例见 `engines/video-select/README.md`。设计真源 `doc/plan/视频剪辑skill-第二环选片-plan.md` §6。 |
 | **登记 / 结构变更后收口** | 改了引擎结构就更新 `registry.yaml`，跑 `python scripts/check-tools.py`（期望 0 error）。 |
 
 ## 环境依赖（首跑准备）

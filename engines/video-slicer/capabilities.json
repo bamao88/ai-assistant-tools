@@ -10,7 +10,7 @@
       "tier": "句级·线上稳定",
       "desc": "单阶段：一次 LLM 读整场逐字稿同时定选题 + 句级时间段（腾讯 minutes 句时间）。线上生产范式，不依赖字级。",
       "entry": "video_slicer.planner",
-      "baseline": "baselines/select_clips.py (方案A 基准·只出选题层候选)",
+      "baseline": "②选片 Eval Harness 已迁出 → engines/video-select/（方案A=video_select/select_clips_a.py；baselines/ 旧址停更）",
       "out": "选段清单 segments(句级秒/MM:SS)",
       "todo": "WS-1 补「开篇去转折」口径(去掉钩子句前承接上文的铺垫)"
     },

@@ -8,14 +8,32 @@
 用法:
   prepend_hook.py 钩子.mp4 正文.mp4 输出.mp4
   prepend_hook.py 钩子.mp4 正文.mp4 输出.mp4 --flip 0.30 --trans slideleft --fps 30
+  prepend_hook.py 钩子.mp4 正文.mp4 输出.mp4 --srt-in final.srt --srt-out final_shifted.srt
 翻页可选 xfade: slideleft/wipeleft/smoothleft/squeezeh（slideleft 最像翻页）
+
+WS-6 伴随轨：钩子拼到正文前，正文画音整体后移 hook_dur（正文真正起播点=钩子时长，翻页期间正文定格）；
+字幕便签(.srt)用 --srt-in/--srt-out 整体 +hook_dur 偏移，与正文画音同步落到最终时间线，末步才烧字。
 """
 from __future__ import annotations
-import argparse, sys, tempfile
+import argparse, re, sys, tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from vutil import run, probe, ensure_parent  # noqa: E402
+from vutil import run, probe, ensure_parent, parse_srt  # noqa: E402
+
+
+def _srt_t(t):
+    h = int(t // 3600); m = int(t % 3600 // 60); s = t % 60
+    return f"{h:02d}:{m:02d}:{s:06.3f}".replace(".", ",")
+
+
+def shift_srt(srt_in, srt_out, offset):
+    """字幕便签整体 +offset 偏移（WS-6）：正文在最终时间线从 offset 起播，字幕随之后移。"""
+    lines = []
+    for i, (t0, t1, txt) in enumerate(parse_srt(srt_in), 1):
+        lines += [str(i), f"{_srt_t(t0 + offset)} --> {_srt_t(t1 + offset)}", txt, ""]
+    ensure_parent(srt_out).write_text("\n".join(lines), encoding="utf-8")
+    return len(lines and parse_srt(srt_in))
 
 ENC = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
        "-c:a", "aac", "-ar", "48000", "-ac", "2"]

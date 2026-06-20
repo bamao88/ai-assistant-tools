@@ -265,14 +265,16 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 
 ---
 
-## 9. 验收门(怎么算做完)
+## 9. 验收门(怎么算 Harness 闭环跑通)
 
-- [ ] `engines/video-select/` 独立成形,选片能脱离 baselines/ 单独跑;`check-tools.py` 0 error;registry/catalog/架构文档同步。
+- [ ] `engines/video-select/` 独立成形,**Eval Harness** 能脱离 baselines/ 单独跑(`generate → gates → score`);`check-tools.py` 0 error;registry/catalog/架构文档同步。
+- [ ] 固定评测集(agent_eval_0613·22 条)上:Runner 重跑可复现;`score_report.json` 可出基线分。
+- [ ] **门禁代码化**(`gates.py`):精选合并/无重叠/正文≥60s/字级决策可执行/零编造——22 条全绿(不靠手工 `_merge_segments.py`)。
 - [ ] 选题停用 stage2,产出只含粗区间。
-- [ ] 总编重跑 22 条:每个被选句子能在 `words.json` 查到(零编造)、连续区间无碎(检查 hook 全绿)。
+- [ ] 总编 prompt 升级后重跑:连续区间与手工合并版一致或更好。
 - [ ] 去口水产出**可执行的字级删除决策**(对得回原视频时间)。
 - [ ] 钩子整句优先,不丢限定词。
-- [ ] 人工定稿落 `golden.json`;打分器给一个基线分。
+- [ ] 人工评审环可更新 `golden.json` 冻结参照;下一轮 Scorer 能自动对照。
 
 ---
 

@@ -64,11 +64,24 @@ def ensure_audio(src: Path) -> tuple[Path, str, Callable[[], None] | None]:
 
     tmp = Path(tempfile.mkdtemp(prefix="videocut-asr-")) / "audio.mp3"
     _log(f"[transcribe] ffmpeg 抽音频 {src.name} → {tmp.name}（mono 16k mp3）")
+    # ★ aresample=async=1:first_pts=0 ——把源音频里的细碎空隙按时间线补回静音，
+    #   抽出来的音频严格贴源时长。否则「带空隙」的素材会被抽短（声音前移），
+    #   转写时间戳整体偏早、越往后越偏，最终字幕领先声音（详见 doc/bug/字幕音频5秒错位-words时间漂移）。
     subprocess.run(
         ["ffmpeg", "-y", "-loglevel", "error", "-i", str(src),
-         "-vn", "-ac", "1", "-ar", "16000", "-b:a", "48k", str(tmp)],
+         "-vn", "-af", "aresample=async=1:first_pts=0",
+         "-ac", "1", "-ar", "16000", "-b:a", "48k", str(tmp)],
         check=True,
     )
+    # 自检：抽出音频时长须贴源时长（差 >0.3s 说明仍有空隙没补上 → 转写会漂，告警）
+    try:
+        sd = _media_dur(src)
+        ad = _media_dur(tmp)
+        if sd > 0 and abs(sd - ad) > 0.3:
+            _log(f"[transcribe] ⚠ 抽出音频({ad:.2f}s) 与源({sd:.2f}s) 差 {ad - sd:+.2f}s>0.3s——"
+                 f"转写时间戳可能与视频漂移，请检查源音频空隙")
+    except Exception as e:  # noqa: BLE001
+        _log(f"[transcribe] 时长自检跳过：{e}")
 
     def cleanup() -> None:
         try:

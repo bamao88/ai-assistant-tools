@@ -134,8 +134,9 @@
 | 4 | **流程二·字级去口水决策** | 草稿 + 字级时间戳 | 去口水·**REFINE_TASK** | 删哪些字(带位置) | `words.json`(R·字级)→内存 |
 | 5 | **流程二·钩子** | 1条选题 + 候选池句 | 钩子·**HOOK_TASK** | `hook_options`(2-3) | `words.json`(R·候选池)+`zh_main.md`(R)→内存 |
 | 6 | **流程二·汇总落盘** | 步骤2-5(内存) | 代码 | 候选切片 | 内存→`golden_candidate.json`(W)+`candidates/clip_NN.md`(W) |
-| 7 | **人工定稿** | 候选 + 人工判断 | 人工 | 成片脚本金标准 | `clip_NN.md`(R)+`golden_candidate.json`(R)→`golden.json`(W) |
-| 8 | ③–⑥执行(不在本文) | 成片脚本 | 六环 ③–⑥ | 成片视频 | `golden.json`(R)→`成片.mp4`(W) |
+| 7 | **Harness·门禁+打分** | 候选 + 冻结参照 | 检查 hook + `score.py` | 过/不过 + 逼近度分 | `golden_candidate.json`(R)+`golden.json`(R·可选)→`score_report.json`(W) |
+| 8 | **Harness·人工评审环** | 候选 + 人工判断 | 人工 | 更新冻结参照 | `clip_NN.md`(R)+`golden_candidate.json`(R)→`golden.json`(W) |
+| 9 | ③–⑥执行(不在本文) | 成片脚本(门禁已通过) | 六环 ③–⑥ | 成片视频 | `golden.json`(R)→`成片.mp4`(W) |
 
 > 第 2-6 步在**同一次运行**里完成(总编/组装/去口水决策/钩子都是内存数据),第 6 步一次性写成两个文件:`golden_candidate.json`(机读真源)+ `clip_NN.md`(人读评审稿)。文件完整路径见第 6 节目录树。
 

@@ -230,10 +230,11 @@ engines/
 var/zh_main/
 ├── asr/agent_eval_0613/words.json                ♻️ ①转写产物(输入)
 ├── cuts/agent全量-volc-native/_selection.json    📦 选题清单(本场)
-└── eval/agent_eval_0613/                          📦 候选 + 金标准产物(var,默认不入库)
-    ├── candidates/clip_NN_*.md                    📦 每条人读评审稿
-    ├── golden_candidate.json / golden.json        📦 候选 / 定稿后的成片脚本金标准
-    └── doc/金标准建设-经验与提示词总结.md          📦 迭代经验(钩子第七节·精选合并第八节)
+└── eval/agent_eval_0613/                          📦 Eval Harness 运行目录(var,默认不入库)
+    ├── candidates/clip_NN_*.md                    📦 人读评审稿(人工评审环)
+    ├── golden_candidate.json / golden.json        📦 Runner 产出 / 冻结参照快照
+    ├── score_report.json                          📦 Scorer 产出
+    └── doc/金标准建设-经验与提示词总结.md          📦 迭代经验(bad case → 改法)
 
 doc/plan/视频剪辑skill-第二环选片-plan.md            本计划(第②环真源)
 doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(架构随改随更)

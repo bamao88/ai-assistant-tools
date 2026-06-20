@@ -1,4 +1,4 @@
-# 第②环 · 选片 —— 「成片脚本」金标准 + 引擎独立 + 流程改造计划
+# 第②环 · 选片 —— Eval Harness 驱动迭代 + 引擎独立 + 流程改造计划
 
 > 面向不读代码的 owner 写。先讲**做什么/为什么/最后长什么样**,技术名词都配一句大白话。
 > 本文是「视频剪辑六环主链」**第②环·选片**的计划真源。六环主链全貌与 ③–⑥ 的实现见
@@ -210,7 +210,7 @@ var/zh_main/
     ├── golden_candidate.json / golden.json        📦 候选 / 定稿后的成片脚本金标准
     └── doc/金标准建设-经验与提示词总结.md          📦 迭代经验(钩子第七节·精选合并第八节)
 
-doc/plan/video-golden-baseline-plan.md            本计划(第②环真源)
+doc/plan/视频剪辑skill-第二环选片-plan.md            本计划(第②环真源)
 doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(架构随改随更)
 ```
 
@@ -253,7 +253,7 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 1. **新引擎名**:我用了 `engines/video-select/`(选片环)。若你想要别的名(如 `video-script` / `clip-select`),说一声。
 2. **②/③ 字级去口水的边界**:本计划把②选片的范围**扩展**为含"字级去口水**决策**"(删哪些字),③ 只负责**执行**(把字剪掉)。这比六环计划里②的窄定义(只选句段)更宽——**需同步更新六环计划 §② + 架构文档**。确认这个边界。
 3. **共享核心的依赖方式**:`video-select` **import** video-slicer 的句/时间核心(单向依赖),不重复造、也不另起共享包。若你想要更彻底的解耦(抽一个独立 transcript-core 包),那是更大改动,另议。
-4. **本文件名**:仍叫 `video-golden-baseline-plan.md`(避免改链接)。若按新定位想重命名(如 `ring2-select-plan.md`),我一并改掉引用它的地方。
+4. **本文件名**:仍叫 `视频剪辑skill-第二环选片-plan.md`(避免改链接)。若按新定位想重命名(如 `ring2-select-plan.md`),我一并改掉引用它的地方。
 5. **金标准长期留存**:`var/` 不入库;定稿后建议把 `golden.json` 复制到明确"冻结"位置并标版本(类比 G4 基线)。
 
 ---

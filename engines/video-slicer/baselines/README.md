@@ -5,7 +5,7 @@
 | 文件 | 是什么 | 来源 |
 |---|---|---|
 | `select_clips.py` | **方案A 基准**：单阶段选段（一次 LLM 同时定选题 + 选段）。只出选题层候选 JSON，不渲染/不切片。 | 由 `assistant_zh/tmp/slice_prompt_iter/` 固化（video-tools-migration 阶段1），去硬编码绝对路径。 |
-| `global_evidence.py` | **金标准生成器（四级流水线）**：对每条**已选定选题**，把张和整场逐字稿喂给 AI 全局取证，产出一条 clip 的四级结构。只产候选(`human_status=pending`)，人工拍定后才是金标准。 | 计划 `doc/plan/video-golden-baseline-plan.md`。 |
+| `global_evidence.py` | **金标准生成器（四级流水线）**：对每条**已选定选题**，把张和整场逐字稿喂给 AI 全局取证，产出一条 clip 的四级结构。只产候选(`human_status=pending`)，人工拍定后才是金标准。 | 计划 `doc/plan/视频剪辑skill-第二环选片-plan.md`。 |
 | `score.py` | **逼近度打分器**：任意一版切片产出 vs 金标准 → 句号召回/精确/F1 + 时间 IoU。让"改 prompt 有没有变好"可量化。 | 同上。 |
 
 ## 金标准这条线（评测基准）

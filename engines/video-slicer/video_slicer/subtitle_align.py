@@ -176,8 +176,8 @@ def main():
     fixes = json.loads(Path(a.fixes).read_text(encoding="utf-8")) if a.fixes and Path(a.fixes).exists() else {}
     cues = build(manifest, words_data, fixes)
     write_srt(cues, a.out)
-    final_dur = manifest.get("durations", {}).get("final")
-    print(f"DONE subtitle_align  {a.out}  {len(cues)}条分句  成片时长~{final_dur}s")
+    asm_dur = manifest.get("durations", {}).get("assembled")
+    print(f"DONE subtitle_align  {a.out}  {len(cues)}条分句  assembled时长~{asm_dur}s（随后随③c/③d/⑥同刀裁缩）")
     for b, e, text, _ in cues:
         print(f"  {b:6.2f}-{e:6.2f} ({e - b:4.1f}s)  {text}")
 

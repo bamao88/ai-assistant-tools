@@ -1,0 +1,37 @@
+{
+  "_schema": "video-capabilities/v2",
+  "_stage_schema": "六环阶段标签：stage=transcribe|select|trim|subtitle|cast|assemble。video-select 只产 stage=select（成片脚本）。",
+  "engine": "video-select",
+  "role": "第②环·选片：Eval Harness（Runner + 门禁 + 打分 + 人工评审环）+ 成片脚本产出。只定「剪成什么内容」，不定「怎么剪」。",
+  "deps": ["python", "LLM via .env (Kimi/MiniMax)", "video-slicer（单向 import：逐字稿→句/时间核心）"],
+  "atoms": {
+    "topic_select": {
+      "kind": "内容决策", "stage": "select", "layer": "backbone", "required": "required",
+      "tier": "流程一·选题",
+      "desc": "整场编号逐字稿 → 选题清单（题 + rough_sid_spans 粗区间，不吐时间戳、不定段）。原 stage2 定段已停用。",
+      "entry": "video_select.topics",
+      "prompt": "prompts/topic-select.md",
+      "out": "_selection.json（clips[].rough_sid_spans）"
+    },
+    "generate_candidate": {
+      "kind": "内容决策", "stage": "select", "layer": "backbone", "required": "required",
+      "tier": "流程二·生成候选（成片脚本）",
+      "desc": "对每条选题：总编(全局取证+逻辑编排+精选合并) → 组装草稿 → 字级去口水决策(删哪些字·可执行) → 钩子(整句优先)。出口过 gates 精选合并门禁。",
+      "entry": "video_select.generate",
+      "prompts": ["prompts/body-edit.md", "prompts/refine-deduct.md", "prompts/hook.md"],
+      "gates": "video_select.gates（merge_segments + 无重叠/无相邻gap≤2/正文≥60s/可执行/零编造）",
+      "out": "golden_candidate.json（机读真源）+ candidates/clip_NN.md（人读评审稿）"
+    }
+  },
+  "also_provides": {
+    "gates": {"kind": "门禁", "stage": "select", "layer": "self_check", "required": "required", "desc": "机器可判红线：精选合并(去重叠+合并相邻碎段) + 正文时长 + 字级决策可执行 + 零编造。不过就挡。", "entry": "video_select.gates", "sig": "python -m video_select.gates --golden g.json --words words.json"},
+    "score": {"kind": "打分器", "stage": "select", "layer": "self_check", "required": "optional", "desc": "候选 vs 冻结 golden 参照的逼近度：句号 召回/精确/F1 + 时间 IoU。量化 prompt 改动有没有变好。", "entry": "video_select.score", "sig": "python -m video_select.score --golden golden.json --candidate cand.json"},
+    "select_clips_a": {"kind": "内容决策", "stage": "select", "layer": "backbone", "required": "optional", "desc": "方案A·单阶段选段（一次 LLM 同时定选题+选段）。Harness 里作方案A/B/金标准对照基准，不进日常 Runner。", "entry": "video_select.select_clips_a"}
+  },
+  "eval": {
+    "harness": "eval/（fixtures 入库 / runs gitignored / words.json 软链不入库 / notes 经验入库）",
+    "fixtures": "eval/fixtures/agent_eval_0613/{selection.json, golden.json(冻结参照·随迭代升版), words.json→软链}",
+    "notes": "eval/notes/金标准建设-经验与提示词总结.md"
+  },
+  "note": "依赖单向 video-select → video-slicer（只读句/时间核心，不重复造）。设计真源 doc/plan/视频剪辑skill-第二环选片-plan.md。提示词全在 prompts/，代码无内嵌 prompt 字符串。"
+}

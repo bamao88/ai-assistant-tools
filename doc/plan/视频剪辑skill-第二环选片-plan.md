@@ -163,7 +163,7 @@
 | # | 步骤 | 输入(数据) | 工具 · 提示词 | 输出(数据) | 涉及文件 |
 |---|---|---|---|---|---|
 | 0 | ①转写(上游) | 源视频 | 火山 ASR | 句/字级时间戳+全文 | `源视频.mp4`(R)→`words.json`(W) |
-| 1 | **流程一·选题** | 整场编号逐字稿 | 选题(stage1)·**STAGE1_TASK** | 选题清单(题+`rough_sid_spans`) | `words.json`(R)+`zh_main.md`(R)→`_selection.json`(W) |
+| 1 | **流程一·选题** | 整场编号逐字稿 | 选题·**topic-select.md** | 选题清单(题+`rough_sid_spans`) | `words.json`(R)+`prompts/topic-select.md`(R)→`_selection.json`(W) |
 | 1b | ~~定段(停用)~~ | 选题粗区间±6句小窗 | ~~stage2·STAGE2_TASK~~ | ~~keep_sids(近视·被总编覆盖)~~ | ~~`_selection.json`±窗(R)~~ |
 | 2 | **流程二·总编** | 1条选题 + **全场**编号句 | 总编·**BODY_TASK** | 选段 `segments[{role,sids,reason}]` | `_selection.json`(R·1条)+`words.json`(R·全场)+`zh_main.md`(R)→内存 |
 | 3 | **流程二·组装草稿** | 总编的 segments + 句表 | 代码(+句号↔时间) | `keep_sids`/`time_spans`/`script_raw` | `words.json`(R·回查时间)→内存 |

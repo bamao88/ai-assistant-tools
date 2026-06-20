@@ -267,6 +267,10 @@ engines:
     path: engines/video-research
     runtime: "python (.venv) — scripts/cli.py"
     purpose: 视频字幕/关键帧/元数据/研究摘要
+  - id: video-select
+    path: engines/video-select
+    runtime: "python — video_select 包（单向 import video-slicer 句/时间核心）"
+    purpose: "第②环·选片 Eval Harness + 成片脚本：Runner(topics 选题 / generate 候选=总编→组装→字级去口水决策→钩子) + gates(精选合并/无重叠/正文≥60s/可执行/零编造门禁) + score(候选 vs 冻结 golden 逼近度) + select_clips_a(方案A备用对照)；4 条提示词全在 prompts/(topic-select/body-edit/refine-deduct/hook·按功能命名·无人设/账号)；Harness 数据 eval/(fixtures 入库·golden 冻结参照随迭代升版 / runs 不入库 / words 软链 / notes 经验)；capabilities.json 声明(stage=select)。定「剪成什么」不定「怎么剪」。无独立触发 skill"
   - id: video-slicer
     path: engines/video-slicer
     runtime: "python — video_slicer 包"

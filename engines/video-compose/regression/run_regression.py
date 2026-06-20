@@ -153,6 +153,12 @@ def t1(work, skip_slow):
     out = work / "titled.mp4"
     r = _run([sys.executable, CLIP / "title_bar.py", GOLDEN / "final.mp4", out, "--text", "回归测试标题", "--style", "label"])
     rec("title_bar 标题条", out.exists() and r.returncode == 0)
+    # prepend_hook 画音整体（防 0619 正片声音超前 0.59s 回归）：拼后门S 必过
+    if HOOK.exists():
+        cp = work / "cp.mp4"
+        _run([sys.executable, CLIP / "prepend_hook.py", HOOK, GOLDEN / "final.mp4", cp])
+        r = _run([sys.executable, CLIP / "align_check.py", "--body", cp])
+        rec("prepend_hook 画音整体(门S)", cp.exists() and r.returncode == 0, "v≈a" if r.returncode == 0 else "拼后画音分叉!")
     # denoise_voice（demucs·慢）：golden body → 107.712
     if skip_slow:
         rec("denoise_voice demucs(跳过·--skip-slow)", True, "skipped")

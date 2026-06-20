@@ -42,19 +42,28 @@ def save(manifest: dict, path) -> None:
     Path(path).write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def _put_op(manifest: dict, entry: dict) -> dict:
+    """幂等写入：同名 op 已存在则替换(就地)，否则追加——让 --from 重跑不叠加重复 op。"""
+    op = entry["op"]
+    for i, e in enumerate(manifest["ops"]):
+        if e.get("op") == op:
+            manifest["ops"][i] = entry
+            return manifest
+    manifest["ops"].append(entry)
+    return manifest
+
+
 def add_keep_op(manifest: dict, op: str, in_tl: str, out_tl: str, keeps, **extra) -> dict:
     """记一笔保留区间类操作（rough_cut/trim_silence/script_clean）。keeps=in_tl 时间轴上的保留区间。"""
     entry = {"op": op, "in": in_tl, "out": out_tl, "keeps": [[round(s, 3), round(e, 3)] for s, e in keeps]}
     entry.update(extra)
-    manifest["ops"].append(entry)
-    return manifest
+    return _put_op(manifest, entry)
 
 
 def add_speed_op(manifest: dict, in_tl: str, out_tl: str, factor: float, **extra) -> dict:
     entry = {"op": "speed", "in": in_tl, "out": out_tl, "factor": float(factor)}
     entry.update(extra)
-    manifest["ops"].append(entry)
-    return manifest
+    return _put_op(manifest, entry)
 
 
 def _through_keeps(t: float, keeps) -> float | None:

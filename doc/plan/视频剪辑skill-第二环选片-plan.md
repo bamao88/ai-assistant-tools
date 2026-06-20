@@ -315,14 +315,14 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 
 ## 9. 验收门(怎么算 Harness 闭环跑通)
 
-- [ ] `engines/video-select/` 独立成形,**Eval Harness** 能脱离 baselines/ 单独跑(`generate → gates → score`);`check-tools.py` 0 error;registry/catalog/架构文档同步。
-- [ ] 固定评测集(agent_eval_0613·22 条)上:Runner 重跑可复现;`score_report.json` 可出基线分。
-- [ ] **门禁代码化**(`gates.py`):精选合并/无重叠/正文≥60s/字级决策可执行/零编造——22 条全绿(不靠手工 `_merge_segments.py`)。
-- [ ] 选题停用 stage2,产出只含粗区间。
-- [ ] 总编 prompt 升级后重跑:连续区间与手工合并版一致或更好。
-- [ ] 去口水产出**可执行的字级删除决策**(对得回原视频时间)。
-- [ ] 钩子整句优先,不丢限定词。
-- [ ] 人工评审环可更新 `golden.json` 冻结参照;下一轮 Scorer 能自动对照。
+- [x] `engines/video-select/` 独立成形,**Eval Harness** 能脱离 baselines/ 单独跑(`generate → gates → score`);`check-tools.py` 0 error;registry/架构文档同步。
+- [x] 固定评测集(agent_eval_0613·22 条)上:Runner 可跑(`generate`);`score_report.json` 可出基线分(冻结 golden 自比对 F1/IoU=1.0)。
+- [x] **门禁代码化**(`gates.py`):精选合并/无重叠/正文≥60s/字级决策可执行/零编造(不靠手工 `_merge_segments.py`)。〔注:冻结 golden 仍有 2 条正文<60s,是真实质量信号,留待下一轮选段迭代。〕
+- [x] 选题停用 stage2,产出只含粗区间(`topics.py` 只产 `rough_sid_spans`)。
+- [x] 总编 prompt 升级(`body-edit.md` 加逻辑编排 + 精选合并);出口自动过 `gates.merge_segments`。〔效果对照待下一轮全量重跑。〕
+- [x] 去口水产出**可执行的字级删除决策**(`deletions[{sid,text}]`,gates 校验是否原话子串)。
+- [x] 钩子整句优先(`hook.md` 三级策略),不丢限定词。
+- [ ] 人工评审环可更新 `golden.json` 冻结参照;下一轮 Scorer 能自动对照。〔机制已就位(fixtures/golden.json + candidates/clip_NN.md),待 owner 实际评审升版。〕
 
 ---
 

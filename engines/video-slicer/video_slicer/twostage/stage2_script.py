@@ -1,5 +1,12 @@
 """阶段二 · 定脚本边界（外科手术）。
 
+⚠️ DEPRECATED（②选片流程）：本步只在选题粗区间 ±WINDOW_PAD 句的小窗里挑句（近视），
+且它的 keep_sids 会被流程二·总编整段重选覆盖（又近视又冗余）。第②环·选片的正式流程
+已停用本步——选题到流程一(粗区间)为止，精确边界交 video-select 的总编(全局取证)。
+正式实现见 engines/video-select/（topics.py 选题 + generate.py 总编）。本文件仅为
+video-slicer 自身的 twostage·cut_word 生产原子保留（pipeline.py 仍引用），不要再把它
+接进②选片的 Eval Harness。
+
 对阶段一的每条选题，只盯它粗区间附近的【张和句子】，按 in/out 纪律精选要哪几句。
 AI 只回句号区间（keep_sids），代码据此拼脚本、回查时间。
 """

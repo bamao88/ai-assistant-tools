@@ -167,7 +167,7 @@
 | 1b | ~~定段(停用)~~ | 选题粗区间±6句小窗 | ~~stage2·STAGE2_TASK~~ | ~~keep_sids(近视·被总编覆盖)~~ | ~~`_selection.json`±窗(R)~~ |
 | 2 | **流程二·总编** | 1条选题 + **全场**编号句 | 总编·**body-edit.md** | 选段 `segments[{role,sids,reason}]` | `_selection.json`(R·1条)+`words.json`(R·全场)+`prompts/body-edit.md`(R)→内存 |
 | 3 | **流程二·组装草稿** | 总编的 segments + 句表 | 代码(+句号↔时间) | `keep_sids`/`time_spans`/`script_raw` | `words.json`(R·回查时间)→内存 |
-| 4 | **流程二·字级去口水决策** | 草稿 + 字级时间戳 | 去口水·**REFINE_TASK** | 删哪些字(带位置) | `words.json`(R·字级)→内存 |
+| 4 | **流程二·字级去口水决策** | 草稿 + 字级时间戳 | 去口水·**refine-deduct.md** | 删哪些字(带位置) | `words.json`(R·字级)+`prompts/refine-deduct.md`(R)→内存 |
 | 5 | **流程二·钩子** | 1条选题 + 候选池句 | 钩子·**HOOK_TASK** | `hook_options`(2-3) | `words.json`(R·候选池)+`zh_main.md`(R)→内存 |
 | 6 | **流程二·汇总落盘** | 步骤2-5(内存) | 代码 | 候选切片 | 内存→`golden_candidate.json`(W)+`candidates/clip_NN.md`(W) |
 | 7 | **Harness·门禁+打分** | 候选 + 冻结参照 | 检查 hook + `score.py` | 过/不过 + 逼近度分 | `golden_candidate.json`(R)+`golden.json`(R·可选)→`score_report.json`(W) |

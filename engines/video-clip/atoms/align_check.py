@@ -21,6 +21,14 @@ def _dur(p):
                                  "-of", "csv=p=0", str(p)], capture_output=True, text=True).stdout.strip() or 0)
 
 
+def _stream_dur(p, kind):
+    """video/audio 流时长（kind='v'|'a'）。"""
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", f"{kind}:0",
+                        "-show_entries", "stream=duration", "-of", "csv=p=0", str(p)],
+                       capture_output=True, text=True).stdout.strip()
+    return float(r or 0)
+
+
 def voiced_intervals(media, noise, min_sil=0.25):
     """成片音频 → 静音区间 → 取补集=人声(voiced)区间。"""
     out = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(media), "-af",

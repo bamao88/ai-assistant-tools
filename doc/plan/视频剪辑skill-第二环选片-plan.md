@@ -283,8 +283,8 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 1. **新引擎名**:我用了 `engines/video-select/`(选片环)。若你想要别的名(如 `video-script` / `clip-select`),说一声。
 2. **②/③ 字级去口水的边界**:本计划把②选片的范围**扩展**为含"字级去口水**决策**"(删哪些字),③ 只负责**执行**(把字剪掉)。这比六环计划里②的窄定义(只选句段)更宽——**需同步更新六环计划 §② + 架构文档**。确认这个边界。
 3. **共享核心的依赖方式**:`video-select` **import** video-slicer 的句/时间核心(单向依赖),不重复造、也不另起共享包。若你想要更彻底的解耦(抽一个独立 transcript-core 包),那是更大改动,另议。
-4. **本文件名**:仍叫 `视频剪辑skill-第二环选片-plan.md`(避免改链接)。若按新定位想重命名(如 `ring2-select-plan.md`),我一并改掉引用它的地方。
-5. **金标准长期留存**:`var/` 不入库;定稿后建议把 `golden.json` 复制到明确"冻结"位置并标版本(类比 G4 基线)。
+4. **本文件名**:真源为 `视频剪辑skill-第二环选片-plan.md`。旧名 `video-golden-baseline-plan.md` 若仍有引用,应改指向本文(旧名偏"金标准终点",已不符合 Harness 定位)。
+5. **冻结参照版本化**:`var/` 不入库;人工评审环确认后的 `golden.json` 复制到明确版本目录(如 `var/zh_main/baseline/select-v1/`)并标版本——它是 **Scorer 的参照**,随 Harness 迭代可升 v2/v3,不是"做完就封存"。
 
 ---
 

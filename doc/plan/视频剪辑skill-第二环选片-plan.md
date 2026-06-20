@@ -239,18 +239,19 @@ engines/
 ├── video-select/                         🆕 第②环·选片(Eval Harness + 成片脚本)
 │   ├── capabilities.json                 🆕 声明(stage=select)
 │   ├── README.md                         🆕 Harness 用法:Runner/门禁/打分/迭代闭环
-│   ├── video_select/                     🆕 包
-│   │   ├── topics.py                     🆕←移自 twostage/stage1_topics.py(选题·STAGE1_TASK)
-│   │   ├── generate.py                   🆕←移自 baselines/global_evidence.py(Runner)
-│   │   │                                    (总编·BODY_TASK + 组装草稿 + 字级去口水决策·REFINE_TASK + 钩子·HOOK_TASK)
-│   │   ├── gates.py                      🆕 阶段检查 hook(精选合并/时长/可执行/零编造…)
+│   ├── prompts/                          🆕 ★所有提示词集中在此(独立文件·按功能命名·通用不分账号)
+│   │   ├── persona.md                    🆕←原 personas/zh_main.md(通用编辑判断:选题闸/标题硬要求/in-out/数量;贴在 选题·总编·钩子 前)
+│   │   ├── topic-select.md               🆕←原 STAGE1_TASK(选题)
+│   │   ├── body-edit.md                  🆕←原 BODY_TASK(总编·待升级)
+│   │   ├── refine-deduct.md              🆕←原 REFINE_TASK(字级去口水决策·待改;并入"承接句保护"红线)
+│   │   └── hook.md                       🆕←原 HOOK_TASK(钩子·待整句优先)
+│   ├── video_select/                     🆕 代码包(只管逻辑;提示词一律从 prompts/ 读,不再内嵌字符串常量)
+│   │   ├── topics.py                     🆕←移自 twostage/stage1_topics.py(选题 Runner;读 topic-select.md)
+│   │   ├── generate.py                   🆕←移自 baselines/global_evidence.py(候选 Runner;读 body-edit/refine-deduct/hook)
+│   │   ├── gates.py                      🆕 门禁(精选合并/时长/可执行/零编造…)
 │   │   ├── score.py                      🆕←移自 baselines/score.py(Scorer:候选 vs 冻结参照)
 │   │   └── select_clips_a.py             🆕←移自 baselines/select_clips.py(方案A·备用对照)
-│   ├── personas/zh_main.md               🆕←移自 video-slicer/personas/(选片人设:选题闸/标题硬要求/in-out/数量)
-│   ├── profiles/zh_main/                 🆕←移自 video-slicer/profiles/(账号定制)
-│   └── references/
-│       └── 字级去口水与承接句保护.md       🆕←移自 video-slicer/references/(去口水承接红线)
-│         ▲ 复用(import,不搬):video-slicer 的 llm / transcribe.segment / twostage.index(编号稿) / twostage.resolve(句号↔时间)
+│   └──(依赖)复用 import·不搬:video-slicer 的 llm / transcribe.segment / twostage.index(编号稿) / twostage.resolve(句号↔时间)
 │
 ├── video-slicer/                         只列②选片要动/要复用的部分(其余 ③④/渲染文件不在本环,不动)
 │   ├── baselines/                        ➡️ 选片三件(global_evidence/select_clips/score)移走 → video-select,README 改指

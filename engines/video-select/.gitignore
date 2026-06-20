@@ -1,0 +1,9 @@
+# Eval Harness 入库口径（见 doc/plan/视频剪辑skill-第二环选片-plan.md §5）：
+#   fixtures(评测集+冻结 golden 参照) + notes(经验) 入库版本化（类比 tests/fixtures）；
+#   runs(每次跑的产物) 不入库；words.json(①转写大文件)软链不入库。
+eval/runs/
+eval/fixtures/*/words.json
+.env
+.env.local
+__pycache__/
+*.pyc

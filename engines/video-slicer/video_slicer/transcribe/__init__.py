@@ -34,6 +34,15 @@ def _log(m: str) -> None:
     print(m, file=sys.stderr, flush=True)
 
 
+def _media_dur(p: Path) -> float:
+    """媒体时长（秒）；读不到返回 0。"""
+    r = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(p)],
+        capture_output=True, text=True,
+    )
+    return float(r.stdout.strip() or 0)
+
+
 def load_env_file(path: str | Path) -> None:
     """读 KEY=VALUE 注入 os.environ（已存在的不覆盖）。火山 key 也放这里。"""
     import os

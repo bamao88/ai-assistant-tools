@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""subtitle_align —— ④ 字幕搬时间：照③剪辑账本重放，把逐字账本里每个选中字搬到成片时间。★承重墙④。
+"""subtitle_align —— ④ 字幕搬时间：把逐字账本里每个选中字搬到「拼好身子(assembled)」时间。★承重墙④。
 
-六环阶段化升级 WS-2 §三/§四。字幕的【时间】不是另算的，是③那把剪刀剪出来的结果：
-读 cut manifest(剪辑账本) 的有序 ops，把每个源字时间依次套用 rough_cut→trim_silence→speed →成片时间。
+六环阶段化升级 + WS-6 伴随轨重构。字幕从此走「伴随轨(.srt 便签)」：本原子只做 **源 → assembled
+一次简单换算**（只套③粗剪 rough_cut 的选段映射），不再事后多级回算到成片时间。
+往后的「动时间轴」操作（③c 去长静音、③d 变速、⑥拼钩子）由各自原子用**同一把刀**把这张字幕便签
+一起裁/缩/偏移（trim_silence/speed_adapt/prepend_hook 的 --srt-in/--srt-out），像素只在最后一步烧一次。
+
+这样字幕时间永远 == 画音被同一把剪刀剪过后的时间，从不另算 → bug① 字幕显示已删内容/卡屏 从根上消失。
 本原子只搬【时间】+ 分句成行；【文字】订正(LLM subtitle_ai_fix / 术语表 / 别动清单)是 WS-4 的事。
 
-剪刀(③)管对齐、AI(④)只换字——所以字幕同步从根上不会被搞乱。
-
-依赖单向：本引擎不 import video-clip，账本是引擎间唯一接口(纯 JSON)，remap_time 在此独立实现(schema 同源)。
+依赖单向：本引擎不 import video-clip，账本是引擎间唯一接口(纯 JSON)。
 
 用法:
-  subtitle_align.py --manifest m.json --words words.json --out clip.srt [--fixes fixes.json] [--cy 1725]
-输出：成片时间轴 SRT（⑤ subtitles 渲药丸 + subtitle_burn 烧）。
+  subtitle_align.py --manifest m.json --words words.json --out clip.srt [--fixes fixes.json]
+输出：assembled(拼好身子) 时间轴 SRT（随后由 ③c/③d/⑥ 各原子按同一把刀同步裁缩，末步烧字）。
 """
 from __future__ import annotations
 import argparse, json, re
@@ -20,31 +22,18 @@ from pathlib import Path
 PUNCT = "，。？！、；："
 FILLERS = ["你知道吧", "是不是", "对不对", "我跟你说", "你放心", "那么", "就是说",
            "他妈的", "妈的", "卧槽", "啊", "嗯", "呃", "唉", "哈", "呀", "哦", "嘛", "呢", "吧", "哎"]
-KEEP_OPS = ("rough_cut", "trim_silence", "script_clean")
+MAX_FILL = 1.0   # 衔接补洞封顶：只补「小空档」，长停顿留给 ③c 去静音连字幕一起裁，绝不硬撑卡屏
 
 
-# ── 剪辑账本重放（与 video-clip/atoms/_manifest.py 同算法·schema 是接口） ──
+# ── 源 → assembled 的单次换算（与 video-clip/atoms/_manifest.py 同算法·schema 是接口） ──
 def _through_keeps(t, keeps):
+    """分段线性映射：t 落在某保留区间[s,e)→偏移到累计保留时长；落在被删处→None。"""
     off = 0.0
     for s, e in keeps:
         if s <= t < e:
             return off + (t - s)
         off += (e - s)
     return None
-
-
-def remap_time(ops, t, is_end=False):
-    for op in ops:
-        if op["op"] in KEEP_OPS or "keeps" in op:
-            nt = _through_keeps(t, op["keeps"])
-            if nt is None and is_end:
-                nt = _through_keeps(t - 0.03, op["keeps"])
-            if nt is None:
-                return None
-            t = nt
-        elif op["op"] == "speed":
-            t = t / op["factor"]
-    return t
 
 
 def rough_cut_keeps(ops):

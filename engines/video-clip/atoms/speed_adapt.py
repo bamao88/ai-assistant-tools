@@ -108,6 +108,8 @@ def main():
     ap.add_argument("--fixed", type=float, default=None, help="固定档：整体匀速 N 倍(③3d)")
     ap.add_argument("--replace-audio", default=None, help="固定档：换干净人声轨(wav)")
     ap.add_argument("--manifest", default=None, help="固定档：把 speed factor 记进剪辑账本")
+    ap.add_argument("--srt-in", dest="srt_in", default=None, help="固定档：字幕便签(trimmed 轴)同因子缩")
+    ap.add_argument("--srt-out", dest="srt_out", default=None, help="固定档：缩后字幕便签(final 轴)")
     ap.add_argument("--target_cps", type=float, default=8.0)
     ap.add_argument("--max_speed", type=float, default=2.0)
     ap.add_argument("--gap_speed", type=float, default=2.0)

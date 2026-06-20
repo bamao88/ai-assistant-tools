@@ -325,7 +325,7 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 2. **②/③ 字级去口水的边界**:本计划把②选片的范围**扩展**为含"字级去口水**决策**"(删哪些字),③ 只负责**执行**(把字剪掉)。这比六环计划里②的窄定义(只选句段)更宽——**需同步更新六环计划 §② + 架构文档**。确认这个边界。
 3. **共享核心的依赖方式**:`video-select` **import** video-slicer 的句/时间核心(单向依赖),不重复造、也不另起共享包。若你想要更彻底的解耦(抽一个独立 transcript-core 包),那是更大改动,另议。
 4. **本文件名**:真源为 `视频剪辑skill-第二环选片-plan.md`。旧名 `video-golden-baseline-plan.md` 若仍有引用,应改指向本文(旧名偏"金标准终点",已不符合 Harness 定位)。
-5. **冻结参照版本化**:`var/` 不入库;人工评审环确认后的 `golden.json` 复制到明确版本目录(如 `var/zh_main/baseline/select-v1/`)并标版本——它是 **Scorer 的参照**,随 Harness 迭代可升 v2/v3,不是"做完就封存"。
+5. **评测数据入库口径(一处需你确认)**:评测数据迁到 `engines/video-select/eval/` 后,按"**fixtures(评测集+冻结 golden 参照)+ notes(经验)入库版本化、runs(每次跑的产物)不入库、words.json 软链不入库**"切分。注意这**轻微突破** CLAUDE.md "引擎旁的 data/output 一律 gitignored" 这条——因为金标准参照是"标准答案",必须随版本走才能当 Scorer 基准(类比 tests/fixtures 要入库)。冻结参照随 Harness 迭代升 v1/v2(如 `fixtures/agent_eval_0613/golden.json` 标版本),不是"做完就封存"。确认这个入库口径。
 
 ---
 

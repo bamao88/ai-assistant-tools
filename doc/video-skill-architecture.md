@@ -121,7 +121,7 @@ python engines/video-compose/run.py --run zh_clip_cut \
 | **给成片加顶部标题**（贴纸式白底黑字 / 旧黑底白字整条） | `engines/video-clip/atoms/title_bar.py IN OUT --text 标题`。两种样式：`--style bar`（默认·顶部黑底白字整条）；`--style label`（顶部黑色信箱块里**白底黑字圆角贴纸**·单行·块高自动探测顶部黑边）。字色/底色 `--bar-color`/`--text-color` 可覆盖。 |
 | **成片前置开篇钩子 + 翻页转场** | `engines/video-clip/atoms/prepend_hook.py 钩子 正文 OUT [--flip 0.30] [--trans slideleft]`。钩子→翻页(翻页期间正文定格暂停)→正文，自动统一画幅/帧率+音频过渡。与 `concat`（硬切拼接，无转场）互补。 |
 | **出一条裁剪版成片**（录屏裁剪版竖版切片） | `run.py --run zh_clip_cut --job job.json` 一键端到端。job 规格（源/选段spec、words.json、术语表、别动清单、标题、钩子、是否 denoise/ai_fix、基准时长、落点）见 `clip_cut_run.py --help`。剪辑账本(`cut_manifest.json`)在原子间流转，自动跑③④⑤⑥+自检门(门A/D/S)。 |
-| **改完字幕/转场不想重切**（从某阶段重跑） | `run.py --run zh_clip_cut --job job.json --from cast`（复用已落盘 final+srt，只重渲药丸+组装）/ `--from assemble`（复用 subbed，只重组装）/ `--from subtitle`（复用 final，重做字幕起）。阶段产物都落在 out_dir，省掉从 3.3h 源重切。 |
+| **改完字幕/转场不想重切**（从某阶段重跑） | 阶段：`rough_cut→subtitle→trim→assemble`。`--from subtitle`（复用 body，重算字幕起，连带去静音/变速/组装/烧字）/ `--from trim`（复用 body+字幕便签，重做去静音起；改字幕**文本**就编辑 `clip.srt` 后走这个）/ `--from assemble`（复用 final+final.srt，只重做加标题/拼钩子/**末次烧字**）。阶段产物都落在 out_dir，省掉从 3.3h 源重切。账本 ops 幂等（重跑不叠加）。 |
 | **产物分层 / 清缓存** | 真源(小·永留)：`cut_manifest.json` + `clip.srt`/`clip.final.srt`（有它们+源就能确定性重生一切）；缓存(大·可清)：`body/trimmed/final/subbed/titled.mp4`。`--cleanup-cache` 成功后清缓存只留真源+成片；要重生跑 `--from rough_cut`。 |
 | **改去长静音/变速口径**（裁剪版③） | 去静音：`trim_silence.py` 的 `--min-sil`(多长算长停顿,默认1.5s)/`--keep-pad`(保留缓冲)/`--noise`(静音阈)；变速：`speed_adapt.py --fixed 1.2`(整体倍速)。静音检测**用干净人声当参考最准**——job 给 `vocals` 现成人声、或 `denoise:true` 跑 demucs(需装 audio venv)。 |
 | **改裁剪版药丸字幕位置/大小** | 改 `video-framework-render/layouts/clip_cut.json` 的 `sub`(FS字号/CY纵向中心/H药丸高/R圆角)。它=竖版 vertical.json ×1.5；**复用同一份 make_subtitles 几何**，不在别处再写第二份。 |

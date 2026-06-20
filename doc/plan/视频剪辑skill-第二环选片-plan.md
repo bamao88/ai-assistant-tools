@@ -35,22 +35,17 @@
 | Harness 组件 | 大白话 | 对应产物/代码 |
 |---|---|---|
 | **评测集** | 固定输入:一场逐字稿 + 已认可的选题清单 | `words.json` + `_selection.json`(如 agent_eval_0613 的 22 条) |
-| **Runner** | 把选片流水线跑一遍,落候选 | `eval/video-select/runner.py`(调生产核心,写 var 产物) |
-| **门禁(Gates)** | 机器可判的红线,不过就挡、不让进下一轮 | `eval/video-select/gates.py` |
-| **打分器(Scorers)** | 跟冻结参照比"逼近度",量化 prompt 改动有没有变好 | `eval/video-select/score.py` |
-| **人工评审环** | 人在环里给参照打标、挑钩子、核对忠实度——**是 Harness 的一环,不是 Harness 之外的"定稿仪式"** | `var/.../candidates/clip_NN.md` 评审 → 更新 `golden.json` |
-| **迭代闭环** | 北极星=**迭代周期**:发现问题→定位层→改→重跑→验收 | `eval/video-select/doc/`(迭代经验) + `var/.../eval/<run>/`(运行产物) |
+| **Runner** | 把选片流水线跑一遍,落候选 | `generate.py`(选题→总编→组装→去口水决策→钩子) |
+| **门禁(Gates)** | 机器可判的红线,不过就挡、不让进下一轮 | 阶段检查 hook(无重叠/相邻 gap≤2/源头连续必连/正文≥60s/字级决策可执行/零编造…) |
+| **打分器(Scorers)** | 跟冻结参照比"逼近度",量化 prompt 改动有没有变好 | `score.py`(句号召回·精确·F1 + 时间 IoU) |
+| **人工评审环** | 人在环里给参照打标、挑钩子、核对忠实度——**是 Harness 的一环,不是 Harness 之外的"定稿仪式"** | `clip_NN.md` 评审 → 更新 `golden.json` 参照 |
+| **迭代闭环** | 北极星=**迭代周期**:发现问题→定位层→改→重跑→验收 | `var/.../eval/<run>/` + `doc/金标准建设-经验与提示词总结.md` |
 
-> **和生产的关系**:
-> - **日常生成**走 `engines/video-select/`(生产引擎),**不加载、不 import** 任何 Eval 代码。
-> - **只有**做提示词优化或架构优化时,才进 `eval/video-select/` 跑 Harness。
-> - Harness 改的是生产引擎里的 prompt/编排;验收通过后,生产路径自动受益。**Harness 不进③–⑥,也不绑在日常命令上。**
+> **和生产的关系**:Harness **不进③–⑥生产管线**,但**驱动**②的 prompt/编排/门禁怎么改;生产侧只消费"门禁已通过"的成片脚本。**Harness 只服务②选片,不是给所有剪辑环节的。**
 
 **为什么要重做这一环**:
 1. **质量不可取**:现在选片产出的候选**切太碎 / 句间跳得大 / 两刀挨太近吞掉中间 / 重复段**——没有 Harness,改 prompt 只能凭感觉。
-2. **代码没独立、生产与 Eval 混在一起**:②生产逻辑与 baselines 评测脚本**同堆在 `engines/video-slicer/`**,日常跑片和改 prompt 共用一套目录,认知混乱。**本计划拆成两条线:**
-   - **生产** → `engines/video-select/`(六环日常用)
-   - **Eval Harness** → `eval/video-select/`(仅优化时用;文档+门禁+打分+重跑脚本,与生产代码分目录)
+2. **代码没独立、阶段认知不清**:②选片的逻辑(选题、总编、去口水决策、钩子、打分、门禁、人设)**全混在 `engines/video-slicer/` 里**(散在 `baselines/` 和 `twostage/`),看不出它是独立的一环,也串不成闭环。**本计划要独立成 `engines/video-select/`,并把 baselines 收成正式的 Eval Harness。**
 
 ---
 
@@ -225,83 +220,58 @@
 7. **字级去口水必须可执行**:产出是"删哪些字(带位置)",不是改写文本——否则脚本落不了地、③ 没法照着剪。
 8. **Eval Harness 驱动迭代**:改 prompt/代码的唯一验收方式是**重跑 Harness**——门禁全绿 + 分数相对冻结参照不跌 + bad case 被消化;人工评审是 Harness 里给参照打标的一环,不是闭环外的"一次性定稿"。
 9. **一次只动一层**:bad case 先定位是哪一段(选题/总编/去口水/钩子/门禁),只改那一层再重跑,别全推倒。
-10. **生产与 Eval 分目录**:prompt/人设真源在生产引擎(`engines/video-select/`);门禁、打分、Harness 文档、评测重跑脚本**只在** `eval/video-select/`。**生产代码不得 import eval**;eval 可 import 生产核心做对照重跑。
 
 ---
 
-## 6. 目录拆分:生产引擎 + Eval Harness(分放)
+## 6. 引擎独立:新建 `engines/video-select/`(目录树)
 
-**决定**:②选片拆成**两条独立目录**,职责不混:
+**决定**:把②选片从 `video-slicer/` 里独立成新引擎 `engines/video-select/`。
 
-| 路径 | 什么时候用 | 放什么 |
-|---|---|---|
-| **`engines/video-select/`** | **日常**跑六环、出成片脚本 | 选题 + 总编 + 去口水决策 + 钩子 + persona/profile/reference(prompt 真源) |
-| **`eval/video-select/`** | **仅**提示词优化 / 架构优化 | Harness README、迭代文档、`runner.py`/`gates.py`/`score.py`、方案A对照 |
-| **`var/.../eval/<run>/`** | Harness 跑出来的 | 候选 json/md、score_report、冻结参照(运行时,默认不入库) |
-
-- **为什么分目录**:平时生成**用不到**评测代码;混在生产引擎里会让人误以为日常也要跑 score/gates,也污染 registry/check-tools 的认知。
-- **共享方式**:Eval **import 生产核心**(`engines.video_select`),prompt 只维护一份;Eval 侧只加门禁/打分/重跑编排,不 fork 一套 prompt。
-- **依赖方向**:`eval/video-select` → `engines/video-select` → `engines/video-slicer`(单向)。
+- **为什么独立**:选片是一条**自成一体的 Eval Harness 业务**(Runner + 门禁 + 打分 + 人工评审环,全是 LLM 提示词驱动的内容判断),和 video-slicer 的"切片机器/字幕对齐机器"是两码事;混在一起阶段认知不清、闭环串不起来。
+- **运行环境**:选片和 video-slicer **同属轻量 Python + LLM 客户端**(不碰 ffmpeg/渲染重库),所以独立后**复用(import)** video-slicer 的"逐字稿→句/时间"轻量核心,**不重复造**。
+- 依赖方向:**`video-select` → `video-slicer`**(单向,只读用它的句/时间核心)。
 
 ```
-tools/
-├── engines/
-│   ├── video-select/                         🆕 生产·第②环选片(日常管线)
-│   │   ├── capabilities.json                 🆕 stage=select · 注册进 registry
-│   │   ├── README.md                         🆕 生产用法(选题→成片脚本→交③)
-│   │   ├── video_select/                     🆕 包
-│   │   │   ├── topics.py                     🆕← twostage/stage1_topics.py
-│   │   │   └── select.py                     🆕 生产 Runner(总编+组装+去口水+钩子)
-│   │   ├── personas/zh_main.md               🆕 prompt 真源(生产与 eval 共用)
-│   │   ├── profiles/zh_main/
-│   │   └── references/字级去口水与承接句保护.md
-│   │         ▲ import(不搬): video-slicer 的 llm / transcribe / twostage.index / resolve
-│   │
-│   └── video-slicer/                         ①转写 + ③④执行 + 共享核心
-│       └── video_slicer/
-│           ├── transcribe/                   ✅ ①
-│           ├── twostage/                     stage2 DEPRECATED; index/resolve ♻️
-│           ├── cut_video.py pipeline.py ...  ✅ ③④
-│           └── (无 baselines/)               ➡️ 删/留 stub README 指 eval/video-select
+engines/
+├── video-select/                         🆕 第②环·选片(Eval Harness + 成片脚本)
+│   ├── capabilities.json                 🆕 声明(stage=select)
+│   ├── README.md                         🆕 Harness 用法:Runner/门禁/打分/迭代闭环
+│   ├── video_select/                     🆕 包
+│   │   ├── topics.py                     🆕←移自 twostage/stage1_topics.py(选题·STAGE1_TASK)
+│   │   ├── generate.py                   🆕←移自 baselines/global_evidence.py(Runner)
+│   │   │                                    (总编·BODY_TASK + 组装草稿 + 字级去口水决策·REFINE_TASK + 钩子·HOOK_TASK)
+│   │   ├── gates.py                      🆕 阶段检查 hook(精选合并/时长/可执行/零编造…)
+│   │   ├── score.py                      🆕←移自 baselines/score.py(Scorer:候选 vs 冻结参照)
+│   │   └── select_clips_a.py             🆕←移自 baselines/select_clips.py(方案A·备用对照)
+│   ├── personas/zh_main.md               🆕←移自 video-slicer/personas/(选片人设:选题闸/标题硬要求/in-out/数量)
+│   ├── profiles/zh_main/                 🆕←移自 video-slicer/profiles/(账号定制)
+│   └── references/
+│       └── 字级去口水与承接句保护.md       🆕←移自 video-slicer/references/(去口水承接红线)
+│         ▲ 复用(import,不搬):video-slicer 的 llm / transcribe.segment / twostage.index(编号稿) / twostage.resolve(句号↔时间)
 │
-├── eval/
-│   └── video-select/                         🆕 Eval Harness(优化时才进)
-│       ├── README.md                         🆕 generate → gates → score 命令
-│       ├── doc/
-│       │   └── 金标准建设-经验与提示词总结.md  🆕← 从 var/.../eval/.../doc/ 迁入仓库
-│       ├── run.py                            🆕 一键 Harness 入口
-│       ├── runner.py                         🆕← baselines/global_evidence.py
-│       ├── gates.py                          🆕 门禁(精选合并/时长/可执行/零编造…)
-│       ├── score.py                          🆕← baselines/score.py
-│       └── select_clips_a.py                 🆕← baselines/select_clips.py(方案A对照)
-│             ▲ import engines.video_select + video_slicer 核心
-│
-├── video-framework-render/  video-clip/  video-compose/   ③⑤⑥ 其余不动
+├── video-slicer/                         只列②选片要动/要复用的部分(其余 ③④/渲染文件不在本环,不动)
+│   ├── baselines/                        ➡️ 选片三件(global_evidence/select_clips/score)移走 → video-select,README 改指
+│   └── video_slicer/
+│       ├── twostage/stage1_topics.py     ➡️ 选题逻辑移走 → video-select;此处删/留薄壳
+│       ├── twostage/stage2_script.py     ⚠️ 定段(近视)→ 标 DEPRECATED·停用
+│       ├── llm.py                        ♻️ 被 video-select import(LLM 客户端)
+│       ├── transcribe/segment.py         ♻️ 被 import(逐字稿→句)
+│       └── twostage/{index,resolve}.py   ♻️ 被 import(编号稿 / 句号↔时间)
 │
 var/zh_main/
-├── asr/agent_eval_0613/words.json            ♻️ 评测集输入(也是生产 ASR 产物)
-├── cuts/agent全量-volc-native/_selection.json 📦 评测集选题清单
-└── eval/agent_eval_0613/                      📦 Harness 运行产物(var,不入库)
-    ├── candidates/clip_NN_*.md                📦 人工评审稿
-    ├── golden_candidate.json / golden.json    📦 候选 / 冻结参照
-    └── score_report.json                      📦 Scorer 产出
-    （迭代经验文档已迁到 eval/video-select/doc/, var 只留运行数据)
+├── asr/agent_eval_0613/words.json                ♻️ ①转写产物(输入)
+├── cuts/agent全量-volc-native/_selection.json    📦 选题清单(本场)
+└── eval/agent_eval_0613/                          📦 Eval Harness 运行目录(var,默认不入库)
+    ├── candidates/clip_NN_*.md                    📦 人读评审稿(人工评审环)
+    ├── golden_candidate.json / golden.json        📦 Runner 产出 / 冻结参照快照
+    ├── score_report.json                          📦 Scorer 产出
+    └── doc/金标准建设-经验与提示词总结.md          📦 迭代经验(bad case → 改法)
 
-doc/plan/视频剪辑skill-第二环选片-plan.md        本计划(第②环真源)
-doc/video-skill-architecture.md / registry.yaml  🔶 拆分后同步
+doc/plan/视频剪辑skill-第二环选片-plan.md            本计划(第②环真源)
+doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(架构随改随更)
 ```
 
-> **图例**:🆕新建 ｜ ➡️移走/删 ｜ ⚠️停用 ｜ ♻️复用(import) ｜ ✅留 ｜ 🔶同步 ｜ 📦运行时产物。
-
-**日常 vs 优化,各走各的门**:
-
-```bash
-# 日常生产(六环②)——不碰 eval/
-python engines/video-select/... select --words ... --selection ... --out var/.../cuts/...
-
-# 仅在做 prompt/架构优化时——进 eval/
-python eval/video-select/run.py --suite agent_eval_0613   # → runner → gates → score
-```
+> **图例**:🆕新建 ｜ ➡️移走 ｜ ⚠️停用 ｜ ♻️复用(import) ｜ ✅留 ｜ 🔶同步 ｜ 📦产物。
 
 ---
 
@@ -309,31 +279,28 @@ python eval/video-select/run.py --suite agent_eval_0613   # → runner → gates
 
 | # | 改什么 | 现状 → 目标 | 验收 |
 |---|---|---|---|
-| 0 | **目录拆分** | baselines 混在 `video-slicer/` → 生产进 `engines/video-select/`;Harness+文档进 `eval/video-select/`;`var/` 只留运行产物 | 日常命令不 import eval;优化命令不污染生产 registry |
-| 1 | **Eval Harness 成形** | 散脚本 + 文档在 var → `eval/video-select/` 内 `run.py` + gates + score + README + doc | 固定评测集上一键 `run → gates → score` |
-| 2 | **生产引擎独立** | 新建 `engines/video-select/`(仅 select/topics/persona);注册 registry;import video-slicer 核心 | `check-tools.py` 0 error;日常选片可独立跑通 |
-| 3 | **选题停用 stage2** | 选题只给粗区间;`stage2_script.py` 标 DEPRECATED | 选题产出只含 `rough_sid_spans`,无 `keep_sids` |
-| 4 | **总编 `BODY_TASK`** | 从"取证"升级"总编"(加逻辑连续+精选合并原则);门禁进 `eval/.../gates.py` | 重跑 22 条:连续区间与手工合并版一致、gates 全绿 |
-| 5 | **去口水 `REFINE_TASK`** | 从"出改写文本"改"出**字级删除决策**(删哪些字、带位置);删掉"顺语序/合并"(上交总编) | 产出能对回原视频字级时间、可直接驱动 ③ 执行 |
-| 6 | **钩子 `HOOK_TASK`** | "短句拼接"→"整句优先、拼接兜底" | 钩子不丢限定词、不失真 |
+| 0 | **Eval Harness 成形** | baselines 散在 video-slicer、无统一门禁/闭环叙事 → `video-select` 内 Runner + `gates.py` + `score.py` + README 写清迭代命令 | 固定评测集上能一键 `generate → gates → score`;bad case 有落盘路径 |
+| 1 | **引擎独立** | 新建 `engines/video-select/`,移入 Harness 全套;import video-slicer 句/时间核心;`capabilities.json` 标 `stage=select`;`registry.yaml` + catalog 注册 | `check-tools.py` 0 error;Harness 能独立跑通、产出与原一致 |
+| 2 | **选题停用 stage2** | 选题只给粗区间;`stage2_script.py` 标 DEPRECATED | 选题产出只含 `rough_sid_spans`,无 `keep_sids` |
+| 3 | **总编 `BODY_TASK`** | 从"取证"升级"总编"(加逻辑连续+精选合并原则);**出口加阶段检查 hook**(无重叠/无相邻 gap≤2/源头连续必连,不过就挡) | 重跑 22 条:连续区间与手工合并版一致、检查 hook 全绿 |
+| 4 | **去口水 `REFINE_TASK`** | 从"出改写文本"改"出**字级删除决策**(删哪些字、带位置);删掉"顺语序/合并"(上交总编) | 产出能对回原视频字级时间、可直接驱动 ③ 执行 |
+| 5 | **钩子 `HOOK_TASK`** | "短句拼接"→"整句优先、拼接兜底" | 钩子不丢限定词、不失真 |
 
 ---
 
 ## 8. 当前状态
 
-- **Harness 已跑通(初版)**:agent_eval_0613 上 baselines 脚本可跑;迭代经验目前在 `var/.../doc/`(待迁入 `eval/video-select/doc/`)。
-- **已做(临时补丁)**:22 条总编选段手工 `_merge_segments.py`(待迁入 eval 或 gates 替代)。
-- **待做**:§7 目录拆分 + 生产引擎 + Harness 收口 + prompt 改造项。
+- **Harness 已跑通(初版)**:agent_eval_0613 评测集上,Runner 已产出 22 条候选;Scorer(`score.py`)可对照参照打分;迭代经验记在 `var/.../doc/金标准建设-经验与提示词总结.md`。
+- **已做(临时补丁)**:对 22 条总编选段手工跑过去重/合并(`_merge_segments.py`),改 15 条、7 条不动、检查全绿。**临时性——prompt/门禁改好后重跑 Harness 会覆盖。**
+- **待做**:第 7 节( Harness 正式收口 + 引擎独立 + 停 stage2 + 总编 + 去口水决策 + 钩子整句 + `gates.py` 代码化)。
 
 ---
 
 ## 9. 验收门(怎么算 Harness 闭环跑通)
 
-- [ ] **生产** `engines/video-select/` 独立成形,日常选片不依赖 eval;`check-tools.py` 0 error;registry 只登记生产引擎。
-- [ ] **Eval** `eval/video-select/` 独立成形,文档在 `eval/.../doc/`(不在 var、不在 engines);`run → gates → score` 可一键跑。
-- [ ] `engines/video-slicer/baselines/` 清空/改 stub,指向 `eval/video-select/`。
+- [ ] `engines/video-select/` 独立成形,**Eval Harness** 能脱离 baselines/ 单独跑(`generate → gates → score`);`check-tools.py` 0 error;registry/catalog/架构文档同步。
 - [ ] 固定评测集(agent_eval_0613·22 条)上:Runner 重跑可复现;`score_report.json` 可出基线分。
-- [ ] **门禁代码化**(`eval/video-select/gates.py`):22 条全绿(不靠手工 `_merge_segments.py`)。
+- [ ] **门禁代码化**(`gates.py`):精选合并/无重叠/正文≥60s/字级决策可执行/零编造——22 条全绿(不靠手工 `_merge_segments.py`)。
 - [ ] 选题停用 stage2,产出只含粗区间。
 - [ ] 总编 prompt 升级后重跑:连续区间与手工合并版一致或更好。
 - [ ] 去口水产出**可执行的字级删除决策**(对得回原视频时间)。
@@ -346,7 +313,7 @@ python eval/video-select/run.py --suite agent_eval_0613   # → runner → gates
 
 1. **新引擎名**:我用了 `engines/video-select/`(选片环)。若你想要别的名(如 `video-script` / `clip-select`),说一声。
 2. **②/③ 字级去口水的边界**:本计划把②选片的范围**扩展**为含"字级去口水**决策**"(删哪些字),③ 只负责**执行**(把字剪掉)。这比六环计划里②的窄定义(只选句段)更宽——**需同步更新六环计划 §② + 架构文档**。确认这个边界。
-3. **共享核心的依赖方式**:生产 `video-select` import video-slicer 句/时间核心;Eval import 生产 `video_select`(prompt 单源)。Eval **不**反向被生产 import。
+3. **共享核心的依赖方式**:`video-select` **import** video-slicer 的句/时间核心(单向依赖),不重复造、也不另起共享包。若你想要更彻底的解耦(抽一个独立 transcript-core 包),那是更大改动,另议。
 4. **本文件名**:真源为 `视频剪辑skill-第二环选片-plan.md`。旧名 `video-golden-baseline-plan.md` 若仍有引用,应改指向本文(旧名偏"金标准终点",已不符合 Harness 定位)。
 5. **冻结参照版本化**:`var/` 不入库;人工评审环确认后的 `golden.json` 复制到明确版本目录(如 `var/zh_main/baseline/select-v1/`)并标版本——它是 **Scorer 的参照**,随 Harness 迭代可升 v2/v3,不是"做完就封存"。
 

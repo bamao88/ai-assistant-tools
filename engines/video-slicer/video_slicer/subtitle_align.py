@@ -112,8 +112,11 @@ def cleanup(cues):
     merged, i = [], 0
     while i < len(res):
         c = res[i]
-        if (c[1] - c[0]) < 0.8 and i + 1 < len(res) and res[i + 1][3] == c[3]:
-            res[i + 1] = [c[0], res[i + 1][1], c[2] + res[i + 1][2], c[3]]; i += 1; continue
+        # <0.8s 碎片并入下一条——但仅当两条「时间上相邻」(间隔≤GAP_SPLIT)；否则会把短碎片
+        # 跨长停顿粘到远处的下一条、重新撑出一条横跨停顿的长字幕(卡屏/字音脱节根因)，故不并。
+        nxt = res[i + 1] if i + 1 < len(res) else None
+        if (c[1] - c[0]) < 0.8 and nxt and nxt[3] == c[3] and (nxt[0] - c[1]) <= GAP_SPLIT:
+            res[i + 1] = [c[0], nxt[1], c[2] + nxt[2], c[3]]; i += 1; continue
         merged.append(c); i += 1
     return merged
 

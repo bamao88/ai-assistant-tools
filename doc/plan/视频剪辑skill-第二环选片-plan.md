@@ -262,14 +262,18 @@ engines/
 │       ├── transcribe/segment.py         ♻️ 被 import(逐字稿→句)
 │       └── twostage/{index,resolve}.py   ♻️ 被 import(编号稿 / 句号↔时间)
 │
-var/zh_main/
-├── asr/agent_eval_0613/words.json                ♻️ ①转写产物(输入)
-├── cuts/agent全量-volc-native/_selection.json    📦 选题清单(本场)
-└── eval/agent_eval_0613/                          📦 Eval Harness 运行目录(var,默认不入库)
-    ├── candidates/clip_NN_*.md                    📦 人读评审稿(人工评审环)
-    ├── golden_candidate.json / golden.json        📦 Runner 产出 / 冻结参照快照
-    ├── score_report.json                          📦 Scorer 产出
-    └── doc/金标准建设-经验与提示词总结.md          📦 迭代经验(bad case → 改法)
+engines/video-select/eval/                🆕 ②选片专属·Eval Harness 数据(从 var/zh_main 迁来,跟引擎走)
+├── fixtures/                            📥 版本化·入库(评测集固定输入 + 冻结金标准参照)
+│   └── agent_eval_0613/
+│       ├── selection.json               选题清单(输入·22 条)
+│       ├── golden.json                  冻结金标准参照(Scorer 比对基准;随迭代升 v1/v2…)
+│       └── words.json → var/.../asr/…   ①转写大文件·**软链引用·不入库**(太大)
+├── runs/                                🚫 gitignored·不入库(每次跑的产物)
+│   └── agent_eval_0613/
+│       ├── candidates/clip_NN_*.md      人读评审稿(人工评审环)
+│       ├── golden_candidate.json        Runner 产出
+│       └── score_report.json            Scorer 产出
+└── notes/金标准建设-经验与提示词总结.md   📥 版本化·入库(迭代经验:bad case → 改法)
 
 doc/plan/视频剪辑skill-第二环选片-plan.md            本计划(第②环真源)
 doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(架构随改随更)

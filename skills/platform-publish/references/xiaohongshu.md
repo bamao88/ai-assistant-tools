@@ -56,6 +56,8 @@ node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
 
 ## 网络分流前置步骤（强制）
 
+> 真因：整机走 Tailscale 海外出口时，上传域名 `ros-upload.xiaohongshu.com` 不可达（ping 100% 丢包）——页面能打开能填字，唯独上传必然失败，极易误判。`route-bypass apply` 把小红书 IP 钉到本地网关出口，上传才通。**漏跑这步 = 视频/图片传不上去。** 详见 `references/xiaohongshu-faq.md` #1。
+
 为避免 Tailscale exit node 导致小红书发布走海外出口，账号选定后、任何会访问小红书网页的 CLI 前，必须先刷新本地分流路由：
 
 ```bash

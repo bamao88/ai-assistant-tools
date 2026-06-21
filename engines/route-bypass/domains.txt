@@ -42,3 +42,15 @@ www.douyin.com
 sso.douyin.com
 mcs.zijieapi.com
 ros-upload.xiaohongshu.com
+# 小红书视频/图片分片上传真实走 *.xhscdn.com 分片域（d1..dN 轮换），
+# 只钉 ros-upload.xiaohongshu.com 不够——分片域不钉则上传卡在 85% 走海外出口。
+# 分片名会轮换，整组列出；解析不到的分片 apply 时自动跳过（2026-06-21 实测漏钉根因）。
+ros-upload.xhscdn.com
+ros-upload-d1.xhscdn.com
+ros-upload-d2.xhscdn.com
+ros-upload-d3.xhscdn.com
+ros-upload-d4.xhscdn.com
+ros-upload-d5.xhscdn.com
+ros-upload-d6.xhscdn.com
+ros-upload-d7.xhscdn.com
+ros-upload-d8.xhscdn.com

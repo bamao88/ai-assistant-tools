@@ -151,7 +151,19 @@ python scripts/cli.py save-draft
 python scripts/cli.py publish-video \
   --title-file title.txt \
   --content-file content.txt \
-  --video "/abs/path/video.mp4"
+  --video "/abs/path/video.mp4" \
+  --cover "/abs/path/cover.png" \
+  --schedule-at "2026-06-21T20:00:00"
+
+# 只填表预览，不点发布
+python scripts/cli.py fill-publish-video \
+  --title-file title.txt \
+  --content-file content.txt \
+  --video "/abs/path/video.mp4" \
+  --cover "/abs/path/cover.png"
+
+视频命令会自动刷新小红书本地网络分流、解析软链真实路径，并默认声明原创；
+非原创素材请加 `--no-original`。
 
 # 长文发布
 python scripts/cli.py long-article \

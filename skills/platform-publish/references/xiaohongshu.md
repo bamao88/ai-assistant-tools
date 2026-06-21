@@ -332,9 +332,17 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
   --title-file /tmp/xhs_title.txt \
   --content-file /tmp/xhs_content.txt \
   --video "/abs/path/video.mp4" \
+  [--cover "/abs/path/cover.png"] \
   [--tags "标签1" "标签2"] \
-  [--visibility "公开可见"]
+  [--visibility "公开可见"] \
+  [--no-original]
 ```
+
+说明：
+- `fill-publish-video` 会自动刷新小红书本地网络分流；不得手工跳过。只有本地调试才允许加 `--skip-route-bypass`。
+- `--video` 会自动解析软链到真实文件路径。
+- `--cover` 可选；提供后会在同一发布页完成「修改封面 → 上传图片 → 确定」，不再调用临时外挂脚本。
+- 视频默认声明原创；如果素材不是原创，显式加 `--no-original`。
 
 填写完成后告知用户：
 > "内容已全部填写完毕，请：
@@ -343,26 +351,29 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 > 3. 手动点击页面上的发布按钮
 > 发布完成后无需关闭或恢复 Tailscale exit node。"
 
-> ⚠️ **`click-publish` 和 `publish-video` 禁止在自动化流程中调用。**
+> ⚠️ **填表预览流程禁止调用 `click-publish`。** 只有用户明确确认“正式发布/定时发布”时，才允许改走下面的一键正式入口。
 
 > ⚠️ **用户要求取消时必须调用 `save-draft`**，不得直接关闭 tab。
 
-### ⚠️ feedback：视频发布流程现状与目标态（2026-06-21）
+### 一键正式视频发布入口（用户确认后才用）
 
-**现状（一条视频实际要手工串 4 段，容易漏步）**：
+当用户已经明确确认要正式发布/定时发布，直接用 `publish-video`；它会在一个流程内完成「本地网络分流刷新 → 软链解析 → 上传视频 → 填标题/正文/标签 → 默认原创声明 → 定时/可见范围 → 可选封面 → 点击发布」。
 
-1. **手动**先跑 `route-bypass apply`（强制前置；漏跑则视频上传域名 `ros-upload.xiaohongshu.com` 在 Tailscale 海外出口下不可达、上传必失败——本次最大坑就是漏了这步）。
-2. `fill-publish-video` 填表：视频要传**软链解析后的真实文件路径**（直接传软链上传会失败）；**原创声明默认不勾**，要记得显式加 `--original`，漏了就不是原创。
-3. **封面引擎不支持**：`fill-publish-video` 无 `--cover`、填表流程里没有封面步骤，平台只会用首帧；要发自定义封面只能**外挂脚本**到发布页做「修改封面→上传 cover.png→确定」。
-4. `click-publish` 真发布。
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
+  /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py \
+  publish-video \
+  --title-file /tmp/xhs_title.txt \
+  --content-file /tmp/xhs_content.txt \
+  --video "/abs/path/video.mp4" \
+  [--cover "/abs/path/cover.png"] \
+  [--tags "标签1" "标签2"] \
+  [--schedule-at "2026-06-21T20:00:00"] \
+  [--visibility "公开可见"] \
+  [--no-original]
+```
 
-**目标态（理想：一条指令发布，下面只列目标、不限定实现）**：
-
-- **封面能力内置进视频发布流程**：填表即可带封面（如 `--cover`），引擎自己完成上传封面，不再靠外挂脚本。
-- **网络分流自动纳入发布流程**：发布命令自身保证 `route-bypass` 已生效，不靠人记得手动先跑。
-- **原创声明纳入默认流程**：该勾原创就勾，不靠记得加参数。
-- **软链路径自动解析**成真实文件，不要求调用方先解析。
-- **最终**：一条命令完成「上传 + 标题 + 正文 + 标签 + 定时 + 封面 + 原创 + 发布」，无需手工串多步、不漏步。
+禁止再使用 `/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/tmp/...` 下的临时封面脚本或临时 `_publish.py` 作为正式入口；相关能力已固化进引擎。
 
 ### ⚠️ 故障复盘：为什么会把发布/路由搞坏（2026-06-21）——当前 skill 设计漏洞
 

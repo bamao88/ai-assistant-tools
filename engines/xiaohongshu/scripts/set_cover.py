@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""为「已打开的视频发布页」设置自定义封面（引擎缺口外挂）。
+"""为「已打开的视频发布页」设置自定义封面（兼容入口）。
 
-背景：`cli.py publish-video / fill-publish-video` 只上传视频、填标题/正文/标签，
-**没有任何封面步骤**——小红书视频默认拿首帧当封面。本脚本补这一步：在已经
-填好表单、视频已处理完成的发布页上，把本地 `cover.png` 设为封面。
+正常发布请直接使用 `cli.py publish-video --cover ...` 或
+`cli.py fill-publish-video --cover ...`。本脚本只保留给已经打开的发布页做
+封面补救。
 
 UI 流程（2026-06 creator 页实测）：
   cover-plugin「修改封面」→ 弹窗 image file input 上传 → 裁剪框「确定」（封面比例 3:4）

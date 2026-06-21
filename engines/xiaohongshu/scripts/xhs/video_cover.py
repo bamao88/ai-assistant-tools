@@ -9,7 +9,6 @@ from typing import Any
 
 from .cdp import Page
 
-IMAGE_FILE_INPUT = 'input[type=file][accept*="image"]'
 MARKED_IMAGE_FILE_INPUT = 'input[type=file][data-xhs-cover-input="1"]'
 
 

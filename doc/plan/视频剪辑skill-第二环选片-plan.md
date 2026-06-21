@@ -186,9 +186,10 @@
 
 | 阶段 | 输入 | 输出 |
 |---|---|---|
-| **选题** | 整场编号逐字稿 | 选题清单:`title / one_argument / hook_line / audience / mainstream / why / rough_sid_spans` |
+| **选题** | 整场编号逐字稿(一次读全稿) | 选题清单:`title / one_argument / hook_line / audience / mainstream / hit_dims / why / rough_sid_spans` |
 
 - 它只决定**"做哪些题、大概在哪几句"**,不给精确边界、不给时间戳。
+- **2026-06-21 reground dbskill**:选片标准换成 dbskill「选片灵魂」(认知增量第一 + 五维富集度≥3〔数据/转变故事/金句/权威背书/戳痛点〕+ 标题 5 铁律 + 宁缺毋滥),蒸馏自 `vendor/dbskill`(dontbesilent·CC BY-NC 4.0·dbs-content/dbs-xhs-title) + videocut-zh `03 §7`/`07`。新增 `hit_dims`(命中哪几维)输出。**owner 拍板:选题仍单次读全稿,不做多路分段并读。**
 
 **⚠ 现状问题:多了一个"近视"的定段步骤**。现状还跑 `stage2`(定脚本边界):只在选题落点前后各 6 句小窗(`WINDOW_PAD=6`)里挑句子定 `keep_sids`。打个比方——选题夹了张书签"这观点大概在第 140 页",定段就只读那一页前后凑稿;可张和常在 3 小时里别处把同一观点讲得更好、举了更狠的例子,这逻辑看不见。而且它的 `keep_sids` 到流程二会被**总编整段重选覆盖**。所以它**又近视又冗余**。**改造:选题到 stage1 为止,停用 stage2。**
 

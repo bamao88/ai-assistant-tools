@@ -282,7 +282,7 @@ def run(words_json, selection_json, out_dir, host="张和", providers=None,
             body, extra = select_body(topic, sents, full_view, providers=providers)
             core = {"title": topic.get("title", ""), "one_argument": topic.get("one_argument", ""),
                     "hook_line": topic.get("hook_line", ""), "audience": topic.get("audience", ""),
-                    "mainstream": topic.get("mainstream", ""),
+                    "mainstream": topic.get("mainstream", ""), "hit_dims": topic.get("hit_dims", []),
                     "orig_keep_sids": topic.get("keep_sids", []), "human_status": "pending"}
             core.update(extra)
             clip = finalize_clip(core, body, sents, providers=providers)

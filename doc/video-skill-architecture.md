@@ -54,11 +54,13 @@ tools/engines/
 │   └── build_catalog.py      从各引擎 capabilities.json 重建 catalog（透传 stage/layer/required/substep/source_types）
 │
 ├── video-select/             第②环·选片 = Eval Harness + 成片脚本（Python 包，单向 import video-slicer 句/时间核心）
-│   ├── prompts/              ★ 4 条提示词全在此（按功能命名·无人设/账号；改 prompt 不动代码）
-│   │                          topic-select(选题) / body-edit(总编·全局取证+精选合并) / refine-deduct(字级去口水决策) / hook(整句优先)
-│   ├── video_select/         topics(选题 Runner) / generate(候选 Runner·总编→组装→去口水决策→钩子) / gates(精选合并门禁) / score(逼近度) / select_clips_a(方案A对照)
+│   ├── prompts/              ★ 5 条提示词全在此（按功能命名·改 prompt 不动代码）
+│   │                          topic-select(选题·基于 dbskill 选片灵魂+标题5铁律) / body-edit(总编·全局取证+精选合并)
+│   │                          refine-deduct(字级去口水决策) / hook(dbs-hook 内容·本项目整句优先排序) / dedup-merge(批量去重)
+│   ├── video_select/         topics(选题) / generate(候选·总编→组装→去口水→钩子) / dedup(流程二后内容级去重) / gates(精选合并门禁) / score(逼近度) / select_clips_a(方案A)
 │   ├── eval/                 Harness 数据：fixtures(评测集+冻结 golden 参照·入库) / runs(产物·不入库) / notes(经验·入库)；words.json 软链不入库
-│   └── capabilities.json     声明：topic_select / generate_candidate(stage=select) + gates/score/select_clips_a
+│   └── capabilities.json     声明：topic_select / generate_candidate(stage=select) + dedup/gates/score/select_clips_a
+│   ▲ 选题/标题/钩子方法论蒸馏自 vendor/dbskill(dontbesilent·CC BY-NC 4.0) + videocut-zh 03§7/07；闭环 topics→generate→dedup→gates→score
 │
 ├── video-slicer/             积木厂 · 剪辑策略 + 内容决策（Python 包，纯 urllib LLM，无独立 venv）
 │   ├── capabilities.json     声明：cut_sentence(句级·线上) / cut_word(词级·方案B) 共存 + transcribe + subtitle_align/subtitle_protect(④承重墙)

@@ -24,6 +24,7 @@
     }
   },
   "also_provides": {
+    "dedup": {"kind": "内容决策", "stage": "select", "layer": "backbone", "required": "optional", "desc": "批量去重/合并（流程二之后·内容级）：大模型看整批 clip 的实际选段内容 → 合并讲同一观点的 / 删被覆盖的弱条。合并时复用 gates.merge_segments 精选合并重算选段。思路来自 videocut-zh 去重，落点在流程二后（基于实际切出内容判断更准）。", "entry": "video_select.dedup", "prompt": "prompts/dedup-merge.md", "sig": "python -m video_select.dedup --golden golden_candidate.json --words words.json --out <dir>", "out": "golden_dedup.json + 重渲 candidates/"},
     "gates": {"kind": "门禁", "stage": "select", "layer": "self_check", "required": "required", "desc": "机器可判红线：精选合并(去重叠+合并相邻碎段) + 正文时长 + 字级决策可执行 + 零编造。不过就挡。", "entry": "video_select.gates", "sig": "python -m video_select.gates --golden g.json --words words.json"},
     "score": {"kind": "打分器", "stage": "select", "layer": "self_check", "required": "optional", "desc": "候选 vs 冻结 golden 参照的逼近度：句号 召回/精确/F1 + 时间 IoU。量化 prompt 改动有没有变好。", "entry": "video_select.score", "sig": "python -m video_select.score --golden golden.json --candidate cand.json"},
     "select_clips_a": {"kind": "内容决策", "stage": "select", "layer": "backbone", "required": "optional", "desc": "方案A·单阶段选段（一次 LLM 同时定选题+选段）。Harness 里作方案A/B/金标准对照基准，不进日常 Runner。", "entry": "video_select.select_clips_a"}

@@ -523,11 +523,11 @@ def _input_single_tag(page: Page, content_selector: str, tag: str) -> None:
         page.type_text(char, delay_ms=0)
         time.sleep(random.uniform(0.05, 0.12))
 
-    # 等待标签联想出现（最多 3 秒）
-    deadline = time.monotonic() + 3.0
+    # 等待标签联想出现（最多 10 秒；联想下拉有时较慢，等太短会点不上 → 标签丢失）
+    time.sleep(1.0)  # 先给联想一点弹出时间，再开始轮询
+    deadline = time.monotonic() + 10.0
     clicked = False
     while time.monotonic() < deadline:
-        time.sleep(0.5)
         if page.has_element(TAG_TOPIC_CONTAINER):
             item_selector = f"{TAG_TOPIC_CONTAINER} {TAG_FIRST_ITEM}"
             if page.has_element(item_selector):
@@ -535,13 +535,14 @@ def _input_single_tag(page: Page, content_selector: str, tag: str) -> None:
                 logger.info("点击标签联想: %s", tag)
                 clicked = True
                 break
+        time.sleep(0.5)
 
     if not clicked:
         # 没有联想，直接空格
         logger.warning("未找到标签联想，直接输入空格: %s", tag)
         page.type_text(" ", delay_ms=0)
 
-    time.sleep(0.8)
+    time.sleep(1.0)
 
 
 # ========== 定时发布 ==========

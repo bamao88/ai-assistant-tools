@@ -134,9 +134,9 @@ def run(golden_path, words_json, out_dir, host="张和", providers=None) -> dict
 
     client = OpenAICompatibleClient(providers=providers)
     print(f"[dedup] 送 {len(clips)} 条候选去重…", file=sys.stderr)
-    data = client.chat_json([
+    data = gen._chat_json_retry(client, [
         {"role": "system", "content": load_prompt("dedup-merge")},
-        {"role": "user", "content": _clip_summary(clips)}], temperature=0.2)
+        {"role": "user", "content": _clip_summary(clips)}], 0.2)
     actions = data.get("actions", [])
 
     deduped, stats = apply_actions(clips, actions, sents)

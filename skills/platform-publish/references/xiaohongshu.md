@@ -387,8 +387,12 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 
 ## 失败处理
 
+> 更细的踩坑速查见 `references/xiaohongshu-faq.md`。
+
 | 情况 | 处理 |
 |------|------|
+| 视频/图片传不上去、上传卡死超时 | **先查网络分流**：跑 `route-bypass apply`，`ping ros-upload.xiaohongshu.com` 应不丢包；九成是没分流（faq #1） |
+| 上传报文件错误/传空 | 路径若是软链先 `realpath` 解析成真实文件再传（faq #2） |
 | 登录失败 | 提示用户重新扫码登录并重试 |
 | 图片下载失败 | 提示更换图片 URL 或改用本地图片 |
 | 标题过长 | 自动重写，保持语义，无需询问用户 |

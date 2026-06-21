@@ -328,6 +328,11 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 > - **选题/标题/钩子标准 reground dbskill**:`topic-select.md` 换成 dbskill 选片灵魂(认知增量第一+五维富集度≥3+标题5铁律)、新增 `hit_dims` 输出;`hook.md` 折入 dbs-hook 内容但保留本项目「整句优先」排序。方法论蒸馏自 `vendor/dbskill`(CC BY-NC 4.0,已署名) + videocut-zh 03§7/07。**选题仍单次读全稿(owner 否决多路并读)。**
 > - **新增批量去重** `dedup.py` + `dedup-merge.md`:流程二后让大模型对整批实际内容去重/合并(merge 复用 gates.merge_segments 重算)。闭环 `topics→generate→dedup→gates→score`。
 > - **跑通验证**:`topics` 真 LLM 出 18 条选题、全带 hit_dims、标题带 AI/产品名;`dedup` 真 LLM 把冻结 golden 22→20(合并 4 条入 2 组,如「Agent看护ComputerUse」+「传统脚本已死」),去重后过 gates;`check-tools.py` 0 error。
+>
+> **2026-06-21 真实素材端到端测试**(腾讯会议 AMA「产品经理转型&企业AI落地答疑」2026-06-14·2.2h):
+> - **腾讯逐字稿直接下载**(无需真实转录):`tencent-meeting/scripts/fetch_tencent_meeting_transcripts_stable.py <crm链接> --strategy api`(公网 API·无 token)→ minutes 格式逐字稿。
+> - **新增适配器** `video_select/adapt_tencent.py`:腾讯 minutes(多说话人)→ words.json,**保留每句 speaker/is_host**;配套把 `video-slicer/.../transcribe/segment.py` 的 `segment_native` 改成**honor 每句 is_host**(向后兼容:无该字段默认 all-host,旧单说话人 fixture 不受影响)。
+> - **选题实跑**:2855 句(主讲 2220/学员 635)→ `topics` 出 19 条选题、全带 hit_dims、标题带产品名(Agent/Cloud Agent/DeepSeek Flash/MCP)、且只选主讲内容(学员提问没被当选题)。流程二/去重/门禁同链跑通。
 
 ---
 

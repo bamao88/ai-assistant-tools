@@ -41,15 +41,21 @@ python -m video_select.topics --words $F/words.json --out eval/runs/agent_eval_0
 python -m video_select.generate --words $F/words.json --selection $F/selection.json \
     --out eval/runs/agent_eval_0613
 
+# 流程二后·批量去重/合并（大模型看整批实际内容 → 合并同观点/删被覆盖）
+python -m video_select.dedup --golden eval/runs/agent_eval_0613/golden_candidate.json \
+    --words $F/words.json --out eval/runs/agent_eval_0613   # → golden_dedup.json
+
 # 门禁（机器可判红线，不过就挡）
-python -m video_select.gates --golden eval/runs/agent_eval_0613/golden_candidate.json \
+python -m video_select.gates --golden eval/runs/agent_eval_0613/golden_dedup.json \
     --words $F/words.json --out eval/runs/agent_eval_0613/gates_report.json
 
 # 打分（候选 vs 冻结 golden 参照，看 prompt 改动有没有变好）
 python -m video_select.score --golden $F/golden.json \
-    --candidate eval/runs/agent_eval_0613/golden_candidate.json \
+    --candidate eval/runs/agent_eval_0613/golden_dedup.json \
     --out eval/runs/agent_eval_0613/score_report.json
 ```
+
+闭环顺序：`topics → generate → dedup → gates → score`。
 
 LLM 凭证走 `.env`（Kimi/MiniMax，与 video-slicer 同源）。`gates` / `score` 不调 LLM，可离线跑。
 

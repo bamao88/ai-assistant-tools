@@ -952,13 +952,13 @@ def cmd_fill_publish_video(args: argparse.Namespace) -> None:
     from xhs.publish_video import fill_publish_video_form
     from xhs.types import PublishVideoContent
 
-    route_bypass = _ensure_xhs_route_bypass(args)
     video_path = _resolve_existing_file(args.video, "视频文件")
     cover_path = (
         _resolve_existing_file(args.cover, "封面文件")
         if getattr(args, "cover", None)
         else ""
     )
+    route_bypass = _ensure_xhs_route_bypass(args)
 
     with open(args.title_file, encoding="utf-8") as f:
         title = f.read().strip()
@@ -1112,13 +1112,13 @@ def cmd_publish_video(args: argparse.Namespace) -> None:
     from xhs.publish_video import publish_video_content
     from xhs.types import PublishVideoContent
 
-    route_bypass = _ensure_xhs_route_bypass(args)
     video_path = _resolve_existing_file(args.video, "视频文件")
     cover_path = (
         _resolve_existing_file(args.cover, "封面文件")
         if getattr(args, "cover", None)
         else ""
     )
+    route_bypass = _ensure_xhs_route_bypass(args)
 
     with open(args.title_file, encoding="utf-8") as f:
         title = f.read().strip()

@@ -207,7 +207,19 @@
 | 4 | **钩子** | `prompts/hook.md` | 选题 + 候选池句 | hook_options(2-3) | 选炸开场 | "短句拼接"思路→蹦字、丢限定词("95%以上"→"95%") |
 
 > 流程一·选题(§3)用 `prompts/topic-select.md`。
-> 所以这条线**一共 4 条提示词**:`topic-select.md`(选题)+ `body-edit.md`(总编)+ `refine-deduct.md`(去口水决策)+ `hook.md`(钩子)。原 zh_main "persona" 取消,其编辑规则已并入上面对应 prompt。`stage2 定段`那条(原 STAGE2_TASK)随 stage2 停用,不收录。
+> 所以这条线**一共 5 条提示词**:`topic-select.md`(选题)+ `body-edit.md`(总编)+ `refine-deduct.md`(去口水决策)+ `hook.md`(钩子)+ `dedup-merge.md`(批量去重)。原 zh_main "persona" 取消,其编辑规则已并入对应 prompt。`stage2 定段`随 stage2 停用,不收录。
+>
+> **2026-06-21 钩子 reground dbskill**:`hook.md` 采纳 dbs-hook 方法论内容(三要素、开头公式=话题+钩子+可信度、钩子类型库),但**构造优先级与输出排序保持本项目既定的「整句直用🥇/整句剪头尾🥈/短句拼接兜底🥉」**(owner 拍板:钩子用它的提示词,但顺序按我们之前定的)。dbs-hook 的内容类型排序(结果+反转＞数据＞…)只作选材参考,不覆盖我们的排序。
+
+### 4b. 流程二之后 · 批量去重/合并(2026-06-21 新增)
+
+videocut-zh 的「多候选→去重合并」思想,**落点放在流程二之后**:等每条选题都跑出「实际切什么内容」,再让大模型对整批 clip 做内容级去重(比基于粗区间判断更准)。
+
+| 步骤 | 提示词 | 输入 | 输出 | 干嘛 |
+|---|---|---|---|---|
+| **批量去重** | `prompts/dedup-merge.md` | 整批 clip(标题+论点+实际选段原文) | 动作表(merge/drop/keep) | 合并讲同一观点的、删被覆盖的弱条 |
+
+- 代码 `video_select/dedup.py`:应用动作时,`merge` 把被合并 clip 的 segments 取并集 → 复用 `gates.merge_segments` 精选合并重算 keep_sids/time_spans/script_raw;输出 `golden_dedup.json` + 重渲 candidates/。闭环顺序:**topics → generate → dedup → gates → score**。
 
 **顺序铁律:先总编把骨架编对,再去口水擦表面。** 剪刀口 = 总编(句级) + 去口水决策(字级)。
 

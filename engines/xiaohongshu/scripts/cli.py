@@ -192,7 +192,8 @@ def _ensure_xhs_route_bypass(args: argparse.Namespace) -> dict:
         logger.info("小红书本地网络分流已刷新")
         return {"applied": True}
 
-    if platform.system() == "Darwin":
+    needs_admin = "sudo:" in result.stderr or "password is required" in result.stderr
+    if platform.system() == "Darwin" and needs_admin:
         try:
             admin_result = _run_route_bypass_apply_with_admin()
         except Exception as e:  # noqa: BLE001

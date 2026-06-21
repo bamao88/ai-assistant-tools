@@ -324,6 +324,11 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 - **跑通验证**:`gates`/`score` 离线跑通(冻结 golden 22 条:score F1/IoU=1.0 自比对;gates 抓出 2 条正文<60s);`generate --limit 1` 真 LLM 端到端跑通(总编 5 段全局取证含跨远句、组装、21 处字级删除决策、3 个钩子带策略标签)。
 - **效果待迭代**(本轮不保证):总编偶尔超时长/选段偏长、去口水决策偶有非逐字子串(已被 gates 抓)。属于下一轮 prompt 迭代,不影响结构与流程。
 
+> **2026-06-21 追加 · dbskill reground + 批量去重**(owner 指示「选题用 dbskill 生成」「钩子用它的提示词但顺序按我们的」):
+> - **选题/标题/钩子标准 reground dbskill**:`topic-select.md` 换成 dbskill 选片灵魂(认知增量第一+五维富集度≥3+标题5铁律)、新增 `hit_dims` 输出;`hook.md` 折入 dbs-hook 内容但保留本项目「整句优先」排序。方法论蒸馏自 `vendor/dbskill`(CC BY-NC 4.0,已署名) + videocut-zh 03§7/07。**选题仍单次读全稿(owner 否决多路并读)。**
+> - **新增批量去重** `dedup.py` + `dedup-merge.md`:流程二后让大模型对整批实际内容去重/合并(merge 复用 gates.merge_segments 重算)。闭环 `topics→generate→dedup→gates→score`。
+> - **跑通验证**:`topics` 真 LLM 出 18 条选题、全带 hit_dims、标题带 AI/产品名;`dedup` 真 LLM 把冻结 golden 22→20(合并 4 条入 2 组,如「Agent看护ComputerUse」+「传统脚本已死」),去重后过 gates;`check-tools.py` 0 error。
+
 ---
 
 ## 9. 验收门(怎么算 Harness 闭环跑通)

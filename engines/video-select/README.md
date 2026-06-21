@@ -22,6 +22,7 @@ video_select/    代码包（只管逻辑；提示词一律从 prompts/ 读）
   gates.py          门禁（精选合并 + 时长 + 可执行 + 零编造）
   score.py          打分器（候选 vs 冻结 golden 参照）
   select_clips_a.py 方案A·单阶段（备用对照）
+  adapt_tencent.py  腾讯会议逐字稿(minutes·多说话人) → words.json（保留 speaker/is_host）
 eval/            Harness 数据（fixtures 入库 / runs 不入库 / words 软链 / notes 经验）
 ```
 

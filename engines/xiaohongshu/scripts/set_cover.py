@@ -69,17 +69,45 @@ def _click_last_confirm(page) -> int:
     )
 
 
+def _wait_cover_ready(page, timeout: float = 90.0) -> None:
+    """等视频自动首帧封面生成完成（cover-plugin 出现「修改封面」且无「封面上传中」）。
+
+    封面还在生成时点「修改封面」，编辑弹窗打不开（本次最大坑）。
+    """
+    start = time.monotonic()
+    while time.monotonic() - start < timeout:
+        ready = page.evaluate(
+            """
+            (() => {
+                const txt = document.body.innerText || '';
+                if (/封面上传中|封面生成中/.test(txt)) return false;
+                return Array.from(document.querySelectorAll('div,span'))
+                    .some(e => e.textContent.trim() === '修改封面');
+            })()
+            """
+        )
+        if ready:
+            return
+        time.sleep(1)
+    raise RuntimeError("等待自动封面生成超时（封面上传中一直不消失）")
+
+
 def set_cover(page, cover_path: str) -> dict:
     if not os.path.exists(cover_path):
         raise FileNotFoundError(f"封面文件不存在: {cover_path}")
+
+    # 0. 等自动首帧封面生成完，否则编辑弹窗打不开
+    _wait_cover_ready(page)
 
     # 1. 进入封面编辑（cover-plugin「修改封面」hover 浮层）
     if not _click_text(page, "修改封面"):
         # 兜底：有的版本入口是「设置封面」标题
         _click_text(page, "设置封面")
-    time.sleep(1.2)
 
-    # 2. 上传本地图片
+    # 2. 等编辑弹窗里的图片上传框出现，再上传本地图片
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline and not page.has_element(IMAGE_FILE_INPUT):
+        time.sleep(0.5)
     if not page.has_element(IMAGE_FILE_INPUT):
         raise RuntimeError("未找到封面图片上传输入框（封面编辑弹窗可能没打开）")
     page.set_file_input(IMAGE_FILE_INPUT, [cover_path])

@@ -44,10 +44,18 @@ def render_full(sents) -> str:
 
 
 def _chat_json_retry(client, msgs, temperature):
-    try:
-        return client.chat_json(msgs, temperature=temperature)
-    except Exception:  # noqa: BLE001  长稿偶发 JSON 截断/超时，重试一次
-        return client.chat_json(msgs, temperature=temperature)
+    """长稿偶发 JSON 截断/超时/返回非对象(null/列表)，重试一次；仍失败则抛清晰错误
+    （上层按 clip try/except 跳过这条，而不是后面 .get 崩在 'NoneType'）。"""
+    last: Exception = RuntimeError("chat_json 未返回结果")
+    for _ in (1, 2):
+        try:
+            r = client.chat_json(msgs, temperature=temperature)
+            if isinstance(r, dict):
+                return r
+            last = TypeError(f"LLM 返回非 JSON 对象：{type(r).__name__}")
+        except Exception as e:  # noqa: BLE001
+            last = e
+    raise last
 
 
 # ───────────────────────── ① 总编 ─────────────────────────

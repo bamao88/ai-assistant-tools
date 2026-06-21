@@ -195,7 +195,10 @@ def write_review_md(out: Path, idx: int, clip: dict) -> None:
     L = [f"# {idx:02d}. {clip['title']}", "",
          f"- **核心论点**：{clip['one_argument']}",
          f"- **受众/流量**：{clip.get('audience','')} ｜ {clip.get('mainstream','')}",
+         f"- **命中富集维度**：{'、'.join(clip.get('hit_dims', [])) or '—'}",
          f"- **正文估时**：{clip['est_dur']}s ｜ 正文段数：{len(clip['segments'])}"]
+    if clip.get("dedup_merged_from"):
+        L.append(f"- **去重合并自**：clip {clip['dedup_merged_from']}")
     if clip.get("title_suggestion"):
         L.append(f"- **AI 建议新标题**：{clip['title_suggestion']}")
     L.append(f"- **原钩子(参考)**：{clip.get('hook_line','')}")

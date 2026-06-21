@@ -30,6 +30,19 @@ eval/            Harness 数据（fixtures 入库 / runs 不入库 / words 软�
 
 **选题/标题/钩子方法论来源**：dontbesilent「dbskill」（`vendor/dbskill/skills/{dbs-content,dbs-hook,dbs-xhs-title}`；**CC BY-NC 4.0**，仓库 github.com/dontbesilent2025/dbskill）。`prompts/{topic-select,hook}.md` 蒸馏自其方法论 + videocut-zh `03 §7`／`07`，已在文件头署名。商用边界由 owner 把关。
 
+## 从腾讯会议逐字稿开始（无需真实转录）
+
+腾讯会议录制的逐字稿可直接下载（公网 API·无需 token·吃 `crm/cw` 分享链），再适配成 `words.json`：
+
+```bash
+# 1. 下载逐字稿（minutes 格式·多说话人）
+python3 ../tencent-meeting/scripts/fetch_tencent_meeting_transcripts_stable.py \
+    "https://meeting.tencent.com/crm/<short_code>" --strategy api --output-dir <下载目录>
+# 2. 适配成 words.json（保留 speaker/is_host）
+python -m video_select.adapt_tencent --in <下载目录>/files/<标题>.json --out <words.json> --host 张和
+# 之后把 <words.json> 当下面命令里的 $F/words.json 用
+```
+
 ## 迭代闭环命令（在 `engines/video-select/` 下跑）
 
 ```bash

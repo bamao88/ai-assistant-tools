@@ -35,11 +35,12 @@ def select_topics(sents, providers: list[str] | None = None,
     """整场逐字稿 → 选题候选（只保留给了 rough_sid_spans 的）。"""
     transcript = _render_numbered(sents)
     client = OpenAICompatibleClient(providers=providers)
-    data = client.chat_json(
-        [{"role": "system", "content": load_prompt("topic-select")},
-         {"role": "user", "content": transcript}],
-        temperature=temperature,
-    )
+    msgs = [{"role": "system", "content": load_prompt("topic-select")},
+            {"role": "user", "content": transcript}]
+    try:
+        data = client.chat_json(msgs, temperature=temperature)
+    except Exception:  # noqa: BLE001  整场长稿一次性吐 JSON 偶发截断/超时，重试一次
+        data = client.chat_json(msgs, temperature=temperature)
     clips = data.get("clips", [])
     return [c for c in clips if c.get("rough_sid_spans")]
 

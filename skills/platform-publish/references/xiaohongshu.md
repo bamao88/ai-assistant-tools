@@ -364,6 +364,24 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 - **软链路径自动解析**成真实文件，不要求调用方先解析。
 - **最终**：一条命令完成「上传 + 标题 + 正文 + 标签 + 定时 + 封面 + 原创 + 发布」，无需手工串多步、不漏步。
 
+### ⚠️ 故障复盘：为什么会把发布/路由搞坏（2026-06-21）——当前 skill 设计漏洞
+
+**现象**：视频上传反复不通 → 我去手工排查网络 → 越改越坏，最后路由表被搞乱（`creator` 的 IP 报 `Errno 49 Can't assign address`、域名互相打架），且"发布完成"是**假成功**（两个号定时列表里根本没有笔记）。
+
+**根因 = skill 这几处设计漏洞**：
+
+1. **「网络分流前置」只写了"跑 `route-bypass apply`"，没写"它看起来没生效时怎么办 + 明令禁止手工乱钉"。** 当 route-bypass 像是没生效时（实因 DNS 经海外出口把 xhs 解析到海外/失效边缘 IP，或 IP 轮换过期），我就跑偏去**手工往 `/etc/hosts` 钉静态 IP + 手工 `route add/delete`**，把 route-bypass 的 managed 路由状态搞乱、IP 互相打架。**这是本次最大教训。**
+2. **route-bypass 是"apply 时刻把当前 IP 钉死"的，IP 会轮换/过期**；skill 没强调"不通时只重跑、永远别手工钉 IP"。
+3. **`click-publish` 只 `sleep` 后打日志"发布完成"，从不核实笔记是否真生成** → 假阳性。我据此误报 evc01 已发，实际没发。
+4. **没规定"验证 = 去账号『定时发布/草稿』列表确认笔记真在"**，只看引擎日志就当成功。
+
+**正确做法（已验证有效，应固化进 skill）**：
+
+- **分流不通/出错时，唯一修法 = `route-bypass remove` 然后 `route-bypass apply`（干净重置）。绝不手工改 `/etc/hosts`、绝不手工 `route add/delete`** —— 手工钉会污染 managed 状态、让正常态也崩。本次就是清掉我加的 hosts 钉 + 手工路由 + 重置后，creator/ros-upload/edith 立刻全部经本地网关 `en1` 直达恢复正常。
+- **判定"发布成功"必须去账号定时/草稿列表核实笔记真在**，不能信"发布完成"日志（`click-publish` 当前不可信）。
+- **标签联想等待要够长**（已从 3s 调到 10s + settle），否则标签选不上、丢标签。
+- IP **必须走本地网关**（账号风控要求）；正常态下 `route-bypass apply` 一跑即生效，不需要任何手工 hosts/route 操作。
+
 ---
 
 ## CLI 子命令总表

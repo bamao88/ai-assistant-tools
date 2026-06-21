@@ -37,11 +37,16 @@ def select_topics(sents, providers: list[str] | None = None,
     client = OpenAICompatibleClient(providers=providers)
     msgs = [{"role": "system", "content": load_prompt("topic-select")},
             {"role": "user", "content": transcript}]
-    try:
-        data = client.chat_json(msgs, temperature=temperature)
-    except Exception:  # noqa: BLE001  整场长稿一次性吐 JSON 偶发截断/超时，重试一次
-        data = client.chat_json(msgs, temperature=temperature)
-    clips = data.get("clips", [])
+    data = None
+    for _ in (1, 2):  # 整场长稿一次性吐 JSON 偶发截断/超时/返回非对象，重试一次
+        try:
+            r = client.chat_json(msgs, temperature=temperature)
+            if isinstance(r, dict):
+                data = r
+                break
+        except Exception:  # noqa: BLE001
+            continue
+    clips = (data or {}).get("clips", [])
     return [c for c in clips if c.get("rough_sid_spans")]
 
 

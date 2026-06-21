@@ -8,10 +8,10 @@
     "topic_select": {
       "kind": "内容决策", "stage": "select", "layer": "backbone", "required": "required",
       "tier": "流程一·选题",
-      "desc": "整场编号逐字稿 → 选题清单（题 + rough_sid_spans 粗区间，不吐时间戳、不定段）。原 stage2 定段已停用。",
+      "desc": "整场编号逐字稿（一次读全稿）→ 选题清单（题 + rough_sid_spans 粗区间 + hit_dims 命中富集维度，不吐时间戳、不定段）。选片标准基于 dbskill 选片灵魂（认知增量第一 + 五维富集度≥3 + 标题 5 铁律）。原 stage2 定段已停用。",
       "entry": "video_select.topics",
-      "prompt": "prompts/topic-select.md",
-      "out": "_selection.json（clips[].rough_sid_spans）"
+      "prompt": "prompts/topic-select.md（蒸馏自 vendor/dbskill·dbs-content/dbs-xhs-title + videocut-zh 03§7/07）",
+      "out": "_selection.json（clips[].rough_sid_spans + hit_dims）"
     },
     "generate_candidate": {
       "kind": "内容决策", "stage": "select", "layer": "backbone", "required": "required",

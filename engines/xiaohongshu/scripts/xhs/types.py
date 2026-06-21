@@ -434,6 +434,7 @@ class PublishVideoContent:
     schedule_time: str | None = None  # ISO8601 格式
     visibility: str = ""  # 公开可见(默认)|仅自己可见|仅互关好友可见
     is_original: bool = False  # 是否声明原创
+    cover_path: str | None = None  # 自定义封面图(png/jpg)，None=用平台默认首帧
 
 
 # ========== 互动 ==========

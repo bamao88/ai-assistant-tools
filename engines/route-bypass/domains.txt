@@ -41,3 +41,4 @@ creator.douyin.com
 www.douyin.com
 sso.douyin.com
 mcs.zijieapi.com
+ros-upload.xiaohongshu.com

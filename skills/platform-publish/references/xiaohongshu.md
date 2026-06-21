@@ -56,7 +56,7 @@ node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
 
 ## 网络分流前置步骤（强制）
 
-> 真因：整机走 Tailscale 海外出口时，上传域名 `ros-upload.xiaohongshu.com` 不可达（ping 100% 丢包）——页面能打开能填字，唯独上传必然失败，极易误判。`route-bypass apply` 把小红书 IP 钉到本地网关出口，上传才通。**漏跑这步 = 视频/图片传不上去。** 详见 `references/xiaohongshu-faq.md` #1。
+> 真因：整机走 Tailscale 海外出口时，上传入口和分片 CDN（`ros-upload.xiaohongshu.com` / `ros-upload-d*.xhscdn.com`）只要有一部分掉到 exit node，就会上传 0%、卡死或极慢。`route-bypass apply` 把小红书 IP 和已观测上传 CDN 网段钉到本地网关出口，上传才通。**漏跑这步 = 视频/图片传不上去。** 详见 `references/xiaohongshu-faq.md` #1。
 
 为避免 Tailscale exit node 导致小红书发布走海外出口，账号选定后、任何会访问小红书网页的 CLI 前，必须先刷新本地分流路由：
 
@@ -313,6 +313,12 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 
 **输入需求**：标题 + 正文 + 视频（本地绝对路径，`.mp4`/`.mov` 等）+ 封面图（本地绝对路径，`.jpg`/`.png` 等）
 
+### 稳定性门槛与发布顺序
+
+- 小红书视频链路不稳定时，只能使用 `测试号` 做复现和修复；在 `测试号` 连续跑通「本地网络分流 → 视频上传进度推进并完成 → 标签联想全部插入 → 封面上传通过 → 定时/发布按钮可点击」前，禁止对真实账号执行 `publish-video` 或自动点击最终发布按钮。
+- 多条待发布笔记必须逐条处理：一次只执行一条 `fill-publish-video` 或 `publish-video`，该条成功后写入对应内容目录的 `published.md` / 状态记录，再进入下一条。禁止写后台循环一次性提交所有真实账号笔记，禁止同时打开多条发布页并行上传。
+- 批量计划只是队列，不是并发发布许可。即使用户说"这个账号其他笔记都发掉"，也要按队列一条一条跑，并在每条失败时停止后续真实发布，先诊断失败原因。
+
 ### 必做约束
 
 - 没有视频不得发布；没有封面图也不得发布。视频和封面图都是必填。
@@ -357,7 +363,7 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 
 ### 一键正式视频发布入口（用户确认后才用）
 
-当用户已经明确确认要正式发布/定时发布，直接用 `publish-video`；它会在一个流程内完成「本地网络分流刷新 → 软链解析 → 上传视频 → 填标题/正文/标签 → 默认原创声明 → 定时/可见范围 → 可选封面 → 点击发布」。
+当用户已经明确确认要正式发布/定时发布，并且测试号稳定性门槛已经满足，才允许对选定账号逐条使用 `publish-video`；它会在一个流程内完成「本地网络分流刷新 → 软链解析 → 上传视频 → 填标题/正文/标签 → 默认原创声明 → 定时/可见范围 → 可选封面 → 点击发布」。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
@@ -391,7 +397,7 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 - **分流不通/出错时，唯一修法 = `route-bypass remove` 然后 `route-bypass apply`（干净重置）。绝不手工改 `/etc/hosts`、绝不手工 `route add/delete`** —— 手工钉会污染 managed 状态、让正常态也崩。本次就是清掉我加的 hosts 钉 + 手工路由 + 重置后，creator/ros-upload/edith 立刻全部经本地网关 `en1` 直达恢复正常。
 - **判定"发布成功"必须去账号定时/草稿列表核实笔记真在**，不能信"发布完成"日志（`click-publish` 当前不可信）。
 - **标签联想等待要够长**（已从 3s 调到 10s + settle），否则标签选不上、丢标签。
-- IP **必须走本地网关**（账号风控要求）；正常态下 `route-bypass apply` 一跑即生效，不需要任何手工 hosts/route 操作。
+- IP **必须走本地网关**（账号风控要求）；`route-bypass status` 里 `route decisions for route target IPv4` 不得出现 `interface=utun*` 或 `destination=default`。正常态下 `route-bypass apply` 一跑即生效，不需要任何手工 hosts/route 操作。
 
 ---
 
@@ -437,7 +443,7 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 
 | 情况 | 处理 |
 |------|------|
-| 视频/图片传不上去、上传卡死超时 | **先查网络分流**：跑 `route-bypass apply`，`ping ros-upload.xiaohongshu.com` 应不丢包；九成是没分流（faq #1） |
+| 视频/图片传不上去、上传卡死超时 | **先查网络分流**：跑 `route-bypass apply` 后看 `route-bypass status`，所有上传目标不得走 `utun*` 或 `destination=default`；九成是没分流（faq #1） |
 | 上传报文件错误/传空 | 路径若是软链先 `realpath` 解析成真实文件再传（faq #2） |
 | 登录失败 | 提示用户重新扫码登录并重试 |
 | 图片下载失败 | 提示更换图片 URL 或改用本地图片 |

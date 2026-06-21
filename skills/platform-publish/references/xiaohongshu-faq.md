@@ -9,7 +9,7 @@
 
 **症状**：视频/图片一直传不上去；上传卡死、转圈、超时；表面看是「网络慢」或「小红书抽风」，反复重试都不行。
 
-**真因**：这台机器整机走 **Tailscale 海外出口**。小红书上传域名 `ros-upload.xiaohongshu.com` 在海外出口下**不可达（ping 100% 丢包）**。页面能打开、能填字，唯独上传那一步必然失败——所以最容易误判成别的问题，绕一大圈。
+**真因**：这台机器整机走 **Tailscale 海外出口**。小红书上传入口和分片 CDN（`ros-upload.xiaohongshu.com` / `ros-upload-d*.xhscdn.com`）只要有一部分掉到 exit node，就会出现上传 0%、卡死或极慢。页面能打开、能填字，唯独上传那一步失败——所以最容易误判成别的问题，绕一大圈。
 
 **解法（发布前必跑，不是可选项）**：
 
@@ -18,13 +18,19 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
 ```
 
-把小红书相关 IP 钉到本地网关出口，上传域名才通。**这一步通了，视频/图片秒传，后面标题/正文/标签/定时/封面才会一路顺。** 无 TTY 报 `sudo: a password is required` 时走 `osascript ... with administrator privileges` 兜底（见 `xiaohongshu.md`「网络分流前置步骤」）。
+把小红书相关 IP 和已观测上传 CDN 网段钉到本地网关出口，上传域名才通。**这一步通了，视频/图片秒传，后面标题/正文/标签/定时/封面才会一路顺。** 无 TTY 报 `sudo: a password is required` 时走 `osascript ... with administrator privileges` 兜底（见 `xiaohongshu.md`「网络分流前置步骤」）。
 
-**自检**：怀疑没生效，先确认上传域名可达：
+**自检**：不要只看 `ping ros-upload.xiaohongshu.com`。上传分片可能走 Akamai/Tencent 的轮换边缘 IP，单域名 ping 正常也可能上传 0%。必须看完整路由校验：
 
 ```bash
-ping -c 3 ros-upload.xiaohongshu.com   # 100% 丢包 = 分流没生效，别往下走
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh status \
+  creator.xiaohongshu.com edith.xiaohongshu.com \
+  ros-upload.xiaohongshu.com ros-upload.xhscdn.com \
+  ros-upload-d1.xhscdn.com ros-upload-d2.xhscdn.com ros-upload-d3.xhscdn.com ros-upload-d4.xhscdn.com \
+  ros-upload-d5.xhscdn.com ros-upload-d6.xhscdn.com ros-upload-d7.xhscdn.com ros-upload-d8.xhscdn.com
 ```
+
+`route decisions for route target IPv4` 中任意上传 IP 出现 `interface=utun*` 或 `destination=default`，都说明分流没生效，别往下走。2026-06-22 已观测到会导致上传 0% 的边缘包括 `23.59.252.*`、`184.27.185.*`、`212.129.158.241`。
 
 页面停留超过 ~30 分钟再点发布前，重跑一次 apply（路由会过期）。
 
@@ -66,4 +72,4 @@ realpath "<可能是软链的路径>"   # 用解析后的真实绝对路径去 -
 
 ## 一句话排查顺序
 
-传不上去 → **先看 #1（route-bypass + ping 上传域名）**，九成是它 → 再看 #2 路径是不是软链 → 都没问题再怀疑登录态 / 平台本身。
+传不上去 → **先看 #1（route-bypass status 所有上传目标都不能走 `utun*`）**，九成是它 → 再看 #2 路径是不是软链 → 都没问题再怀疑登录态 / 平台本身。

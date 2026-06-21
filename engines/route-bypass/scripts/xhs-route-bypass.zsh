@@ -5,7 +5,11 @@ TOOL_DIR="${0:A:h:h}"
 DOMAIN_FILE="${XHS_ROUTE_DOMAIN_FILE:-$TOOL_DIR/domains.txt}"
 STATE_DIR="${XHS_ROUTE_STATE_DIR:-$HOME/.xhs-route-bypass}"
 STATE_FILE="$STATE_DIR/managed-ips.txt"
+STATE_NET_FILE="$STATE_DIR/managed-nets.txt"
 SERVICE="${XHS_ROUTE_SERVICE:-Wi-Fi}"
+STATIC_IPS="${XHS_ROUTE_STATIC_IPS:-23.59.252.178 23.59.252.200 23.59.252.201 23.59.252.202 23.59.252.203 184.27.185.201 184.27.185.213 212.129.158.241}"
+STATIC_NETS="${XHS_ROUTE_STATIC_NETS:-23.59.252.0/24 23.52.128.0/24 184.27.185.0/24 212.129.158.0/24}"
+PRUNE_STALE="${XHS_ROUTE_PRUNE_STALE:-0}"
 
 usage() {
   cat <<USAGE
@@ -19,6 +23,9 @@ Environment:
   XHS_ROUTE_SERVICE       Network service name, default: Wi-Fi
   XHS_ROUTE_DOMAIN_FILE   Domain list file, default: $DOMAIN_FILE
   XHS_ROUTE_STATE_DIR     State directory, default: $STATE_DIR
+  XHS_ROUTE_STATIC_IPS    Extra IPv4 host routes to always manage
+  XHS_ROUTE_STATIC_NETS   Extra IPv4 CIDR routes to always manage
+  XHS_ROUTE_PRUNE_STALE   Set to 1 to delete managed routes absent from the latest resolve
 USAGE
 }
 
@@ -79,6 +86,21 @@ resolve_domains() {
   rm -f "$tmp"
 }
 
+route_targets() {
+  local gw="$1"
+  shift
+  local tmp
+  tmp="$(mktemp)"
+
+  resolve_domains "$gw" "$@" >"$tmp"
+  if [[ -n "$STATIC_IPS" ]]; then
+    printf '%s\n' ${(z)STATIC_IPS} >>"$tmp"
+  fi
+
+  awk '/^[0-9]+(\.[0-9]+){3}$/ { print }' "$tmp" | sort -u
+  rm -f "$tmp"
+}
+
 route_summary() {
   local ip="$1"
   local out
@@ -104,6 +126,17 @@ write_state_ips() {
   sort -u >"$STATE_FILE"
 }
 
+read_state_nets() {
+  if [[ -f "$STATE_NET_FILE" ]]; then
+    awk '/^[0-9]+(\.[0-9]+){3}\/[0-9]+$/ { print }' "$STATE_NET_FILE" | sort -u
+  fi
+}
+
+write_state_nets() {
+  mkdir -p "$STATE_DIR"
+  sort -u >"$STATE_NET_FILE"
+}
+
 apply_routes() {
   require_cmd networksetup
   require_cmd dig
@@ -123,11 +156,15 @@ apply_routes() {
   old="$(mktemp)"
   stale="$(mktemp)"
 
-  resolve_domains "$gw" "${domains[@]}" >"$new"
+  route_targets "$gw" "${domains[@]}" >"$new"
   [[ -s "$new" ]] || die "no IPv4 addresses resolved; refusing to change routes"
 
   read_state_ips >"$old"
-  comm -23 "$old" "$new" >"$stale" || true
+  if [[ "$PRUNE_STALE" == "1" ]]; then
+    comm -23 "$old" "$new" >"$stale" || true
+  else
+    : >"$stale"
+  fi
 
   print "service=$SERVICE gateway=$gw interface=$iface"
   print "domains:"
@@ -140,6 +177,8 @@ apply_routes() {
       print "  $ip"
       route_cmd -n delete -host "$ip" >/dev/null 2>&1 || true
     done <"$stale"
+  elif [[ "$PRUNE_STALE" != "1" ]]; then
+    print "retaining stale managed routes (set XHS_ROUTE_PRUNE_STALE=1 to prune)"
   fi
 
   print "applying routes:"
@@ -149,7 +188,23 @@ apply_routes() {
     route_cmd -n add -host "$ip" "$gw" >/dev/null 2>&1 || route_cmd -n change -host "$ip" "$gw" >/dev/null
   done <"$new"
 
-  write_state_ips <"$new"
+  cat "$old" "$new" | write_state_ips
+
+  if [[ -n "$STATIC_NETS" ]]; then
+    print "applying static network routes:"
+    local nets old_nets
+    nets="$(mktemp)"
+    old_nets="$(mktemp)"
+    printf '%s\n' ${(z)STATIC_NETS} | awk '/^[0-9]+(\.[0-9]+){3}\/[0-9]+$/ { print }' | sort -u >"$nets"
+    read_state_nets >"$old_nets"
+    while read -r net; do
+      [[ -n "$net" ]] || continue
+      print "  $net -> $gw"
+      route_cmd -n add -net "$net" "$gw" >/dev/null 2>&1 || route_cmd -n change -net "$net" "$gw" >/dev/null
+    done <"$nets"
+    cat "$old_nets" "$nets" | write_state_nets
+    rm -f "$nets" "$old_nets"
+  fi
 
   print "route decisions:"
   while read -r ip; do
@@ -174,10 +229,10 @@ status_routes() {
   print "domains:"
   printf '  %s\n' "${domains[@]}"
 
-  print "currently resolved IPv4:"
+  print "route target IPv4:"
   local resolved
   resolved="$(mktemp)"
-  resolve_domains "$gw" "${domains[@]}" >"$resolved"
+  route_targets "$gw" "${domains[@]}" >"$resolved"
   if [[ -s "$resolved" ]]; then
     cat "$resolved" | sed 's/^/  /'
   else
@@ -194,7 +249,17 @@ status_routes() {
     print "  none"
   fi
 
-  print "route decisions for resolved IPv4:"
+  print "managed network state:"
+  local net_state
+  net_state="$(mktemp)"
+  read_state_nets >"$net_state"
+  if [[ -s "$net_state" ]]; then
+    cat "$net_state" | sed 's/^/  /'
+  else
+    print "  none"
+  fi
+
+  print "route decisions for route target IPv4:"
   if [[ -s "$resolved" ]]; then
     while read -r ip; do
       [[ -n "$ip" ]] || continue
@@ -204,27 +269,41 @@ status_routes() {
     print "  none"
   fi
 
-  rm -f "$resolved" "$state"
+  rm -f "$resolved" "$state" "$net_state"
 }
 
 remove_routes() {
   local state
   state="$(mktemp)"
   read_state_ips >"$state"
-  [[ -s "$state" ]] || {
+  local net_state
+  net_state="$(mktemp)"
+  read_state_nets >"$net_state"
+  [[ -s "$state" || -s "$net_state" ]] || {
     print "no managed routes recorded at $STATE_FILE"
-    rm -f "$state"
+    rm -f "$state" "$net_state"
     return
   }
 
-  print "removing managed routes:"
-  while read -r ip; do
-    [[ -n "$ip" ]] || continue
-    print "  $ip"
-    route_cmd -n delete -host "$ip" >/dev/null 2>&1 || true
-  done <"$state"
+  if [[ -s "$state" ]]; then
+    print "removing managed routes:"
+    while read -r ip; do
+      [[ -n "$ip" ]] || continue
+      print "  $ip"
+      route_cmd -n delete -host "$ip" >/dev/null 2>&1 || true
+    done <"$state"
+  fi
 
-  rm -f "$STATE_FILE" "$state"
+  if [[ -s "$net_state" ]]; then
+    print "removing managed network routes:"
+    while read -r net; do
+      [[ -n "$net" ]] || continue
+      print "  $net"
+      route_cmd -n delete -net "$net" >/dev/null 2>&1 || true
+    done <"$net_state"
+  fi
+
+  rm -f "$STATE_FILE" "$STATE_NET_FILE" "$state" "$net_state"
 }
 
 resolve_only() {

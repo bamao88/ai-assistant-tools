@@ -36,6 +36,9 @@ from .urls import PUBLISH_URL
 
 logger = logging.getLogger(__name__)
 
+PUBLISH_BUTTON_NAMES = ("定时发布", "发布", "立即发布", "提交发布")
+MARKED_PUBLISH_BUTTON = '[data-xhs-publish-target="1"]'
+
 
 def publish_image_content(page: Page, content: PublishImageContent) -> None:
     """发布图文内容（填写表单 + 点击发布）。
@@ -116,9 +119,248 @@ def click_publish_button(page: Page) -> None:
     Raises:
         PublishError: 点击失败。
     """
-    page.click_element(PUBLISH_BUTTON)
+    _wait_for_submit_publish_button(page)
+    if not _click_submit_publish_button(page):
+        raise PublishError("未找到可点击的发布按钮")
     time.sleep(3)
     logger.info("发布完成")
+
+
+def _wait_for_submit_publish_button(page: Page, timeout: float = 1800.0) -> None:
+    """等待最终发布按钮可点击。
+
+    小红书新版发布页把底部按钮封装成 ``xhs-publish-btn`` 自定义元素，
+    旧版仍可能是普通 ``button.bg-red``。这里同时兼容两种结构。
+    """
+    start = time.monotonic()
+    logger.info("开始等待发布按钮可点击")
+    while time.monotonic() - start < timeout:
+        state = _mark_dom_publish_button(page)
+        if state.get("clickable"):
+            return
+        if _has_accessible_publish_button(page):
+            return
+        time.sleep(1)
+    raise UploadTimeoutError("等待发布按钮可点击超时")
+
+
+def _click_submit_publish_button(page: Page) -> bool:
+    """点击最终发布/定时发布按钮。"""
+    if _click_accessible_publish_button(page):
+        return True
+
+    state = _mark_dom_publish_button(page)
+    if not state.get("clickable"):
+        return False
+
+    if state.get("kind") == "xhs-publish-btn":
+        point = state.get("point") or {}
+        x = float(point.get("x", 0))
+        y = float(point.get("y", 0))
+        if x > 0 and y > 0:
+            page.mouse_move(x, y)
+            time.sleep(0.05)
+            page.mouse_click(x, y)
+            return True
+
+    page.click_element(MARKED_PUBLISH_BUTTON)
+    return True
+
+
+def _scroll_publish_page_to_bottom(page: Page) -> None:
+    """滚动新版发布页内部滚动容器到底部，让 sticky 提交组件挂载/可见。"""
+    page.evaluate(
+        """
+        (() => {
+            const scroller = document.querySelector('.publish-page');
+            if (scroller && scroller.scrollHeight > scroller.clientHeight) {
+                scroller.scrollTo(0, scroller.scrollHeight);
+            }
+        })()
+        """
+    )
+
+
+def _mark_dom_publish_button(page: Page) -> dict:
+    """在 DOM 中标记一个可点击的最终发布按钮，并返回定位状态。"""
+    result = page.evaluate(
+        f"""
+        (() => {{
+            document.querySelectorAll({json.dumps(MARKED_PUBLISH_BUTTON)})
+                .forEach(el => delete el.dataset.xhsPublishTarget);
+
+            const scroller = document.querySelector('.publish-page');
+            if (scroller && scroller.scrollHeight > scroller.clientHeight) {{
+                scroller.scrollTo(0, scroller.scrollHeight);
+            }}
+
+            const visible = el => {{
+                const rect = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+                return rect.width > 0
+                    && rect.height > 0
+                    && style.display !== 'none'
+                    && style.visibility !== 'hidden'
+                    && style.opacity !== '0';
+            }};
+            const disabled = el => {{
+                if (el.disabled) return true;
+                if (el.getAttribute('aria-disabled') === 'true') return true;
+                if (/disabled|disable/.test(String(el.className || ''))) return true;
+                return false;
+            }};
+            const mark = (el, kind, point = null) => {{
+                el.dataset.xhsPublishTarget = '1';
+                return {{clickable: true, kind, point}};
+            }};
+
+            const legacy = document.querySelector({json.dumps(PUBLISH_BUTTON)});
+            if (legacy && visible(legacy) && !disabled(legacy)) {{
+                return mark(legacy, 'legacy');
+            }}
+
+            const xhsBtn = document.querySelector('xhs-publish-btn');
+            if (xhsBtn && visible(xhsBtn) && xhsBtn.getAttribute('submit-disabled') !== 'true') {{
+                const rect = xhsBtn.getBoundingClientRect();
+                const hasSave = xhsBtn.getAttribute('is-save-draft') === 'true'
+                    && xhsBtn.getAttribute('save-disabled') !== 'true';
+                const buttonWidth = Math.min(120, Math.max(80, rect.width * 0.14));
+                const gap = 24;
+                const x = rect.left + rect.width / 2 + (hasSave ? (buttonWidth + gap) / 2 : 0);
+                const y = rect.top + rect.height / 2;
+                return mark(xhsBtn, 'xhs-publish-btn', {{x, y}});
+            }}
+
+            const names = new Set({json.dumps(list(PUBLISH_BUTTON_NAMES))});
+            const candidates = Array.from(document.querySelectorAll(
+                'button, [role="button"], .d-button, .custom-button, [class*="button"], [class*="btn"]'
+            )).filter(el => {{
+                if (!visible(el) || disabled(el)) return false;
+                if (el.closest('.menu-container')) return false;
+                const text = (el.innerText || el.textContent || '').replace(/\\s+/g, '').trim();
+                return names.has(text);
+            }});
+            candidates.sort((a, b) => {{
+                const ar = a.getBoundingClientRect();
+                const br = b.getBoundingClientRect();
+                const ap = window.getComputedStyle(a).position;
+                const bp = window.getComputedStyle(b).position;
+                const as = (ap === 'fixed' || ap === 'sticky' ? 10000 : 0) + ar.top;
+                const bs = (bp === 'fixed' || bp === 'sticky' ? 10000 : 0) + br.top;
+                return bs - as;
+            }});
+            if (candidates.length) {{
+                return mark(candidates[0], 'text-button');
+            }}
+
+            return {{clickable: false}};
+        }})()
+        """
+    )
+    return result if isinstance(result, dict) else {"clickable": False}
+
+
+def _has_accessible_publish_button(page: Page) -> bool:
+    """检查 AX tree 中是否存在可点击的发布按钮。"""
+    return bool(_get_accessible_publish_button_rect(page))
+
+
+def _click_accessible_publish_button(page: Page) -> bool:
+    """通过可访问性树定位发布按钮并点击。
+
+    ``xhs-publish-btn`` 使用闭合实现时，DOM 里只能看到宿主节点；AX tree
+    仍能暴露真实 button 和它的 viewport bounds。
+    """
+    rect = _get_accessible_publish_button_rect(page)
+    if not rect:
+        return False
+    x = rect["x"] + rect["width"] / 2
+    y = rect["y"] + rect["height"] / 2
+    page.mouse_move(x, y)
+    time.sleep(0.05)
+    page.mouse_click(x, y)
+    return True
+
+
+def _get_accessible_publish_button_rect(page: Page) -> dict | None:
+    """返回 AX tree 中发布按钮的 viewport rect。"""
+    try:
+        _scroll_publish_page_to_bottom(page)
+        page._send_session("DOM.getDocument", {"depth": -1, "pierce": True})
+        page._send_session("Accessibility.enable")
+        tree = page._send_session("Accessibility.getFullAXTree", {})
+    except Exception:
+        return None
+
+    nodes = tree.get("nodes", [])
+    for button_name in PUBLISH_BUTTON_NAMES:
+        for node in nodes:
+            if _ax_value(node.get("role")) != "button":
+                continue
+            if _ax_value(node.get("name")) != button_name:
+                continue
+            if _ax_node_disabled(node):
+                continue
+            rect = _ax_node_rect(page, node)
+            if rect:
+                return rect
+    return None
+
+
+def _ax_value(value: object) -> object:
+    if isinstance(value, dict):
+        return value.get("value")
+    return value
+
+
+def _ax_node_disabled(node: dict) -> bool:
+    for prop in node.get("properties", []):
+        if prop.get("name") != "disabled":
+            continue
+        value = _ax_value(prop.get("value"))
+        if value is True or value == "true":
+            return True
+    return False
+
+
+def _ax_node_rect(page: Page, node: dict) -> dict | None:
+    backend_id = node.get("backendDOMNodeId")
+    if not backend_id:
+        return None
+    try:
+        pushed = page._send_session(
+            "DOM.pushNodesByBackendIdsToFrontend",
+            {"backendNodeIds": [backend_id]},
+        )
+        node_ids = pushed.get("nodeIds") or []
+        if not node_ids:
+            return None
+        resolved = page._send_session("DOM.resolveNode", {"nodeId": node_ids[0]})
+        object_id = resolved.get("object", {}).get("objectId")
+        if not object_id:
+            return None
+        rect_result = page._send_session(
+            "Runtime.callFunctionOn",
+            {
+                "objectId": object_id,
+                "functionDeclaration": """
+                    function() {
+                        const r = this.getBoundingClientRect();
+                        return {x: r.left, y: r.top, width: r.width, height: r.height};
+                    }
+                """,
+                "returnByValue": True,
+            },
+        )
+    except Exception:
+        return None
+
+    rect = rect_result.get("result", {}).get("value")
+    if not isinstance(rect, dict):
+        return None
+    if rect.get("width", 0) <= 0 or rect.get("height", 0) <= 0:
+        return None
+    return rect
 
 
 def save_as_draft(page: Page) -> None:

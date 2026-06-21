@@ -11,15 +11,16 @@ from .errors import PublishError, UploadTimeoutError
 from .publish import (
     _click_publish_tab,
     _find_content_element,
+    _click_submit_publish_button,
     _input_tags,
     _navigate_to_publish_page,
     _set_original,
     _set_schedule_publish,
     _set_visibility,
+    _wait_for_submit_publish_button,
 )
 from .selectors import (
     FILE_INPUT,
-    PUBLISH_BUTTON,
     TITLE_INPUT,
     UPLOAD_INPUT,
 )
@@ -91,7 +92,8 @@ def click_publish_video_button(page: Page) -> None:
         page: CDP 页面对象。
     """
     _wait_for_publish_button_clickable(page)
-    page.click_element(PUBLISH_BUTTON)
+    if not _click_submit_publish_button(page):
+        raise PublishError("未找到可点击的视频发布按钮")
     time.sleep(3)
     logger.info("视频发布完成")
 
@@ -119,7 +121,10 @@ def _wait_for_video_processed(page: Page) -> None:
     判定信号：页面出现 <video> 预览（带 blob/http 源），且不再显示上传/处理进度。
     """
     max_wait = 1800.0  # 30 分钟
+    max_stalled_upload_wait = 180.0
     start = time.monotonic()
+    last_upload_progress = ""
+    last_upload_progress_at = start
 
     logger.info("开始等待视频处理完成")
 
@@ -135,6 +140,27 @@ def _wait_for_video_processed(page: Page) -> None:
         )
         if failure_text:
             raise PublishError(f"视频上传失败: {failure_text}")
+
+        upload_progress = page.evaluate(
+            """
+            (() => {
+                const text = document.body.innerText || '';
+                const match = text.match(/上传中\\s*\\d+%/);
+                return match ? match[0].replace(/\\s+/g, ' ') : '';
+            })()
+            """
+        )
+        if upload_progress:
+            now = time.monotonic()
+            if upload_progress != last_upload_progress:
+                logger.info("视频上传进度: %s", upload_progress)
+                last_upload_progress = upload_progress
+                last_upload_progress_at = now
+            elif now - last_upload_progress_at > max_stalled_upload_wait:
+                raise UploadTimeoutError(
+                    f"视频上传进度长时间无变化: {upload_progress}。"
+                    "请检查小红书上传域名是否已全部走本地网关。"
+                )
 
         done = page.evaluate(
             """
@@ -158,30 +184,8 @@ def _wait_for_video_processed(page: Page) -> None:
 
 def _wait_for_publish_button_clickable(page: Page) -> None:
     """等待发布按钮可点击（视频处理可能需要较长时间）。"""
-    max_wait = 1800.0  # 30 分钟
-    start = time.monotonic()
-
     logger.info("开始等待发布按钮可点击(视频)")
-
-    while time.monotonic() - start < max_wait:
-        clickable = page.evaluate(
-            f"""
-            (() => {{
-                const btn = document.querySelector({_js_str(PUBLISH_BUTTON)});
-                if (!btn) return false;
-                const rect = btn.getBoundingClientRect();
-                if (rect.width === 0 || rect.height === 0) return false;
-                if (btn.disabled) return false;
-                if (btn.classList.contains('disabled')) return false;
-                return true;
-            }})()
-            """
-        )
-        if clickable:
-            return
-        time.sleep(1)
-
-    raise UploadTimeoutError("等待发布按钮可点击超时(10分钟)")
+    _wait_for_submit_publish_button(page, timeout=1800.0)
 
 
 def _fill_publish_video_form(
@@ -226,10 +230,3 @@ def _fill_publish_video_form(
     _set_visibility(page, visibility)
 
     logger.info("视频表单填写完成，等待确认发布")
-
-
-def _js_str(s: str) -> str:
-    """将 Python 字符串转为 JS 字面量。"""
-    import json
-
-    return json.dumps(s)

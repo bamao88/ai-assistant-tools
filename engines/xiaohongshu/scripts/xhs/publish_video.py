@@ -24,6 +24,7 @@ from .selectors import (
     UPLOAD_INPUT,
 )
 from .types import PublishVideoContent
+from .video_cover import set_video_cover
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,10 @@ def fill_publish_video_form(page: Page, content: PublishVideoContent) -> None:
         content.is_original,
     )
 
+    if content.cover_path:
+        set_video_cover(page, content.cover_path)
+        logger.info("视频封面已设置: %s", content.cover_path)
+
 
 def click_publish_video_button(page: Page) -> None:
     """点击视频发布按钮。
@@ -93,6 +98,7 @@ def click_publish_video_button(page: Page) -> None:
 
 def _upload_video(page: Page, video_path: str) -> None:
     """上传视频文件。"""
+    video_path = os.path.realpath(os.path.expanduser(video_path))
     if not os.path.exists(video_path):
         raise PublishError(f"视频文件不存在: {video_path}")
 

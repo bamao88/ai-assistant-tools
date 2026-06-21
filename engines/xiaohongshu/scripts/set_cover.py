@@ -24,111 +24,10 @@ import argparse
 import json
 import os
 import sys
-import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from xhs.cdp import Browser  # noqa: E402
-
-IMAGE_FILE_INPUT = 'input[type=file][accept*="image"]'
-
-
-def _click_text(page, text: str) -> bool:
-    """点击第一个 textContent 恰为 text 的可见元素。"""
-    return bool(
-        page.evaluate(
-            f"""
-            (() => {{
-                const want = {json.dumps(text)};
-                const el = Array.from(document.querySelectorAll('div,span,button'))
-                    .find(e => e.textContent.trim() === want
-                        && e.getBoundingClientRect().width > 0);
-                if (!el) return false;
-                el.click();
-                return true;
-            }})()
-            """
-        )
-    )
-
-
-def _click_last_confirm(page) -> int:
-    """点击 DOM 中最后一个可见「确定」按钮（裁剪弹窗的确认在最上层/最末）。返回可见确定数。"""
-    return page.evaluate(
-        """
-        (() => {
-            const btns = Array.from(document.querySelectorAll('button, .d-button')).filter(el => {
-                const t = (el.textContent || '').trim();
-                const r = el.getBoundingClientRect();
-                return t === '确定' && r.width > 0 && r.height > 0;
-            });
-            if (!btns.length) return 0;
-            btns[btns.length - 1].click();
-            return btns.length;
-        })()
-        """
-    )
-
-
-def _wait_cover_ready(page, timeout: float = 90.0) -> None:
-    """等视频自动首帧封面生成完成（cover-plugin 出现「修改封面」且无「封面上传中」）。
-
-    封面还在生成时点「修改封面」，编辑弹窗打不开（本次最大坑）。
-    """
-    start = time.monotonic()
-    while time.monotonic() - start < timeout:
-        ready = page.evaluate(
-            """
-            (() => {
-                const txt = document.body.innerText || '';
-                if (/封面上传中|封面生成中/.test(txt)) return false;
-                return Array.from(document.querySelectorAll('div,span'))
-                    .some(e => e.textContent.trim() === '修改封面');
-            })()
-            """
-        )
-        if ready:
-            return
-        time.sleep(1)
-    raise RuntimeError("等待自动封面生成超时（封面上传中一直不消失）")
-
-
-def set_cover(page, cover_path: str) -> dict:
-    if not os.path.exists(cover_path):
-        raise FileNotFoundError(f"封面文件不存在: {cover_path}")
-
-    # 0. 等自动首帧封面生成完，否则编辑弹窗打不开
-    _wait_cover_ready(page)
-
-    # 1. 进入封面编辑（cover-plugin「修改封面」hover 浮层）
-    if not _click_text(page, "修改封面"):
-        # 兜底：有的版本入口是「设置封面」标题
-        _click_text(page, "设置封面")
-
-    # 2. 等编辑弹窗里的图片上传框出现，再上传本地图片
-    deadline = time.monotonic() + 15
-    while time.monotonic() < deadline and not page.has_element(IMAGE_FILE_INPUT):
-        time.sleep(0.5)
-    if not page.has_element(IMAGE_FILE_INPUT):
-        raise RuntimeError("未找到封面图片上传输入框（封面编辑弹窗可能没打开）")
-    page.set_file_input(IMAGE_FILE_INPUT, [cover_path])
-    time.sleep(3)
-
-    # 3. 裁剪框确认（cover.png 已是 3:4 时无需真裁，直接确定）
-    n = _click_last_confirm(page)
-    if n == 0:
-        raise RuntimeError("上传后未出现「确定」按钮，封面可能未生效")
-    time.sleep(2)
-
-    # 4. 校验：封面预审 + 编辑弹窗已关闭
-    state = page.evaluate(
-        """
-        (() => ({
-            stillCropping: /封面比例/.test(document.body.innerText || ''),
-            reviewPassed: /封面预审结果评估通过|封面.*通过/.test(document.body.innerText || ''),
-        }))()
-        """
-    )
-    return {"confirm_clicks": n, **state}
+from xhs.video_cover import set_video_cover  # noqa: E402
 
 
 def main() -> int:
@@ -151,7 +50,7 @@ def main() -> int:
     browser = Browser(host=args.host, port=port)
     page = browser.get_existing_page()
     try:
-        result = set_cover(page, args.cover)
+        result = set_video_cover(page, args.cover)
     except Exception as e:  # noqa: BLE001
         print(json.dumps({"success": False, "error": str(e)}, ensure_ascii=False))
         return 2

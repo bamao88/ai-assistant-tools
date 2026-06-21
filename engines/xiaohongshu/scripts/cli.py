@@ -12,6 +12,9 @@ import contextlib
 import json
 import logging
 import os
+import platform
+import shlex
+import subprocess
 import sys
 import tempfile
 import time
@@ -102,6 +105,120 @@ def _open_file_if_display(path: str) -> None:
             subprocess.Popen(["xdg-open", path])
     except Exception:
         logger.debug("无法自动打开文件: %s", path)
+
+
+def _resolve_existing_file(path: str, label: str) -> str:
+    """Expand symlinks/user paths and fail with a JSON error if missing."""
+    resolved = os.path.realpath(os.path.expanduser(path))
+    if not os.path.exists(resolved):
+        _output({"success": False, "error": f"{label}不存在: {resolved}"}, exit_code=2)
+    return resolved
+
+
+def _route_bypass_script() -> str:
+    return os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "route-bypass",
+            "scripts",
+            "xhs-route-bypass.zsh",
+        )
+    )
+
+
+def _tail_text(text: str, max_chars: int = 2000) -> str:
+    text = text.strip()
+    return text[-max_chars:] if len(text) > max_chars else text
+
+
+def _run_route_bypass_apply(timeout: int = 180) -> subprocess.CompletedProcess[str]:
+    script = _route_bypass_script()
+    if not os.path.exists(script):
+        raise FileNotFoundError(f"route-bypass 脚本不存在: {script}")
+
+    with contextlib.suppress(FileNotFoundError, subprocess.TimeoutExpired):
+        subprocess.run(
+            ["tailscale", "set", "--exit-node-allow-lan-access=true"],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+
+    return subprocess.run(
+        [script, "apply"],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def _run_route_bypass_apply_with_admin(timeout: int = 240) -> subprocess.CompletedProcess[str]:
+    script = _route_bypass_script()
+    command = (
+        "tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true; "
+        f"{shlex.quote(script)} apply"
+    )
+    return subprocess.run(
+        [
+            "osascript",
+            "-e",
+            f'do shell script {json.dumps(command)} with administrator privileges',
+        ],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def _ensure_xhs_route_bypass(args: argparse.Namespace) -> dict:
+    """Ensure Xiaohongshu publishing hosts are routed through the local gateway."""
+    if getattr(args, "skip_route_bypass", False):
+        return {"skipped": True}
+
+    try:
+        result = _run_route_bypass_apply()
+    except Exception as e:  # noqa: BLE001
+        _output({"success": False, "error": f"网络分流执行失败: {e}"}, exit_code=2)
+
+    if result.returncode == 0:
+        logger.info("小红书本地网络分流已刷新")
+        return {"applied": True}
+
+    if platform.system() == "Darwin":
+        try:
+            admin_result = _run_route_bypass_apply_with_admin()
+        except Exception as e:  # noqa: BLE001
+            _output(
+                {
+                    "success": False,
+                    "error": f"网络分流管理员授权失败: {e}",
+                    "stdout": _tail_text(result.stdout),
+                    "stderr": _tail_text(result.stderr),
+                },
+                exit_code=2,
+            )
+        if admin_result.returncode == 0:
+            logger.info("小红书本地网络分流已通过管理员授权刷新")
+            return {"applied": True, "admin": True}
+        result = admin_result
+
+    _output(
+        {
+            "success": False,
+            "error": "网络分流未生效，已停止发布。请先修复 route-bypass 后重试。",
+            "stdout": _tail_text(result.stdout),
+            "stderr": _tail_text(result.stderr),
+        },
+        exit_code=2,
+    )
 
 
 def _update_account_nickname(args: argparse.Namespace, page) -> None:
@@ -835,6 +952,14 @@ def cmd_fill_publish_video(args: argparse.Namespace) -> None:
     from xhs.publish_video import fill_publish_video_form
     from xhs.types import PublishVideoContent
 
+    route_bypass = _ensure_xhs_route_bypass(args)
+    video_path = _resolve_existing_file(args.video, "视频文件")
+    cover_path = (
+        _resolve_existing_file(args.cover, "封面文件")
+        if getattr(args, "cover", None)
+        else ""
+    )
+
     with open(args.title_file, encoding="utf-8") as f:
         title = f.read().strip()
     with open(args.content_file, encoding="utf-8") as f:
@@ -848,17 +973,21 @@ def cmd_fill_publish_video(args: argparse.Namespace) -> None:
                 title=title,
                 content=content,
                 tags=args.tags or [],
-                video_path=args.video,
+                video_path=video_path,
                 schedule_time=args.schedule_at,
                 visibility=args.visibility or "",
-                is_original=getattr(args, "original", False),
+                is_original=getattr(args, "original", True),
+                cover_path=cover_path,
             ),
         )
         _output(
             {
                 "success": True,
                 "title": title,
-                "video": args.video,
+                "video": video_path,
+                "cover": cover_path,
+                "route_bypass": route_bypass,
+                "original": getattr(args, "original", True),
                 "status": "视频表单已填写，等待确认发布",
             }
         )
@@ -983,6 +1112,14 @@ def cmd_publish_video(args: argparse.Namespace) -> None:
     from xhs.publish_video import publish_video_content
     from xhs.types import PublishVideoContent
 
+    route_bypass = _ensure_xhs_route_bypass(args)
+    video_path = _resolve_existing_file(args.video, "视频文件")
+    cover_path = (
+        _resolve_existing_file(args.cover, "封面文件")
+        if getattr(args, "cover", None)
+        else ""
+    )
+
     with open(args.title_file, encoding="utf-8") as f:
         title = f.read().strip()
     with open(args.content_file, encoding="utf-8") as f:
@@ -1004,12 +1141,24 @@ def cmd_publish_video(args: argparse.Namespace) -> None:
                 title=title,
                 content=content,
                 tags=args.tags or [],
-                video_path=args.video,
+                video_path=video_path,
                 schedule_time=args.schedule_at,
                 visibility=args.visibility or "",
+                is_original=getattr(args, "original", True),
+                cover_path=cover_path,
             ),
         )
-        _output({"success": True, "title": title, "video": args.video, "status": "发布完成"})
+        _output(
+            {
+                "success": True,
+                "title": title,
+                "video": video_path,
+                "cover": cover_path,
+                "route_bypass": route_bypass,
+                "original": getattr(args, "original", True),
+                "status": "发布完成",
+            }
+        )
     finally:
         browser.close_page(page)
         browser.close()
@@ -1233,9 +1382,17 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("--title-file", required=True, help="标题文件路径")
     sub.add_argument("--content-file", required=True, help="正文文件路径")
     sub.add_argument("--video", required=True, help="视频文件路径")
+    sub.add_argument("--cover", help="自定义封面图片路径（可选）")
     sub.add_argument("--tags", nargs="*", help="标签")
     sub.add_argument("--schedule-at", help="定时发布 (ISO8601)")
     sub.add_argument("--visibility", help="可见范围")
+    sub.add_argument("--original", action="store_true", default=True, help="声明原创（默认开启）")
+    sub.add_argument("--no-original", dest="original", action="store_false", help="不声明原创")
+    sub.add_argument(
+        "--skip-route-bypass",
+        action="store_true",
+        help="跳过小红书本地网络分流刷新（仅用于本地调试）",
+    )
     sub.add_argument("--headless", action="store_true", help="无头模式（未登录自动降级）")
     sub.set_defaults(func=cmd_publish_video)
 
@@ -1255,10 +1412,17 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("--title-file", required=True, help="标题文件路径")
     sub.add_argument("--content-file", required=True, help="正文文件路径")
     sub.add_argument("--video", required=True, help="视频文件路径")
+    sub.add_argument("--cover", help="自定义封面图片路径（可选）")
     sub.add_argument("--tags", nargs="*", help="标签")
     sub.add_argument("--schedule-at", help="定时发布 (ISO8601)")
     sub.add_argument("--visibility", help="可见范围")
-    sub.add_argument("--original", action="store_true", help="声明原创")
+    sub.add_argument("--original", action="store_true", default=True, help="声明原创（默认开启）")
+    sub.add_argument("--no-original", dest="original", action="store_false", help="不声明原创")
+    sub.add_argument(
+        "--skip-route-bypass",
+        action="store_true",
+        help="跳过小红书本地网络分流刷新（仅用于本地调试）",
+    )
     sub.set_defaults(func=cmd_fill_publish_video)
 
     # click-publish（点击发布按钮）

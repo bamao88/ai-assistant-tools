@@ -22,6 +22,7 @@ def run_publish_pipeline(
     content: str,
     images: list[str] | None = None,
     video: str | None = None,
+    cover: str | None = None,
     tags: list[str] | None = None,
     schedule_time: str | None = None,
     is_original: bool = False,
@@ -92,7 +93,9 @@ def run_publish_pipeline(
                         tags=tags or [],
                         video_path=video,
                         schedule_time=schedule_time,
+                        is_original=is_original,
                         visibility=visibility,
+                        cover_path=cover or "",
                     ),
                 )
             else:
@@ -115,6 +118,7 @@ def run_publish_pipeline(
                 "content_length": len(content),
                 "images": len(local_images),
                 "video": video or "",
+                "cover": cover or "",
                 "status": "发布完成",
             }
 
@@ -133,6 +137,7 @@ def main() -> None:
     parser.add_argument("--content-file", required=True, help="正文文件路径")
     parser.add_argument("--images", nargs="*", help="图片路径或 URL 列表")
     parser.add_argument("--video", help="视频文件路径")
+    parser.add_argument("--cover", help="视频封面图片路径")
     parser.add_argument("--tags", nargs="*", help="标签列表")
     parser.add_argument("--schedule-at", help="定时发布时间 (ISO8601)")
     parser.add_argument("--original", action="store_true", help="声明原创")
@@ -154,6 +159,7 @@ def main() -> None:
         content=content,
         images=args.images,
         video=args.video,
+        cover=args.cover,
         tags=args.tags,
         schedule_time=args.schedule_at,
         is_original=args.original,

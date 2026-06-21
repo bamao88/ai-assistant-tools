@@ -9,14 +9,16 @@
 ## 结构
 
 ```
-prompts/         ★ 4 条提示词全在此（按功能命名·无人设/账号概念·改 prompt 不动代码）
-  topic-select.md   流程一·选题
+prompts/         ★ 5 条提示词全在此（按功能命名·改 prompt 不动代码）
+  topic-select.md   流程一·选题（选片标准基于 dbskill 选片灵魂 + 标题 5 铁律）
   body-edit.md      流程二·总编（全局取证 + 逻辑编排 + 精选合并）
   refine-deduct.md  流程二·字级去口水决策（删哪些字·带位置·可执行）
-  hook.md           流程二·钩子（整句优先·拼接兜底）
+  hook.md           流程二·钩子（dbs-hook 方法论内容 + 本项目「整句优先·拼接兜底」排序）
+  dedup-merge.md    流程二后·批量去重/合并（内容级）
 video_select/    代码包（只管逻辑；提示词一律从 prompts/ 读）
   topics.py         选题 Runner          → _selection.json
   generate.py       候选 Runner          → golden_candidate.json + candidates/clip_NN.md
+  dedup.py          批量去重 Runner      → golden_dedup.json（流程二后·内容级去重）
   gates.py          门禁（精选合并 + 时长 + 可执行 + 零编造）
   score.py          打分器（候选 vs 冻结 golden 参照）
   select_clips_a.py 方案A·单阶段（备用对照）
@@ -24,6 +26,8 @@ eval/            Harness 数据（fixtures 入库 / runs 不入库 / words 软�
 ```
 
 **依赖方向**：`video-select → video-slicer`（单向 import 它的 `transcribe.segment` / `llm` / `twostage.index`，复用「逐字稿→句/时间」核心，不重复造）。
+
+**选题/标题/钩子方法论来源**：dontbesilent「dbskill」（`vendor/dbskill/skills/{dbs-content,dbs-hook,dbs-xhs-title}`；**CC BY-NC 4.0**，仓库 github.com/dontbesilent2025/dbskill）。`prompts/{topic-select,hook}.md` 蒸馏自其方法论 + videocut-zh `03 §7`／`07`，已在文件头署名。商用边界由 owner 把关。
 
 ## 迭代闭环命令（在 `engines/video-select/` 下跑）
 

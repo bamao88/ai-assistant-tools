@@ -124,6 +124,18 @@ def _wait_for_video_processed(page: Page) -> None:
     logger.info("开始等待视频处理完成")
 
     while time.monotonic() - start < max_wait:
+        failure_text = page.evaluate(
+            """
+            (() => {
+                const t = document.body.innerText || '';
+                const m = t.match(/.{0,40}(上传失败|网络异常|视频上传失败).{0,60}/);
+                return m ? m[0] : '';
+            })()
+            """
+        )
+        if failure_text:
+            raise PublishError(f"视频上传失败: {failure_text}")
+
         done = page.evaluate(
             """
             (() => {
@@ -132,7 +144,7 @@ def _wait_for_video_processed(page: Page) -> None:
                 const src = v.currentSrc || v.src || '';
                 if (!src) return false;
                 const t = document.body.innerText || '';
-                if (/上传中|视频上传中|处理中|上传失败/.test(t)) return false;
+                if (/上传中|视频上传中|处理中/.test(t)) return false;
                 return true;
             })()
             """

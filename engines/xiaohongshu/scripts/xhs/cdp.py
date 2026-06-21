@@ -456,6 +456,12 @@ class Page:
                 "code": "ArrowDown",
                 "windowsVirtualKeyCode": 40,
             },
+            "Backspace": {
+                "key": "Backspace",
+                "code": "Backspace",
+                "windowsVirtualKeyCode": 8,
+            },
+            "Escape": {"key": "Escape", "code": "Escape", "windowsVirtualKeyCode": 27},
             "Tab": {"key": "Tab", "code": "Tab", "windowsVirtualKeyCode": 9},
         }
         info = key_map.get(key, {"key": key, "code": key})

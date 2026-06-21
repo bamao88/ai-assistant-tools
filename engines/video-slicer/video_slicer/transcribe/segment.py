@@ -80,8 +80,12 @@ def segment_native(words: list[dict], sentences_raw: list[dict], host: str = "�
             j += 1
         if wi == -1 or wj == -1:
             wi = wj = -1
-        sents.append(Sentence(sid=len(sents), start=s0, end=s1, speaker=host,
-                              text=sr.get("text", ""), is_host=True, wi=wi, wj=wj))
+        # 多说话人源（如腾讯会议答疑）可在每句带 speaker/is_host；
+        # 单说话人源不带这俩字段时默认 speaker=host、is_host=True（向后兼容）。
+        spk = sr.get("speaker", host)
+        sents.append(Sentence(sid=len(sents), start=s0, end=s1, speaker=spk,
+                              text=sr.get("text", ""),
+                              is_host=sr.get("is_host", spk == host), wi=wi, wj=wj))
     return sents
 
 

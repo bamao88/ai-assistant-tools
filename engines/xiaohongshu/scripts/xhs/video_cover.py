@@ -10,6 +10,7 @@ from typing import Any
 from .cdp import Page
 
 MARKED_IMAGE_FILE_INPUT = 'input[type=file][data-xhs-cover-input="1"]'
+COVER_THUMBNAIL_SELECTOR = ".publish-page-content-cover .cover .default.column"
 
 
 def _click_text(page: Page, text: str) -> bool:
@@ -55,6 +56,36 @@ def _click_last_confirm(page: Page) -> int:
     )
 
 
+def _click_cover_editor_entry(page: Page) -> bool:
+    """Open the cover editor by hovering and clicking the cover thumbnail."""
+    box = page.evaluate(
+        f"""
+        (() => {{
+            const el = document.querySelector({json.dumps(COVER_THUMBNAIL_SELECTOR)})
+                || document.querySelector('.publish-page-content-cover .cover');
+            if (!el) return null;
+            el.scrollIntoView({{block: 'center'}});
+            const rect = el.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return null;
+            return {{
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+            }};
+        }})()
+        """
+    )
+    if not box:
+        return _click_text(page, "修改封面") or _click_text(page, "设置封面")
+
+    page.mouse_move(float(box["x"]), float(box["y"]))
+    time.sleep(0.5)
+    if _click_text(page, "修改封面"):
+        return True
+
+    page.mouse_click(float(box["x"]), float(box["y"]))
+    return True
+
+
 def _wait_cover_ready(page: Page, timeout: float = 90.0) -> None:
     """Wait until the platform-generated first-frame cover can be edited."""
     start = time.monotonic()
@@ -63,18 +94,24 @@ def _wait_cover_ready(page: Page, timeout: float = 90.0) -> None:
             """
             (() => {
                 const txt = document.body.innerText || '';
+                const canEdit = Array.from(document.querySelectorAll('div,span,button'))
+                    .some(e => {
+                        const text = (e.textContent || '').trim();
+                        const rect = e.getBoundingClientRect();
+                        return (text === '修改封面' || text === '设置封面')
+                            && rect.width > 0
+                            && rect.height > 0;
+                    });
+                if (canEdit) return true;
                 if (/封面上传中|封面生成中/.test(txt)) return false;
-                return Array.from(document.querySelectorAll('div,span'))
-                    .some(e => (e.textContent || '').trim() === '修改封面'
-                        && e.getBoundingClientRect().width > 0
-                        && e.getBoundingClientRect().height > 0);
+                return false;
             })()
             """
         )
         if ready:
             return
         time.sleep(1)
-    raise RuntimeError("等待自动封面生成超时（封面上传中一直不消失）")
+    raise RuntimeError("等待自动封面生成超时（未出现可编辑封面入口）")
 
 
 def _mark_latest_image_input(page: Page) -> int:
@@ -111,6 +148,31 @@ def _wait_image_input(page: Page, timeout: float = 15.0) -> int:
     raise RuntimeError("未找到封面图片上传输入框（封面编辑弹窗可能没打开）")
 
 
+def _wait_cover_editor_closed(page: Page, timeout: float = 30.0) -> dict[str, Any]:
+    """Wait until the cover editor closes after confirming the uploaded image."""
+    deadline = time.monotonic() + timeout
+    last_state: dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        state = page.evaluate(
+            """
+            (() => {
+                const text = document.body.innerText || '';
+                const modalOpen = !!document.querySelector('.cover-modal, .d-modal');
+                return {
+                    modalOpen,
+                    stillCropping: modalOpen || /封面比例|上传图片|图片大小/.test(text),
+                    reviewPassed: /封面效果评估通过|封面预审结果评估通过|封面.*通过/.test(text),
+                };
+            })()
+            """
+        ) or {}
+        last_state = state
+        if not state.get("stillCropping"):
+            return state
+        time.sleep(0.5)
+    raise RuntimeError(f"封面确认后弹窗未关闭: {last_state}")
+
+
 def set_video_cover(page: Page, cover_path: str) -> dict[str, Any]:
     """Set a custom cover on an already-open video publish page.
 
@@ -123,26 +185,17 @@ def set_video_cover(page: Page, cover_path: str) -> dict[str, Any]:
 
     _wait_cover_ready(page)
 
-    if not _click_text(page, "修改封面"):
-        _click_text(page, "设置封面")
+    if _mark_latest_image_input(page) == 0 and not _click_cover_editor_entry(page):
+        raise RuntimeError("未找到封面编辑入口")
 
-    input_count = _wait_image_input(page)
+    input_count = _wait_image_input(page, timeout=30.0)
     page.set_file_input(MARKED_IMAGE_FILE_INPUT, [cover_path])
     time.sleep(3)
 
     confirm_clicks = _click_last_confirm(page)
     if confirm_clicks == 0:
         raise RuntimeError("上传后未出现「确定」按钮，封面可能未生效")
-    time.sleep(2)
-
-    state = page.evaluate(
-        """
-        (() => ({
-            stillCropping: /封面比例/.test(document.body.innerText || ''),
-            reviewPassed: /封面预审结果评估通过|封面.*通过/.test(document.body.innerText || ''),
-        }))()
-        """
-    )
+    state = _wait_cover_editor_closed(page)
     return {
         "cover": cover_path,
         "image_input_count": input_count,

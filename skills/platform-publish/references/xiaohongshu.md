@@ -311,11 +311,11 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 
 ## 视频发布流程
 
-**输入需求**：标题 + 正文 + 视频（本地绝对路径，`.mp4`/`.mov` 等）
+**输入需求**：标题 + 正文 + 视频（本地绝对路径，`.mp4`/`.mov` 等）+ 封面图（本地绝对路径，`.jpg`/`.png` 等）
 
 ### 必做约束
 
-- 没有视频不得发布；图片和视频不可混合（二选一）。
+- 没有视频不得发布；没有封面图也不得发布。视频和封面图都是必填。
 - 标题长度 ≤ 20（规则同图文）。
 - 发布前用 `AskUserQuestion` 确认标题、正文、视频。
 - 所有路径必须绝对路径。
@@ -332,7 +332,7 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
   --title-file /tmp/xhs_title.txt \
   --content-file /tmp/xhs_content.txt \
   --video "/abs/path/video.mp4" \
-  [--cover "/abs/path/cover.png"] \
+  --cover "/abs/path/cover.png" \
   [--tags "标签1" "标签2"] \
   [--visibility "公开可见"] \
   [--no-original]
@@ -341,7 +341,7 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 说明：
 - `fill-publish-video` 会自动刷新小红书本地网络分流；不得手工跳过。只有本地调试才允许加 `--skip-route-bypass`。
 - `--video` 会自动解析软链到真实文件路径。
-- `--cover` 可选；提供后会在同一发布页完成「修改封面 → 上传图片 → 确定」，不再调用临时外挂脚本。
+- `--cover` 必填；会在同一发布页完成「修改封面 → 上传图片 → 确定」，不再调用临时外挂脚本。
 - 视频默认声明原创；如果素材不是原创，显式加 `--no-original`。
 
 填写完成后告知用户：
@@ -366,7 +366,7 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
   --title-file /tmp/xhs_title.txt \
   --content-file /tmp/xhs_content.txt \
   --video "/abs/path/video.mp4" \
-  [--cover "/abs/path/cover.png"] \
+  --cover "/abs/path/cover.png" \
   [--tags "标签1" "标签2"] \
   [--schedule-at "2026-06-21T20:00:00"] \
   [--visibility "公开可见"] \

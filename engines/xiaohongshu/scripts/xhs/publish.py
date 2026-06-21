@@ -483,6 +483,9 @@ def _check_content_max_length(page: Page) -> None:
 
 # ========== 标签输入 ==========
 
+MARKED_TAG_ITEM = '[data-xhs-tag-target="1"]'
+TAG_SUGGESTION_WAIT_SECONDS = (10.0, 30.0, 60.0)
+
 
 def _input_tags(page: Page, content_selector: str, tags: list[str]) -> None:
     """输入标签。"""
@@ -514,35 +517,137 @@ def _input_tags(page: Page, content_selector: str, tags: list[str]) -> None:
 
 def _input_single_tag(page: Page, content_selector: str, tag: str) -> None:
     """输入单个标签。"""
-    # 输入 #
+    for attempt, wait_seconds in enumerate(TAG_SUGGESTION_WAIT_SECONDS, start=1):
+        before_count = _count_inserted_topics(page, tag)
+        _type_raw_tag(page, tag)
+        selected_text = _wait_for_tag_suggestion(page, tag, wait_seconds)
+        if selected_text:
+            page.click_element(MARKED_TAG_ITEM)
+            if _wait_for_topic_inserted(page, tag, before_count):
+                logger.info("点击标签联想并确认插入: %s -> %s", tag, selected_text)
+                time.sleep(1.0)
+                return
+            logger.warning("标签联想已点击但未生成话题，删除后重试: #%s -> %s", tag, selected_text)
+        else:
+            logger.warning(
+                "未找到精确匹配的标签联想，删除后重试: #%s (第%d/%d轮, 等待%.0fs)",
+                tag,
+                attempt,
+                len(TAG_SUGGESTION_WAIT_SECONDS),
+                wait_seconds,
+            )
+
+        _clear_raw_tag_input(page, tag)
+        time.sleep(1.0)
+
+    raise PublishError(f"多次重试后仍未找到标签联想，停止发布: #{tag}")
+
+
+def _type_raw_tag(page: Page, tag: str) -> None:
+    """输入待联想的原始 #标签文本。"""
     page.type_text("#", delay_ms=0)
     time.sleep(0.3)
-
-    # 逐字输入标签（随机间隔模拟真实输入）
     for char in tag:
         page.type_text(char, delay_ms=0)
         time.sleep(random.uniform(0.05, 0.12))
-
-    # 等待标签联想出现（最多 10 秒；联想下拉有时较慢，等太短会点不上 → 标签丢失）
-    time.sleep(1.0)  # 先给联想一点弹出时间，再开始轮询
-    deadline = time.monotonic() + 10.0
-    clicked = False
-    while time.monotonic() < deadline:
-        if page.has_element(TAG_TOPIC_CONTAINER):
-            item_selector = f"{TAG_TOPIC_CONTAINER} {TAG_FIRST_ITEM}"
-            if page.has_element(item_selector):
-                page.click_element(item_selector)
-                logger.info("点击标签联想: %s", tag)
-                clicked = True
-                break
-        time.sleep(0.5)
-
-    if not clicked:
-        # 没有联想，直接空格
-        logger.warning("未找到标签联想，直接输入空格: %s", tag)
-        page.type_text(" ", delay_ms=0)
-
     time.sleep(1.0)
+
+
+def _wait_for_tag_suggestion(page: Page, tag: str, timeout: float) -> str:
+    """等待标签联想项出现并标记目标项。"""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        selected_text = _mark_tag_suggestion(page, tag)
+        if selected_text:
+            return selected_text
+        time.sleep(0.5)
+    return ""
+
+
+def _clear_raw_tag_input(page: Page, tag: str) -> None:
+    """删除本轮输入的原始 #标签，准备重新触发联想。"""
+    page.press_key("Escape")
+    time.sleep(0.2)
+    for _ in range(len(tag) + 1):
+        page.press_key("Backspace")
+        time.sleep(0.03)
+
+
+def _count_inserted_topics(page: Page, tag: str) -> int:
+    """统计编辑器里已经插入的同名话题数量。"""
+    return int(
+        page.evaluate(
+            f"""
+            (() => {{
+                const want = {json.dumps(tag.lstrip("#"))};
+                const normalize = text => text
+                    .replace(/^#/, '')
+                    .replace(/新建话题/g, '')
+                    .replace(/\\[话题\\]/g, '')
+                    .replace(/\\s+/g, '')
+                    .trim();
+                return Array.from(document.querySelectorAll('[contenteditable="true"] a.tiptap-topic'))
+                    .filter(a => {{
+                        const raw = a.getAttribute('data-topic') || '';
+                        let name = '';
+                        try {{ name = JSON.parse(raw).name || ''; }} catch (_e) {{}}
+                        return name === want || normalize(a.textContent || '') === want;
+                    }}).length;
+            }})()
+            """
+        )
+        or 0
+    )
+
+
+def _wait_for_topic_inserted(page: Page, tag: str, before_count: int) -> bool:
+    """等待点击联想后，同名话题真正写入编辑器。"""
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        if _count_inserted_topics(page, tag) > before_count:
+            return True
+        time.sleep(0.2)
+    return False
+
+
+def _mark_tag_suggestion(page: Page, tag: str) -> str:
+    """标记一个可见标签联想项，优先选择文本精确匹配的项。"""
+    return str(
+        page.evaluate(
+            f"""
+            (() => {{
+                document.querySelectorAll({json.dumps(MARKED_TAG_ITEM)})
+                    .forEach(el => delete el.dataset.xhsTagTarget);
+                const container = document.querySelector({json.dumps(TAG_TOPIC_CONTAINER)});
+                if (!container) return '';
+                const items = Array.from(container.querySelectorAll({json.dumps(TAG_FIRST_ITEM)}))
+                    .filter(el => {{
+                        const rect = el.getBoundingClientRect();
+                        const style = window.getComputedStyle(el);
+                        return rect.width > 0
+                            && rect.height > 0
+                            && style.display !== 'none'
+                            && style.visibility !== 'hidden'
+                            && (el.textContent || '').trim();
+                    }});
+                if (!items.length) return '';
+
+                const want = {json.dumps(tag.lstrip("#"))};
+                const normalize = text => text
+                    .replace(/^#/, '')
+                    .replace(/新建话题/g, '')
+                    .replace(/\\[话题\\]/g, '')
+                    .replace(/\\s+/g, '')
+                    .trim();
+                const exact = items.find(el => normalize(el.textContent || '') === want);
+                if (!exact) return '';
+                exact.dataset.xhsTagTarget = '1';
+                return (exact.textContent || '').trim();
+            }})()
+            """
+        )
+        or ""
+    )
 
 
 # ========== 定时发布 ==========

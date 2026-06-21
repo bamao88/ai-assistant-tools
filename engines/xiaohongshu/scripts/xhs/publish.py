@@ -633,16 +633,20 @@ def _mark_tag_suggestion(page: Page, tag: str) -> str:
                 if (!items.length) return '';
 
                 const want = {json.dumps(tag.lstrip("#"))};
+                const label = el => {{
+                    const name = el.querySelector('.name');
+                    return (name ? name.textContent : el.textContent) || '';
+                }};
                 const normalize = text => text
                     .replace(/^#/, '')
                     .replace(/新建话题/g, '')
                     .replace(/\\[话题\\]/g, '')
                     .replace(/\\s+/g, '')
                     .trim();
-                const exact = items.find(el => normalize(el.textContent || '') === want);
+                const exact = items.find(el => normalize(label(el)) === want);
                 if (!exact) return '';
                 exact.dataset.xhsTagTarget = '1';
-                return (exact.textContent || '').trim();
+                return label(exact).trim();
             }})()
             """
         )

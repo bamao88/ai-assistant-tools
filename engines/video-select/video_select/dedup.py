@@ -140,8 +140,10 @@ def run(golden_path, words_json, out_dir, host="张和", providers=None) -> dict
     actions = data.get("actions", [])
 
     deduped, stats = apply_actions(clips, actions, sents)
+    prompt_versions = _deps.snapshot_prompts(out)   # 快照层：提示词原文+版本入 run，分数可复现
     out_json = {**{k: v for k, v in src.items() if k != "clips"},
-                "method": "video-select/dedup", "dedup_stats": stats, "clips": deduped}
+                "method": "video-select/dedup", "dedup_stats": stats,
+                "prompt_versions": prompt_versions, "clips": deduped}
     (out / "golden_dedup.json").write_text(
         json.dumps(out_json, ensure_ascii=False, indent=2), encoding="utf-8")
     # 重渲评审稿（去重后这批）

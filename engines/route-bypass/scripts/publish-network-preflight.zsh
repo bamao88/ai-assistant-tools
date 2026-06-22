@@ -17,6 +17,8 @@ Platforms:
   gongzhonghao|gzh        WeChat Official Account draft/publish API
   article-drafts|wechatsync|draft-direct
                            Zhihu/Juejin/CSDN/Baijiahao/SegmentFault/Toutiao drafts
+  transcribe|asr|video-transcribe
+                           Cloud transcription (video-slicer): Volcengine/Aliyun ASR + OSS upload
   all|publishing          All configured publishing domains
 
 Actions:

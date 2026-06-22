@@ -22,6 +22,7 @@ SAU="$ENGINE/.venv/bin/sau"
 - 测试号 `测试号_抖音` 已通过真实 fill-only 复测：上传测试视频、填写标题/简介/话题、上传横版和竖版封面、选择自主声明，最终停在发布页，未点击“发布”。
 - `upload-video` / `upload-note` 支持 `--fill-only`：上传素材、填写标题/正文/标签/封面/定时时间后停在发布页，不点击最终“发布”。
 - 当前测试阶段只允许 `--fill-only`；禁止点击最终“发布/定时发布”。即使命令支持自动提交，也必须等用户之后重新明确授权。
+- 抖音话题/关键词最多 5 个。即使素材文案给了 10 个关键词，发布命令也只能传前 5 个；底层 CLI/uploader 会防御性截断到 5 个。
 - 新版创作者中心必须先点左侧“高清发布”菜单里的“发布视频/发布图文”；底层 CLI 已内置该入口，不再直接等旧的 `div[class^='container'] input`。
 - 视频发布页表单渲染可能在文件解析后才出现，当前 CLI 最长等待 120s；不要把这段等待误判为卡死。
 
@@ -82,6 +83,7 @@ SAU="$ENGINE/.venv/bin/sau"
 - 封面：`--thumbnail-landscape`（4:3 横版）、`--thumbnail-portrait`（3:4 竖版）；`--thumbnail` 兼容旧参数=3:4 竖版。
 - 带货可选：`--product-link --product-title`。
 - `--schedule` 格式 `YYYY-MM-DD HH:MM`，传了即切换为抖音定时发布。
+- 抖音最多 5 个话题，`--tags` 只传 5 个以内；如果 `publish_copy.md` 给了 10 个小红书关键词，只取前 5 个用于抖音。
 - 默认 `manual-submit` 时必须传 `--fill-only`；`--hold-seconds 0` 表示浏览器保持打开直到终端 Ctrl-C，`--hold-seconds 60` 表示停 60 秒后关闭，便于自动化复测。
 
 **发图文（笔记）：**
@@ -92,6 +94,7 @@ SAU="$ENGINE/.venv/bin/sau"
   --fill-only --hold-seconds 0
 ```
 - 抖音图文最多 35 张，不支持 GIF。
+- 抖音图文同样最多 5 个话题。
 
 ## 运行时开关
 

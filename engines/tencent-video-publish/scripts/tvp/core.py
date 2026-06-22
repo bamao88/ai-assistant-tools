@@ -624,6 +624,8 @@ async def is_login_completed(page: Page) -> bool:
         return True
     if await has_login_marker(page):
         return False
+    if page.url.startswith(UPLOAD_URL):
+        return await has_upload_form_marker(page)
     return page.url.startswith(MANAGE_URL)
 
 
@@ -635,7 +637,11 @@ async def wait_for_login_completed(page: Page, timeout_ms: int = 15000) -> bool:
             return True
         if await has_login_marker(page):
             return False
-        if page.url.startswith(UPLOAD_URL) or page.url.startswith(MANAGE_URL):
+        if page.url.startswith(UPLOAD_URL):
+            if await has_upload_form_marker(page):
+                return True
+            stable_candidate_since = None
+        elif page.url.startswith(MANAGE_URL):
             now = asyncio.get_event_loop().time()
             if stable_candidate_since is None:
                 stable_candidate_since = now

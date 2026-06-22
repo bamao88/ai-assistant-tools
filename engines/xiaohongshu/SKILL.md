@@ -1,8 +1,8 @@
 ---
-name: xiaohongshu-skills
+name: xiaohongshu-engine
 description: |
-  小红书自动化技能集合。支持认证登录、内容发布、搜索发现、社交互动、复合运营。
-  当用户要求操作小红书（发布、搜索、评论、登录、分析、点赞、收藏）时触发。
+  小红书底层引擎说明文件，仅供 tools/skills/* 的统一入口调用；不要作为可触发 skill 安装。
+  小红书发布必须走 platform-publish；登录走 xhs-auth；搜索抓取走 platform-fetch；互动走 xhs-interact。
 version: 1.0.0
 metadata:
   openclaw:
@@ -11,15 +11,22 @@ metadata:
         - python3
         - uv
     emoji: "\U0001F4D5"
-    homepage: https://github.com/xpzouying/xiaohongshu-skills
     os:
       - darwin
       - linux
 ---
 
-# 小红书自动化 Skills
+# 小红书底层引擎
 
-你是"小红书自动化助手"。根据用户意图路由到对应的子技能完成任务。
+本目录是底层 engine，不是当前 tools 目录的可触发 skill。不要把它安装到 `~/.claude/skills`，也不要从这里创建 `xhs-publish` 之类的旧触发入口。
+
+当前正式入口：
+
+- 发布：`skills/platform-publish`
+- 登录/账号：`skills/xhs-auth`
+- 搜索/抓取：`skills/platform-fetch`
+- 评论/点赞/收藏：`skills/xhs-interact`
+- 复合运营：`skills/xhs-ops`
 
 ## 🔒 技能边界（强制）
 
@@ -34,13 +41,7 @@ metadata:
 
 ## 输入判断
 
-按优先级判断用户意图，路由到对应子技能：
-
-1. **认证相关**（"登录 / 检查登录 / 切换账号"）→ 执行 `xhs-auth` 技能。
-2. **内容发布**（"发布 / 发帖 / 上传图文 / 上传视频"）→ 执行 `xhs-publish` 技能。
-3. **搜索发现**（"搜索笔记 / 查看详情 / 浏览首页 / 查看用户"）→ 执行 `xhs-fetch` 技能。
-4. **社交互动**（"评论 / 回复 / 点赞 / 收藏"）→ 执行 `xhs-interact` 技能。
-5. **复合运营**（"竞品分析 / 热点追踪 / 批量互动 / 一键创作"）→ 执行 `xhs-ops` 技能。
+如果用户直接打开到本文件，不要继续按本 engine 的旧子技能路由执行；回到上面的正式入口。尤其是内容发布必须走 `platform-publish`，由它完成账号、最终提交权限、本地网络分流、素材与流程检查。
 
 ## 全局约束
 
@@ -50,7 +51,7 @@ metadata:
 - CLI 输出为 JSON 格式，结构化呈现给用户。
 - 操作频率不宜过高，保持合理间隔。
 
-## 子技能概览
+## CLI 能力概览
 
 ### xhs-auth — 认证管理
 
@@ -64,9 +65,9 @@ metadata:
 | `cli.py verify-code --code <验证码>` | 手机登录第二步：提交验证码 |
 | `cli.py delete-cookies` | 清除 cookies（退出/切换账号） |
 
-### xhs-publish — 内容发布
+### 内容发布（仅供 platform-publish 调用）
 
-发布图文或视频内容到小红书。
+发布图文或视频内容到底层小红书页面。不要暴露为独立 `xhs-publish` skill。
 
 | 命令 | 功能 |
 |------|------|
@@ -74,7 +75,7 @@ metadata:
 | `cli.py publish-video` | 视频发布 |
 | `publish_pipeline.py` | 发布流水线（含图片下载和登录检查） |
 
-### xhs-fetch — 内容发现
+### 内容发现（仅供 platform-fetch 调用）
 
 搜索笔记、查看详情、获取用户资料。
 

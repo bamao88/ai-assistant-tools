@@ -1,6 +1,6 @@
-# xiaohongshu-skills
+# xiaohongshu engine
 
-小红书自动化 Claude Code Skills，基于 Python CDP 浏览器自动化引擎。
+小红书自动化底层引擎，基于 Python CDP 浏览器自动化。不要把本目录作为可触发 skill 安装；发布走 `skills/platform-publish`，登录走 `skills/xhs-auth`，抓取走 `skills/platform-fetch`，互动走 `skills/xhs-interact`。
 
 ## Git 工作流
 
@@ -18,12 +18,11 @@ uv run pytest              # 运行测试
 
 ## 架构
 
-双层结构：`scripts/` 是 Python CDP 自动化引擎，`skills/` 是 Claude Code Skills 定义（SKILL.md 格式）。
+当前结构：`scripts/` 是 Python CDP 自动化引擎；顶层 `tools/skills/` 才是正式可触发 skills。
 
 - `scripts/xhs/` — 核心自动化库（模块化，每个功能一个文件）
 - `scripts/cli.py` — 统一 CLI 入口，23 个子命令，JSON 结构化输出
 - `scripts/publish_pipeline.py` — 发布编排器（含图片下载和登录检查）
-- `skills/*/SKILL.md` — 指导 Claude 如何调用 scripts/
 
 ### 调用方式
 

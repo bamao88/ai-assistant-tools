@@ -69,7 +69,7 @@ metadata:
 ## 必做约束
 
 - **评论和回复内容必须经过用户确认后才能发送**。
-- 所有操作需要 `feed_id` 和 `xsec_token`（从搜索或详情中获取，参考 xhs-fetch）。
+- 所有操作需要 `feed_id` 和 `xsec_token`（从搜索或详情中获取，参考 `platform-fetch`）。
 - 点赞和收藏操作是幂等的（重复执行不会出错）。
 - CLI 输出 JSON 格式。
 

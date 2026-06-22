@@ -1,18 +1,26 @@
-# xiaohongshu-skills
+# xiaohongshu engine
 
-小红书自动化 Skills，基于 Python CDP 浏览器自动化引擎。
+小红书自动化底层引擎，基于 Python CDP 浏览器自动化。
 
-支持 [OpenClaw](https://github.com/anthropics/openclaw) 及所有兼容 `SKILL.md` 格式的 AI Agent 平台（如 Claude Code）。
+本目录不再作为可触发 skill 安装。当前正式入口在 tools 顶层 `skills/`：
+
+- 发布：`skills/platform-publish`
+- 登录/账号：`skills/xhs-auth`
+- 搜索/抓取：`skills/platform-fetch`
+- 评论/点赞/收藏：`skills/xhs-interact`
+- 复合运营：`skills/xhs-ops`
+
+不要恢复或安装旧的 `xhs-publish` / `xhs-publish-article` / `xhs-publish-post` / `xhs-publish-video` 触发入口；它们已经合并进 `platform-publish`。
 
 ## 功能概览
 
-| 技能 | 说明 | 核心能力 |
+| 入口 | 说明 | 核心能力 |
 |------|------|----------|
 | **xhs-auth** | 认证管理 | 登录检查、扫码登录、多账号切换 |
-| **xhs-publish** | 内容发布 | 图文 / 视频 / 长文发布、定时发布、分步预览 |
-| **xhs-explore** | 内容发现 | 关键词搜索、笔记详情、用户主页、首页推荐 |
+| **platform-publish** | 内容发布 | 图文 / 视频 / 长文发布、定时发布、分步预览 |
+| **platform-fetch** | 内容发现 | 关键词搜索、笔记详情、用户主页、首页推荐 |
 | **xhs-interact** | 社交互动 | 评论、回复、点赞、收藏 |
-| **xhs-content-ops** | 复合运营 | 竞品分析、热点追踪、批量互动、内容创作 |
+| **xhs-ops** | 复合运营 | 竞品分析、热点追踪、批量互动、内容创作 |
 
 支持**连贯操作** — 你可以用自然语言下达复合指令，Agent 会自动串联多个技能完成任务。例如：
 
@@ -20,7 +28,7 @@
 
 Agent 会自动执行：搜索 → 筛选图文 → 按点赞排序 → 收藏 → 获取详情 → 总结内容。
 
-## 安装
+## 开发环境
 
 ### 前置条件
 
@@ -28,66 +36,11 @@ Agent 会自动执行：搜索 → 筛选图文 → 按点赞排序 → 收藏 �
 - [uv](https://docs.astral.sh/uv/) 包管理器
 - Google Chrome 浏览器
 
-### 方法一：下载 ZIP 安装（推荐）
-
-最简单稳妥的方式，适用于 OpenClaw 及所有支持 `SKILL.md` 的 Agent 平台。
-
-1. 在 GitHub 仓库页面点击 **Code → Download ZIP**，下载项目压缩包。
-2. 解压到你的 Agent 的 skills 目录下：
-
-```
-# OpenClaw 示例
-<openclaw-project>/skills/xiaohongshu-skills/
-
-# Claude Code 示例
-<your-project>/.claude/skills/xiaohongshu-skills/
-```
-
-3. 安装 Python 依赖：
-
 ```bash
-cd xiaohongshu-skills
 uv sync
 ```
-
-安装完成后，Agent 会自动识别 `SKILL.md` 并加载小红书技能。
-
-### 方法二：Git Clone
-
-```bash
-# 进入 skills 目录
-cd <your-agent-project>/skills/
-
-# 克隆项目
-git clone https://github.com/autoclaw-cc/xiaohongshu-skills.git
-cd xiaohongshu-skills
-
-# 安装依赖
-uv sync
-```
-
-> 其他支持 SKILL.md 格式的 Agent 框架安装方式类似 — 将本项目放入其 skills 目录即可。
 
 ## 使用方式
-
-### 作为 AI Agent 技能使用（推荐）
-
-安装到 skills 目录后，直接用自然语言与 Agent 对话即可。Agent 会根据你的意图自动路由到对应技能。
-
-**认证登录：**
-> "登录小红书" / "检查登录状态"
-
-**搜索浏览：**
-> "搜索关于露营的笔记" / "查看这条笔记的详情"
-
-**发布内容：**
-> "帮我发一条图文笔记，标题是…，配图是…"
-
-**社交互动：**
-> "给这条笔记点赞" / "收藏这条帖子" / "评论：写得太好了"
-
-**复合操作：**
-> "搜索竞品账号最近的爆款笔记，分析他们的选题方向"
 
 ### 作为 CLI 工具使用
 
@@ -223,7 +176,7 @@ python scripts/cli.py favorite-feed \
 ## 项目结构
 
 ```
-xiaohongshu-skills/
+xiaohongshu/
 ├── scripts/                        # Python CDP 自动化引擎
 │   ├── xhs/                        # 核心自动化包
 │   │   ├── cdp.py                  # CDP WebSocket 客户端
@@ -251,14 +204,8 @@ xiaohongshu-skills/
 │   ├── title_utils.py              # UTF-16 标题长度计算
 │   ├── run_lock.py                 # 单实例锁
 │   └── publish_pipeline.py         # 发布编排器
-├── skills/                         # Claude Code Skills 定义
-│   ├── xhs-auth/SKILL.md
-│   ├── xhs-publish/SKILL.md
-│   ├── xhs-explore/SKILL.md
-│   ├── xhs-interact/SKILL.md
-│   └── xhs-content-ops/SKILL.md
-├── SKILL.md                        # 技能统一入口（路由到子技能）
-├── CLAUDE.md                       # 项目开发指南
+├── SKILL.md                        # 旧兼容说明；不要作为可触发 skill 安装
+├── CLAUDE.md                       # engine 开发指南
 ├── pyproject.toml                  # uv 项目配置
 └── README.md
 ```

@@ -1,5 +1,15 @@
 # xhs-auth cookie 导入缺少标准命令
 
+## 状态
+
+open（认证工具增强项，不是 `platform-publish` 当前发布流程的阻塞项）
+
+## 当前解释
+
+这条反馈说的是：如果用户直接给一串小红书 Cookie header，希望 Agent 把它导入某个命名账号，目前没有标准 CLI 子命令，只能临时用 CDP/浏览器脚本写入 Chrome profile；同时现有 `check-login` 主要检查常规登录态，不能清楚区分 `www.xiaohongshu.com` 登录态和 `creator.xiaohongshu.com` 发布后台登录态。
+
+正常扫码登录、已登录账号发布、`platform-publish` 的小红书发布流程不依赖这个能力。只有“新增账号时用户给 Cookie 字符串、要求直接导入并验证 creator 后台登录态”时才会遇到。
+
 ## 复现步骤
 
 1. 用户提供新账号名称和一组小红书 creator 端 Cookie 字符串，要求加入小红书发布 skill 的多账号列表。

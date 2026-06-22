@@ -101,6 +101,8 @@ case "$platform" in
       wxapp.tc.qq.com
       aladin.wxqcloud.qq.com
     )
+    manage_hosts=1
+    host_overrides="res.wx.qq.com"
     ;;
   bilibili|bilibili-video|bili)
     domains=(

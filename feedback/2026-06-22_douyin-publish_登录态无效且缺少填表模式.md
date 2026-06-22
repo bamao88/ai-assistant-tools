@@ -2,7 +2,13 @@
 
 ## 状态
 
-open
+partially_fixed
+
+## 处理进展
+
+2026-06-22：已给 `sau douyin upload-video` / `upload-note` 增加 `--fill-only` 和 `--hold-seconds`。`--fill-only` 会强制有头浏览器，上传并填写内容后停在最终发布按钮前，不点击“发布”。已补单元测试覆盖 fill-only 分支不会调用最终发布 callback。
+
+仍未完成：当前账号 cookie 仍无效，需要完成测试号或低风险账号 `login` + `check`，再跑真实上传复测。
 
 ## 发现日期
 
@@ -22,7 +28,8 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/vendor/social-auto-upload
 - `sau douyin check --account 张和` 返回 `invalid`。
 - `tools/var/state/social-auto-upload/cookies/` 当前没有 `douyin_张和.json`。
 - 最近 `vendor/social-auto-upload/logs/douyin.log` 里的登录尝试停在二维码登录阶段，最终报 `Target page, context or browser has been closed`。
-- `upload-video` / `upload-note` 在流程尾部直接点击“发布”，没有 fill-only / draft / manual-submit 模式。
+- 修复前：`upload-video` / `upload-note` 在流程尾部直接点击“发布”，没有 fill-only / draft / manual-submit 模式。
+- 修复后：已支持 `--fill-only`，但登录态尚未恢复，真实上传链路仍需复测。
 
 ## 期望行为
 
@@ -32,6 +39,6 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/vendor/social-auto-upload
 
 ## 建议修复
 
-1. 给 `sau douyin upload-video` / `upload-note` 增加 `--fill-only` 或 `--draft` 参数，默认不点击最终发布。
+1. ~~给 `sau douyin upload-video` / `upload-note` 增加 `--fill-only` 或 `--draft` 参数，默认不点击最终发布。~~
 2. 给 CLI 输出明确的账号态检查结果，缺 cookie / cookie 失效 / creator 登录态失效要分开返回。
 3. 用测试号跑通视频上传、封面、标签、定时发布或人工停留页，再更新 `skills/platform-publish/references/douyin.md` 的当前状态。

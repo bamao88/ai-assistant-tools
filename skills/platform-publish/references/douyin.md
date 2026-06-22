@@ -17,14 +17,14 @@ SAU="$ENGINE/.venv/bin/sau"
 
 ## 当前状态（2026-06-22）
 
-抖音发布入口存在，但**当前不算已打通**：
+抖音发布工具入口存在，已补上人工最终确认需要的填表模式；账号态还需要恢复：
 
 - `sau douyin check --account 张和` 返回 `invalid`。
 - 当前 cookies 目录没有 `douyin_张和.json`。
 - 最近日志里的登录尝试停在二维码登录阶段，最终报 `Target page, context or browser has been closed`。
-- `upload-video` / `upload-note` 没有 fill-only / draft / manual-submit 模式，流程尾部会直接点击“发布”。除非用户明确授权 `agent-submit`，否则不要调用这两个上传命令。
+- `upload-video` / `upload-note` 已支持 `--fill-only`：上传素材、填写标题/正文/标签/封面/定时时间后停在发布页，不点击最终“发布”。
 
-恢复流程：先在测试号或低风险账号上完成 `login` + `check`，再补一个不会自动点最终发布的填表模式；未补齐前，不要把抖音作为真实账号的一键发布通路。
+恢复流程：先在测试号或低风险账号上完成 `login` + `check`，再用 `--fill-only --hold-seconds <秒数>` 跑通上传、封面、标签和定时设置；复测通过前，不要把抖音作为真实账号的自动最终发布通路。
 
 ## 网络分流前置步骤（强制）
 
@@ -69,31 +69,35 @@ osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/ro
   --tags 运动,训练 \
   --thumbnail-landscape /abs/cover-4x3.png \
   --thumbnail-portrait  /abs/cover-3x4.png \
+  --fill-only --hold-seconds 0 \
   --schedule "2026-06-10 21:30"     # 可选：定时发布
 ```
 - 必填：`--account --file --title`。其余可选。
 - 封面：`--thumbnail-landscape`（4:3 横版）、`--thumbnail-portrait`（3:4 竖版）；`--thumbnail` 兼容旧参数=3:4 竖版。
 - 带货可选：`--product-link --product-title`。
 - `--schedule` 格式 `YYYY-MM-DD HH:MM`，传了即切换为抖音定时发布。
+- 默认 `manual-submit` 时必须传 `--fill-only`；`--hold-seconds 0` 表示浏览器保持打开直到终端 Ctrl-C，`--hold-seconds 60` 表示停 60 秒后关闭，便于自动化复测。
 
 **发图文（笔记）：**
 ```bash
 "$SAU" douyin upload-note --account <account_name> \
   --images /abs/1.png /abs/2.png \
-  --title "图文标题" --note "图文内容" --tags 图文,测试
+  --title "图文标题" --note "图文内容" --tags 图文,测试 \
+  --fill-only --hold-seconds 0
 ```
 - 抖音图文最多 35 张，不支持 GIF。
 
 ## 运行时开关
 
 - `--headed` 有头（看页面 / 人工核对）、`--headless` 无头（默认）、`--debug` 失败时留更多调试信息。
+- `--fill-only` 会强制使用有头浏览器并停在最终发布前；未给 `--hold-seconds` 时默认一直等，适合人工检查。
 - 抖音默认无头；要可视核对再显式 `--headed`。
 
 ## ⚠️ 安全
 
 - 上传走真实创作者中心。发布前把 标题/简介/标签/封面/视频 与用户确认。
-- 当前 CLI 不会停在草稿/待发布页，而是会直接点击“发布”；所以默认 `manual-submit` 场景下必须停止，不得调用 `upload-video` / `upload-note`。
-- 只有用户明确授权机器点击最终“发布/定时发布”（`agent-submit`）时，才允许执行当前上传命令。
+- 默认 `manual-submit` 场景下必须带 `--fill-only`，让页面停在最终发布前。
+- 只有用户明确授权机器点击最终“发布/定时发布”（`agent-submit`）时，才允许不带 `--fill-only` 执行上传命令。
 - check 失效 / 报 cookie missing or expired → 让用户重跑 `douyin login`。
 
 ## 素材准备（可选）

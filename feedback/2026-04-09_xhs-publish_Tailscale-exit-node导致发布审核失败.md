@@ -1,5 +1,21 @@
 # Tailscale Exit Node 导致小红书发布审核失败
 
+## 状态
+
+fixed-in-platform-publish（旧 `xhs-publish-*` 触发入口已废弃）
+
+## 当前处理
+
+本反馈里的 `xhs-publish-article` / `xhs-publish-post` / `xhs-publish-video` 是历史独立发布 skill 名称。当前仓库的正式发布入口只有 `platform-publish`；`registry.yaml: deprecated` 已把这些旧触发标为废弃，`scripts/sync-skills.py` 会从 `~/.claude/skills` 移除同名旧入口。
+
+旧建议里的“临时关闭 Tailscale exit node”不再采用。当前方案是在 `platform-publish` 的小红书 reference 中，把发布前网络门固定为：
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply
+```
+
+该方案只给小红书发布域名和上传 CDN 刷新本地网关路由，不关闭全局 exit node。
+
 ## 日期
 2026-04-09
 

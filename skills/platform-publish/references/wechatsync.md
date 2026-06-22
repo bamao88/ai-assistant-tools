@@ -9,7 +9,7 @@
 - 默认使用 `platform-draft-direct`；只有回退到 Wechatsync 时才使用全局 `wechatsync` 命令，不要调用本仓库 `packages/cli/dist/index.js`。
 - 当前 Wechatsync 发布只服务 `assistant_zh`。`assistant_docfit` 暂无 Wechatsync 发布白名单，后续配置前不得发布。
 - 发布白名单和期望账号在 `/Volumes/ExtSSD2601/AI_Assistant/tools/vendor/wechatsync/config/project-platforms.json`。
-- `weixin` 和 `xiaohongshu` 即使显示已登录，也禁止通过这个 skill 发布；它们分别走专用公众号发布 skill 和 `xiaohongshu-skills`。
+- `weixin` 和 `xiaohongshu` 即使显示已登录，也禁止通过 Wechatsync 发布；它们继续留在 `platform-publish` 内对应 reference，不能调用旧的独立发布 skill。
 - 不保存、不打印、不回显 `WECHATSYNC_TOKEN`、Cookie、账号密码或平台后台敏感信息。
 - 所有同步动作都先运行 `--dry-run`。只有用户明确确认后，才运行真实同步命令。
 - Wechatsync 默认同步为草稿；仍然把它视为外部发布动作，因为它会使用浏览器登录态向平台写入草稿。
@@ -89,7 +89,7 @@ zhihu, juejin, bilibili, baijiahao, csdn, sohu, cnblogs,
 weixin, xiaohongshu
 ```
 
-用户用中文平台名时，转换为对应 ID。例如：知乎 `zhihu`，掘金 `juejin`，头条 `toutiao`。如果用户要求发布到公众号或小红书，停止 Wechatsync 流程并路由到对应专用 skill。
+用户用中文平台名时，转换为对应 ID。例如：知乎 `zhihu`，掘金 `juejin`，头条 `toutiao`。如果用户要求发布到公众号或小红书，停止 Wechatsync 流程并继续使用 `platform-publish` 内对应 reference。
 
 ## 当前实测状态
 
@@ -254,7 +254,7 @@ wechatsync extract -o /absolute/path/article.md
 | `WECHATSYNC_TOKEN=missing` | 提示用户在扩展里设置 token 并在 shell 环境变量中配置，不要让用户把 token 发给 Agent |
 | Chrome Extension 未连接 | 提示检查扩展启用、token 一致、连接开关、端口和浏览器状态 |
 | 项目不是 `assistant_zh` | 停止发布，提示先为该项目配置平台白名单 |
-| 平台是 `weixin` 或 `xiaohongshu` | 停止 Wechatsync 流程，路由到专用 skill |
+| 平台是 `weixin` 或 `xiaohongshu` | 停止 Wechatsync 流程，继续使用 `platform-publish` 内对应 reference |
 | 平台不在白名单 | 停止发布，不要自动扩大平台范围 |
 | 目标平台未登录 | 跳过该平台，提示用户先在浏览器中登录 |
 | 当前账号名不匹配 | 停止发布，提示当前账号和期望账号 |

@@ -34,6 +34,7 @@
 eval/
 ├── README.md                ← 本文（规范总纲·真源）
 ├── build_inputs.py          ← 派生脚本：从源/上游金标准生成各阶段 input.json
+├── seed_golden.py           ← 派生脚本：从种子端到端 golden 派生各阶段 golden 种子/草稿
 ├── contracts/               ← 阶段契约（与数据集无关·真源）：每阶段一份
 │   ├── 1_topic_select.md        每份写死：输入 schema / 输出金标准 schema / 评分口径 / 血缘
 │   ├── 2_body_edit.md

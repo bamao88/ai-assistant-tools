@@ -52,7 +52,11 @@ eval/
 │           ├── 3_refine_deduct/{input.json, golden.json}
 │           ├── 4_hook/{input.json, golden.json}
 │           └── 5_dedup_merge/{input.json, golden.json}
-├── scorers/                 ← 评分器代码（每阶段一个·后续 P2/P4 实现）
+├── scorers/                 ← 评分器代码（每阶段一个·已实现，见 scorers/README.md）
+│   ├── _common.py               P/R/F1、字符多重集、按 idx 对齐等纯函数
+│   ├── 1_topic_select.py … 5_dedup_merge.py   每阶段一把尺
+│   ├── judge.py                 主观维度 LLM 评委封装（要网络·默认不跑）
+│   └── run_all.py               一键跑全部「金标准已填」的阶段（自比对冒烟）
 ├── runs/                    ← 每次跑的产物（gitignored·不入库）
 │   └── <run>/prompts/           ← 跑分时自动快照的提示词原文+版本（可复现）
 └── notes/                   ← 迭代经验笔记（入库）

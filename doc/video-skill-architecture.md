@@ -120,6 +120,7 @@ python engines/video-compose/run.py --run zh_clip_cut \
 
 | 想做的事 | 怎么做 |
 |---|---|
+| **做第①环转录**（视频→逐字稿，日常用） | 固定走一行：`engines/video-slicer/transcribe-01.sh <视频>`。自动开本地分流(整条链路走本地出口·VPN照开)→抽音频→公网上传→火山转录·阿里兜底→出 `words.json`+`transcript.txt` 到 `<视频同目录>/transcript/`。已验证 44s~2.2h。runbook(大白话)：`doc/转录标准流程-01.md`。 |
 | **加一个新能力**（结尾卡、字幕加粗变色、画面多排布…） | ① 在所属积木厂 `engines/<engine>/` 写原子代码 → ② 在该引擎 `capabilities.json` 声明 → ③ 跑 `python engines/video-compose/build_catalog.py` 重建总表 → ④ 在 `recipes.json` 引用（或让 AI 自由组合）。**管线骨架不动。** |
 | **加一条新配方**（新的能力组合预设） | 在 `engines/video-compose/recipes.json` 加一条，`chain` 列出有序原子；`run.py --plan <name>` 审链路。 |
 | **改账号定制**（选题口径 / 术语表 / 版式几何，不碰代码） | 改对应 `engines/<engine>/profiles/<account>/`：选题/分页/纠错 prompt 在 `video-slicer/profiles/`、persona 在 `video-slicer/personas/`、ASR 术语在 `video-framework-render/profiles/<acct>/fixes.json`。 |

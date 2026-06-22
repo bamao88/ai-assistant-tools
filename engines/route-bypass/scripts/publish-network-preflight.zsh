@@ -151,6 +151,17 @@ case "$platform" in
       zijieapi.com
     )
     ;;
+  transcribe|asr|video-transcribe)
+    # Cloud transcription (engines/video-slicer). 国内 ASR 服务，必须本地出口，
+    # 否则海外 IP 绕行慢/易触发地域限制。OSS 两域名仅 --uploader oss 用到，
+    # public 默认上传走海外 uguu.se（不在此钉，留海外出口）；钉了不用也无害。
+    domains=(
+      openspeech.bytedance.com
+      dashscope.aliyuncs.com
+      oss-cn-beijing.aliyuncs.com
+      zh-0121.oss-cn-beijing.aliyuncs.com
+    )
+    ;;
   all|publishing)
     domains=()
     manage_hosts=1

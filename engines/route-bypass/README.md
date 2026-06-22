@@ -27,10 +27,13 @@ Use the platform wrapper from skills and runbooks:
 ```
 
 Non-publish consumer: the `video-slicer` transcription line uses the same preflight
-with platform `transcribe` to pin domestic ASR API hosts (Volcengine / Aliyun, plus
-OSS upload hosts) to the local gateway before uploading audio for transcription.
-Its CLI (`engines/video-slicer/video_slicer/transcribe/cli.py`) runs this
-automatically before each transcription:
+with platform `transcribe` to pin the **whole** transcription path to the local
+gateway before each transcription — domestic ASR API hosts (Volcengine / Aliyun) AND
+the public upload stations (`uguu.se` / `0x0.st`), so "upload the audio to a public
+host" also egresses locally. This mirrors the manual "turn off the proxy" path that
+works, without actually disabling the VPN. (OSS hosts are pinned too but the OSS
+channel is disabled — credentials expired 2026-06.) Its CLI
+(`engines/video-slicer/video_slicer/transcribe/cli.py`) runs this automatically:
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh transcribe apply

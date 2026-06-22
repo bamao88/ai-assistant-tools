@@ -67,6 +67,11 @@ osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/ro
 - **1 个命名账号**：告知用户“将使用账号 X 发布”，后续命令加 `--account <slot>`。
 - **多个命名账号**：询问用户选择哪个账号，后续命令固定加 `--account <slot>`。
 
+当前固定账号约定：
+
+- `aipm` = AI PM 小助理视频号，默认账号，同时承担视频号测试号职责。测试流程、稳定性复测、未知风险排查默认使用 `--account aipm`。
+- `zhanghe` = 张和视频号真实账号。只有用户明确指定张和账号并且测试链路已稳定，才使用 `--account zhanghe`。
+
 `count: 0` 不代表没有登录态。默认账号的登录态在：
 
 ```text
@@ -126,6 +131,20 @@ Agent 必须把这张二维码图片展示给用户扫码，不能只转述路�
 登录命令使用账号专属 `chrome-profile/` 打开视频号登录页。页面确认已登录后会保存 profile，并导出 `storage_state.json` 作为兼容备份。登录后可再运行 `check-login` 验证；如果返回 `status: cookie_invalid`，不要手动删除 cookie 或 profile，重新运行 `login --timeout 180` 即可。
 
 如二维码超时，命令会刷新并再次打印新的 `QRCODE_PATH`。
+
+如果用户手动提供视频号 Cookie header，不要把 Cookie 值写进日志或文档。写入临时文件后导入指定账号 slot；导入会同时更新账号专属 `chrome-profile/` 和 `storage_state.json`，并默认打开发布页验证：
+
+```bash
+umask 077
+printf '%s' "$COOKIE_HEADER" > /tmp/shipinhao.cookies
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
+  /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/scripts/cli.py \
+  --account zhanghe \
+  import-cookies --cookie-file /tmp/shipinhao.cookies
+rm -f /tmp/shipinhao.cookies
+```
+
+导入命令只输出 cookie 名称、数量和登录验证结果，不回显 cookie 值。若返回 `logged_in: false` 或非零退出，说明这组 cookie 不足以恢复登录态，不能继续上传；改走扫码登录或让用户重新导出完整 Cookie。
 
 ## 保存草稿（默认推荐）
 

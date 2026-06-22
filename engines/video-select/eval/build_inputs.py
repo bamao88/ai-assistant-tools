@@ -34,7 +34,7 @@ from pathlib import Path
 
 EVAL_DIR = Path(__file__).resolve().parent
 ENGINE_DIR = EVAL_DIR.parent
-sys.path.insert(0, str(ENGINE_DIR / "video_select"))
+sys.path.insert(0, str(ENGINE_DIR))
 
 from video_select import _deps  # noqa: E402,F401  挂 video-slicer 到 sys.path
 from video_select import generate as gen  # noqa: E402  复用真实取数逻辑

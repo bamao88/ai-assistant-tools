@@ -26,3 +26,18 @@ def load_prompt(name: str) -> str:
     if not path.exists():
         raise FileNotFoundError(f"提示词不存在：{path}")
     return path.read_text(encoding="utf-8")
+
+
+def snapshot_prompts(out_dir: str | Path) -> dict:
+    """快照层：把当前 prompts/*.md + versions.json 复制进 out_dir/prompts/，
+    让每次 run 的分数永远查得到「是哪段提示词文本、哪个版本」跑出来的（可复现）。
+    返回当前版本注册表（写进 golden 便于溯源）。设计见 prompts/_version.py。"""
+    dst = Path(out_dir) / "prompts"
+    dst.mkdir(parents=True, exist_ok=True)
+    for p in sorted(PROMPTS_DIR.glob("*.md")):
+        shutil.copy2(p, dst / p.name)
+    reg_path = PROMPTS_DIR / "versions.json"
+    reg = json.loads(reg_path.read_text(encoding="utf-8")) if reg_path.exists() else {}
+    (dst / "versions.json").write_text(
+        json.dumps(reg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return reg

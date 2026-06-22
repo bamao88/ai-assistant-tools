@@ -56,14 +56,23 @@ def public_upload(audio: Path, *, retries: int = 5) -> UploadResult:
     raise RuntimeError("公网上传失败（uguu + 0x0 均未成功）")
 
 
-# ---------- 备选通道：阿里 OSS（默认关闭）----------
+# ---------- 备选通道：阿里 OSS（⚠ 2026-06 凭证已过期，暂不可用）----------
 
 def oss_upload(audio: Path) -> UploadResult:
     """上传到阿里 OSS，返回 (1h 签名直链, cleanup)。需 oss2 + OSS_* 凭证。
 
-    默认不启用：仅当 uploader='oss' 时调用。凭证缺失会报错并提示。
+    ⚠ 2026-06：var/credentials/aliyun.env 里的 OSS 凭证已过期，本通道暂不可用——
+    续期前请用默认的 public 通道。续期后把新 OSS_* 写回该 env 文件即可恢复，
+    并把下面这道过期门去掉（或加凭证有效性检查替代）。代码逻辑本身没问题。
     """
     import os
+
+    # 过期门：早失败、给明确指引，免得后面报成晦涩的签名/鉴权错误。
+    if os.environ.get("OSS_CHANNEL_EXPIRED", "1") == "1":
+        raise RuntimeError(
+            "oss 通道已停用：var/credentials/aliyun.env 的 OSS 凭证 2026-06 已过期。"
+            "请用默认 public 通道；OSS 续期后写回新凭证并设 OSS_CHANNEL_EXPIRED=0 即可恢复。"
+        )
 
     try:
         import oss2  # 延迟导入：public 通道无需此依赖

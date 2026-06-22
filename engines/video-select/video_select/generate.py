@@ -255,9 +255,10 @@ def _parse_only(only: str | None) -> set[int] | None:
 
 def _write_golden(out: Path, by_idx: dict, words_json, selection_json, host, log):
     clips = [by_idx[i] for i in sorted(by_idx)]
+    prompt_versions = _deps.snapshot_prompts(out)   # 快照层：提示词原文+版本入 run，分数可复现
     golden = {"source_words": str(words_json), "selection": str(selection_json),
               "host": host, "method": "video-select/generate", "human_status": "pending",
-              "clips": clips}
+              "prompt_versions": prompt_versions, "clips": clips}
     (out / "golden_candidate.json").write_text(
         json.dumps(golden, ensure_ascii=False, indent=2), encoding="utf-8")
     (out / "_run.log").write_text("\n".join(log) + "\n", encoding="utf-8")

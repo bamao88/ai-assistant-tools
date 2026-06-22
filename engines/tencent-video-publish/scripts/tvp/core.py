@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from http.cookies import CookieError, SimpleCookie
 import json
 import platform
 import shlex
@@ -47,6 +48,15 @@ PAGE_DIAG_RELEVANT_TOKENS = (
     "weixin",
     "wxqcloud",
 )
+COOKIE_ATTRIBUTE_NAMES = {
+    "domain",
+    "expires",
+    "httponly",
+    "max-age",
+    "path",
+    "samesite",
+    "secure",
+}
 SHIPINHAO_ROUTE_VERIFY_DOMAINS = (
     "channels.weixin.qq.com",
     "open.weixin.qq.com",
@@ -347,6 +357,40 @@ def storage_state_json_is_valid(path: Path) -> bool:
     return isinstance(data, dict) and isinstance(data.get("cookies", []), list)
 
 
+def parse_cookie_string(cookie_string: str) -> list[dict[str, Any]]:
+    cookie_string = cookie_string.strip()
+    if not cookie_string:
+        raise ValueError("cookie string is empty")
+
+    parsed = SimpleCookie()
+    try:
+        parsed.load(cookie_string)
+    except CookieError as exc:
+        raise ValueError(f"invalid cookie string: {exc}") from exc
+
+    cookies: list[dict[str, Any]] = []
+    for name, morsel in parsed.items():
+        if name.lower() in COOKIE_ATTRIBUTE_NAMES:
+            continue
+        value = morsel.value
+        if not name or value is None:
+            continue
+        cookies.append(
+            {
+                "name": name,
+                "value": value,
+                "url": LOGIN_URL,
+                "secure": True,
+                "httpOnly": name.lower() == "sessionid",
+                "sameSite": "Lax",
+            }
+        )
+
+    if not cookies:
+        raise ValueError("no cookies parsed from cookie string")
+    return cookies
+
+
 def restore_backup_if_needed(storage_state: Path) -> Path | None:
     if storage_state_json_is_valid(storage_state):
         return None
@@ -379,6 +423,74 @@ async def save_storage_state(context, storage_state: Path) -> dict:
         raise RuntimeError(f"refusing to write invalid storage state: {storage_state}")
     tmp_path.replace(storage_state)
     return {"saved": True, "backup": str(backup) if backup else "", "reason": "updated"}
+
+
+async def import_cookies(
+    storage_state: Path,
+    cookie_string: str,
+    *,
+    headless: bool = True,
+    verify: bool = True,
+    clear_existing: bool = True,
+) -> dict:
+    parsed_cookies = parse_cookie_string(cookie_string)
+    storage_state.parent.mkdir(parents=True, exist_ok=True)
+    recovered_from_backup = restore_backup_if_needed(storage_state)
+    profile_dir = profile_dir_for_storage_state(storage_state)
+
+    async with async_playwright() as playwright:
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        context = await playwright.chromium.launch_persistent_context(
+            str(profile_dir),
+            **launch_kwargs(headless=headless),
+            **context_kwargs(),
+        )
+        context = await harden_context(context)
+        current_url = ""
+        verify_error = ""
+        logged_in = False
+        try:
+            if clear_existing:
+                await context.clear_cookies()
+            await context.add_cookies(parsed_cookies)
+            save_result = await save_storage_state(context, storage_state)
+
+            if verify:
+                page = await context.new_page()
+                try:
+                    await page.goto(UPLOAD_URL, wait_until="domcontentloaded", timeout=60000)
+                    logged_in = await wait_for_login_completed(page, timeout_ms=20000)
+                    current_url = page.url
+                    save_result = await save_storage_state(context, storage_state)
+                except Exception as exc:
+                    verify_error = str(exc)
+                    current_url = page.url
+
+            return {
+                "success": True,
+                "imported": True,
+                "logged_in": logged_in if verify else None,
+                "status": (
+                    "logged_in"
+                    if logged_in
+                    else "cookie_imported_but_not_logged_in"
+                    if verify
+                    else "cookie_imported_unverified"
+                ),
+                "cookie_count": len(parsed_cookies),
+                "cookie_names": [cookie["name"] for cookie in parsed_cookies],
+                "storage_state": str(storage_state),
+                "profile_dir": str(profile_dir),
+                "credential_source": "manual_cookie_import",
+                "cleared_existing": clear_existing,
+                "recovered_from_backup": str(recovered_from_backup) if recovered_from_backup else "",
+                "storage_state_saved": save_result.get("saved", False),
+                "storage_state_backup": save_result.get("backup", ""),
+                "current_url": current_url,
+                "verify_error": verify_error,
+            }
+        finally:
+            await context.close()
 
 
 def validate_video_file(file_path: str | Path) -> Path:

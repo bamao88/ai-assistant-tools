@@ -148,3 +148,12 @@ eval/
 5. 填完通知我，我接 `scorers/` 把这阶段的自动评分跑起来。
 
 > 排期建议（见计划 §5）：先填**能纯代码自动评**的（②总编已有评分器 → ③去口水 → ⑤去重），再填要评委的（①选题、④钩子）。
+
+### 当前进度（2026-06-22）
+- **代码全就位**：5 个评分器 + `judge.py` + `run_all.py` 已实现并自测通过；`seed_golden.py` 已把
+  种子端到端 golden 派生成各阶段 golden；`video_select/stage_run.py` 开好了 3 个单阶段测试口。
+- **金标准现状**（`agent_eval_0613`）：②总编=**正式金标准**（原地复用 segments，自比对 1.0）；
+  ①选题、④钩子=**草稿**（待 owner 补 hit_dims / best+must_keep_terms 并拍板冻结）；
+  ③去口水、⑤去重=**待重建**（③重建 deletions、⑤标 groups/drop/keep）。
+- **改提示词怎么验**：改 `prompts/<阶段>.md` → `_version.py bump` → `stage_run` 单跑该阶段 →
+  对应 `scorers/<阶段>.py` 对金标准出分。②已能完整跑通这条闭环。

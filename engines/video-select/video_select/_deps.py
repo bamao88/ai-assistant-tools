@@ -35,6 +35,8 @@ def snapshot_prompts(out_dir: str | Path) -> dict:
     dst = Path(out_dir) / "prompts"
     dst.mkdir(parents=True, exist_ok=True)
     for p in sorted(PROMPTS_DIR.glob("*.md")):
+        if p.name == "CHANGELOG.md":          # 账本不是提示词，不进 run 快照
+            continue
         shutil.copy2(p, dst / p.name)
     reg_path = PROMPTS_DIR / "versions.json"
     reg = json.loads(reg_path.read_text(encoding="utf-8")) if reg_path.exists() else {}

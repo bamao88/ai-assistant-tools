@@ -78,6 +78,32 @@ python -m video_select.score --golden $F/golden.json \
 
 LLM 凭证走 `.env`（Kimi/MiniMax，与 video-slicer 同源）。`gates` / `score` 不调 LLM，可离线跑。
 
+## 分阶段评测（per-stage eval · 5 条提示词各一把尺）
+
+整条链的总分看不出"哪一步烂"，故每条提示词单独评。规范总纲见 [`eval/README.md`](eval/README.md)，
+判分契约见 `eval/contracts/`。
+
+```bash
+# 1) 派生各阶段 input/golden（input 来自上游金标准；golden 种子来自端到端 golden）
+python3 eval/build_inputs.py --dataset agent_eval_0613
+python3 eval/seed_golden.py  --dataset agent_eval_0613
+
+# 2) 改某条提示词后，单跑该阶段（喂冻结 input，不串其余阶段）—— 要 LLM 出口
+python3 -m video_select.stage_run --stage body_edit \
+    --input eval/fixtures/agent_eval_0613/stages/2_body_edit/input.json \
+    --words $F/words.json --out eval/runs/agent_eval_0613/2_body_edit.json
+
+# 3) 出分（候选 vs 该阶段金标准）；或一键跑全部已填阶段的自比对冒烟
+python3 eval/scorers/2_body_edit.py \
+    --golden eval/fixtures/agent_eval_0613/stages/2_body_edit/golden.json \
+    --candidate eval/runs/agent_eval_0613/2_body_edit.json
+python3 eval/scorers/run_all.py --dataset agent_eval_0613
+```
+
+5 把尺：②句号F1 / ③字符P/R / ⑤配对P/R 是**纯代码自动评**（`run_all` 自比对 = 满分）；
+①④硬规则自动 + 主观层（覆盖率/打分卡）走 `eval/scorers/judge.py` LLM 评委。
+`scorers/*` 不碰网络可离线跑；只有 `judge.py`/`stage_run.py` 要 LLM（按 memory 先 route-bypass 本地出口）。
+
 ## 人工评审环
 
 `candidates/clip_NN.md` 是人读评审稿：挑钩子、核对字级去口水决策、改状态（留/删/改）。

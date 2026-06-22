@@ -63,6 +63,7 @@ esac
 typeset -a domains
 manage_hosts=0
 host_overrides=""
+host_override_static=""
 static_ips="__none__"
 static_nets="__none__"
 
@@ -109,7 +110,14 @@ case "$platform" in
       res.wxqcloud.qq.com.cn
     )
     manage_hosts=1
-    host_overrides="res.wx.qq.com"
+    # res.wx.qq.com DNS can return edge IPs that are routed locally but do not
+    # accept 443 in the current network (2026-06-22 observed 43.x and
+    # 183.204.106.138 timing out). Pin to a probed-good edge for login assets.
+    host_override_static="res.wx.qq.com=39.156.8.194"
+    # 视频号上传/CDN 边缘 IP 会在同一 /24 内轮换。2026-06-22 实测
+    # 183.204.106.98 预检通过后，上传前解析到 183.204.106.138，
+    # 如果只钉 host route 会重新走默认通道，导致上传被挡在流程前置检查。
+    static_nets="${SHIPINHAO_ROUTE_STATIC_NETS:-183.204.90.0/24 183.204.96.0/24 183.204.106.0/24}"
     ;;
   bilibili|bilibili-video|bili)
     domains=(
@@ -209,6 +217,7 @@ fi
 with_env=(
   XHS_ROUTE_MANAGE_HOSTS="$manage_hosts"
   XHS_ROUTE_HOST_OVERRIDE_DOMAINS="$host_overrides"
+  XHS_ROUTE_HOST_OVERRIDE_STATIC="$host_override_static"
   XHS_ROUTE_STATIC_IPS="$static_ips"
   XHS_ROUTE_STATIC_NETS="$static_nets"
 )

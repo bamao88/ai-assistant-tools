@@ -427,6 +427,13 @@ async def save_storage_state(context, storage_state: Path) -> dict:
     return {"saved": True, "backup": str(backup) if backup else "", "reason": "updated"}
 
 
+async def best_effort_save_storage_state(context, storage_state: Path) -> dict:
+    try:
+        return await save_storage_state(context, storage_state)
+    except Exception as exc:
+        return {"saved": False, "backup": "", "reason": "best_effort_failed", "error": str(exc)}
+
+
 def candidate_storage_state_path(storage_state: Path) -> Path:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     return storage_state.with_name(f"{storage_state.name}.candidate_{timestamp}")
@@ -2247,5 +2254,9 @@ async def upload_video(request: UploadVideoRequest) -> dict:
                 "submitted": True,
             }
         finally:
+            # Manual fill-only flows keep the page open for user-side review and
+            # publishing. Persist any cookies/tokens refreshed during that
+            # session before an interrupt closes the browser.
+            await best_effort_save_storage_state(context, request.storage_state)
             await context.close()
             await browser.close()

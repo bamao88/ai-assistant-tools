@@ -13,6 +13,7 @@ PRUNE_STALE="${XHS_ROUTE_PRUNE_STALE:-0}"
 MANAGE_HOSTS="${XHS_ROUTE_MANAGE_HOSTS:-1}"
 HOSTS_FILE="${XHS_ROUTE_HOSTS_FILE:-/etc/hosts}"
 HOST_OVERRIDE_DOMAINS="${XHS_ROUTE_HOST_OVERRIDE_DOMAINS:-www.xiaohongshu.com edith.xiaohongshu.com ros-upload.xiaohongshu.com}"
+HOST_OVERRIDE_STATIC="${XHS_ROUTE_HOST_OVERRIDE_STATIC:-}"
 HOSTS_BEGIN="# BEGIN xhs-route-bypass managed hosts"
 HOSTS_END="# END xhs-route-bypass managed hosts"
 
@@ -33,6 +34,8 @@ Environment:
   XHS_ROUTE_MANAGE_HOSTS  Set to 0 to skip managed /etc/hosts overrides
   XHS_ROUTE_HOST_OVERRIDE_DOMAINS
                           Domains resolved via local gateway DNS into a managed hosts block
+  XHS_ROUTE_HOST_OVERRIDE_STATIC
+                          Static managed hosts, space-separated domain=ip pairs
   XHS_ROUTE_PRUNE_STALE   Set to 1 to delete managed routes absent from the latest resolve
 USAGE
 }
@@ -173,7 +176,17 @@ host_ip_connects() {
 
 managed_host_lines() {
   local gw="$1"
-  local domain ip selected candidates
+  local pair domain ip selected candidates
+
+  for pair in ${(z)HOST_OVERRIDE_STATIC}; do
+    [[ "$pair" == *=* ]] || continue
+    domain="${pair%%=*}"
+    ip="${pair#*=}"
+    [[ -n "$domain" && -n "$ip" ]] || continue
+    if [[ "$ip" =~ '^[0-9]+(\.[0-9]+){3}$' ]]; then
+      printf '%-15s %s\n' "$ip" "$domain"
+    fi
+  done
 
   for domain in ${(z)HOST_OVERRIDE_DOMAINS}; do
     [[ -n "$domain" ]] || continue

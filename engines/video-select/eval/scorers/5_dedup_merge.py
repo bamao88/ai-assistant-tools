@@ -74,9 +74,9 @@ def score(golden_path: str, candidate: dict, input_path: str | None = None) -> d
     if input_path:
         universe = {c.get("idx") for c in C.load_json(input_path).get("batch", [])}
         seen: dict[int, int] = {}
-        for bucket, name in ((candidate.get("groups", []), "groups"),
-                             ([[i] for i in candidate.get("drop", [])], "drop"),
-                             ([[i] for i in candidate.get("keep", [])], "keep")):
+        for bucket in (candidate.get("groups", []),
+                       [[i] for i in candidate.get("drop", [])],
+                       [[i] for i in candidate.get("keep", [])]):
             for grp in bucket:
                 for i in grp:
                     if i not in universe:

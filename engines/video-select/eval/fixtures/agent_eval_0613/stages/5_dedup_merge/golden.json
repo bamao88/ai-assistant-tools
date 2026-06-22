@@ -1,0 +1,6 @@
+{
+  "_status": "待填 · TODO_FILL_GOLDEN",
+  "_contract": "eval/contracts/5_dedup_merge.md",
+  "_note": "金标准由 owner 整理后填入；字段与判分口径见 _contract。填好后重跑 build_inputs.py --chained。",
+  "items": []
+}

@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 import shutil
 
+RESERVED_INFO_KEYS = {"description", "storage_state"}
+
 
 def tools_root() -> Path:
     return Path(__file__).resolve().parents[4]
@@ -90,7 +92,33 @@ def storage_state_summary(storage_state: Path) -> dict:
     }
 
 
-def add_account(slot: str, description: str = "") -> dict:
+def normalize_roles(roles: list[str] | tuple[str, ...] | set[str] | None) -> list[str]:
+    if not roles:
+        return []
+    normalized: list[str] = []
+    for role in roles:
+        role = str(role).strip()
+        if role and role not in normalized:
+            normalized.append(role)
+    return normalized
+
+
+def _account_payload(slot: str, info: dict, default: str) -> dict:
+    state_path = Path(info.get("storage_state") or account_state_path(slot))
+    roles = normalize_roles(info.get("roles"))
+    metadata = {key: value for key, value in info.items() if key not in RESERVED_INFO_KEYS | {"roles"}}
+    return {
+        "slot": slot,
+        "description": info.get("description", ""),
+        "roles": roles,
+        "is_default": slot == default,
+        "is_test": "test" in roles,
+        **metadata,
+        **storage_state_summary(state_path),
+    }
+
+
+def add_account(slot: str, description: str = "", roles: list[str] | None = None) -> dict:
     slot = slot.strip()
     if not slot:
         raise ValueError("slot must not be empty")
@@ -103,10 +131,13 @@ def add_account(slot: str, description: str = "") -> dict:
         "description": description,
         "storage_state": str(state_path),
     }
+    normalized_roles = normalize_roles(roles)
+    if normalized_roles:
+        accounts[slot]["roles"] = normalized_roles
     if not config.get("default"):
         config["default"] = slot
     save_config(config)
-    return {"slot": slot, **accounts[slot], "is_default": config.get("default") == slot}
+    return _account_payload(slot, accounts[slot], config.get("default", ""))
 
 
 def remove_account(slot: str) -> dict:
@@ -130,18 +161,24 @@ def set_default_account(slot: str) -> dict:
     return {"slot": slot, "is_default": True}
 
 
+def set_account_roles(slot: str, roles: list[str]) -> dict:
+    config = load_config()
+    accounts = config.get("accounts", {})
+    if slot not in accounts:
+        raise ValueError(f"account does not exist: {slot}")
+    normalized_roles = normalize_roles(roles)
+    if normalized_roles:
+        accounts[slot]["roles"] = normalized_roles
+    else:
+        accounts[slot].pop("roles", None)
+    save_config(config)
+    return _account_payload(slot, accounts[slot], config.get("default", ""))
+
+
 def list_accounts() -> list[dict]:
     config = load_config()
     default = config.get("default", "")
     accounts = []
     for slot, info in config.get("accounts", {}).items():
-        state_path = Path(info.get("storage_state") or account_state_path(slot))
-        accounts.append(
-            {
-                "slot": slot,
-                "description": info.get("description", ""),
-                **storage_state_summary(state_path),
-                "is_default": slot == default,
-            }
-        )
+        accounts.append(_account_payload(slot, info, default))
     return accounts

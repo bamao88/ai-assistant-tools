@@ -17,7 +17,7 @@
 | 维度 | 主 | 备 |
 |---|---|---|
 | 转写后端 | **火山 seedasr v3**（`backend=volc`） | 阿里 paraformer-v2（`fallback=aliyun`，火山失败/额度用尽**自动切**） |
-| 上传通道 | **公网托管**（`uploader=public`，uguu→0x0） | 阿里 OSS（`uploader=oss`，**代码在、默认不用**，公网出问题再切） |
+| 上传通道 | **公网托管**（`uploader=public`，uguu→0x0；上传站已走本地分流） | 阿里 OSS（`uploader=oss`）⚠ **2026-06 凭证已过期、暂不可用**，续期前用 public |
 
 句级线（腾讯会议 minutes）**不走本模块**。
 

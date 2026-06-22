@@ -5,13 +5,79 @@
     python -m video_slicer.transcribe --audio a.mp4 --uploader oss   # 切阿里 OSS 上传通道
 
 默认：火山主、阿里兜底、公网上传。产出 words.json 可直接喂 twostage/resolve.load_paraformer_words。
+
+转录前自动跑 route-bypass，把国内 ASR API 域名（火山/阿里）钉到本地网关出口，避免整机挂
+海外 Tailscale exit node 时绕行变慢/触发地域限制（与发布同一套机制）。`--skip-route-bypass`
+可关。路由是优化项不是硬前置：钉不上只告警、不挡转录。
 """
 from __future__ import annotations
 
 import argparse
+import json
+import os
+import platform as _platform
+import shlex
+import subprocess
 import sys
+import tempfile
 
-from . import DEFAULT_ENV, transcribe_audio
+from . import DEFAULT_ENV, REPO_ROOT, transcribe_audio
+
+# 复用发布那套 route-bypass：平台包装器 + transcribe 平台域名组。
+_PREFLIGHT_SCRIPT = REPO_ROOT / "engines" / "route-bypass" / "scripts" / "publish-network-preflight.zsh"
+_PREFLIGHT_PLATFORM = "transcribe"
+
+
+def _log(m: str) -> None:
+    print(m, file=sys.stderr, flush=True)
+
+
+def _route_bypass_preflight() -> None:
+    """把国内 ASR API 域名钉到本地出口。需要 sudo 改路由表；非 TTY 直跑失败时退到
+    osascript 管理员授权。任何失败只告警、不抛错（转录失败只是慢，不该挡住出字幕）。"""
+    script = _PREFLIGHT_SCRIPT
+    if not script.exists():
+        _log(f"[transcribe] ⚠ route-bypass 前置脚本不存在，跳过本地分流：{script}")
+        return
+
+    try:
+        r = subprocess.run(
+            [str(script), _PREFLIGHT_PLATFORM, "apply"],
+            stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False,
+        )
+    except Exception as e:  # noqa: BLE001
+        _log(f"[transcribe] ⚠ route-bypass 前置异常（继续转录）：{e}")
+        return
+
+    if r.returncode == 0:
+        _log("[transcribe] 本地网络分流已应用：国内 ASR 走本地出口")
+        return
+
+    # 直跑要 sudo，非 TTY 拿不到密码 → macOS 退到管理员授权弹框（与发布 reference 同一段）。
+    needs_admin = "sudo:" in r.stderr or "password is required" in r.stderr
+    if _platform.system() == "Darwin" and needs_admin:
+        log_path = os.path.join(tempfile.gettempdir(), "transcribe-route-bypass-apply.log")
+        command = (
+            f"{shlex.quote(str(script))} {shlex.quote(_PREFLIGHT_PLATFORM)} apply "
+            f"> {shlex.quote(log_path)} 2>&1; status=$?; "
+            f"tail -200 {shlex.quote(log_path)}; exit $status"
+        )
+        try:
+            ar = subprocess.run(
+                ["osascript", "-e",
+                 f"do shell script {json.dumps(command)} with administrator privileges"],
+                stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=240, check=False,
+            )
+        except Exception as e:  # noqa: BLE001
+            _log(f"[transcribe] ⚠ route-bypass 管理员授权异常（继续转录）：{e}")
+            return
+        if ar.returncode == 0:
+            _log("[transcribe] 本地网络分流已应用（管理员授权）：国内 ASR 走本地出口")
+            return
+        r = ar
+
+    tail = (r.stderr or r.stdout or "").strip()[-300:]
+    _log(f"[transcribe] ⚠ route-bypass 前置未生效（继续转录，可能走海外较慢）：{tail}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -24,7 +90,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--uploader", default="public", choices=["public", "oss"], help="上传通道（默认公网；oss=阿里存储，备选）")
     ap.add_argument("--out-dir", dest="out_dir", help="落 words.json 的目录")
     ap.add_argument("--env-file", dest="env_file", default=str(DEFAULT_ENV), help="KEY=VALUE 凭证文件")
+    ap.add_argument("--skip-route-bypass", dest="skip_route_bypass", action="store_true",
+                    help="跳过转录前本地网络分流（route-bypass）。路由已钉过或不在意国内出口时用")
     a = ap.parse_args(argv)
+
+    if not a.skip_route_bypass:
+        _route_bypass_preflight()
 
     try:
         result = transcribe_audio(

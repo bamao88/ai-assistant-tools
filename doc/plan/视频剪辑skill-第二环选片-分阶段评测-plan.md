@@ -169,6 +169,28 @@ fixtures/agent_eval_0613/
 
 ---
 
+## 5b. 落地进度（2026-06-22 · 代码已交付，余金标准待 owner）
+
+> 大白话：**"尺子"全做好了，且都自测过；"标准答案"有的能机器派生（已派生），有的得你人工拍板（留草稿/留空等你）。**
+
+| 期 | 计划产出 | 实际落点 | 状态 |
+|---|---|---|---|
+| **P0** | 拆 golden→按阶段 + 总编金标准原地复用 | `stages/<阶段>/{input,golden}.json` 全建好；`eval/seed_golden.py` 把种子端到端 golden 派生成各阶段 golden | ✅ 完成。②总编=正式金标准 |
+| **P1** | 3 个单阶段测试口 | `video_select/stage_run.py`（body_edit / refine_deduct / hook 单跑，不破坏一条龙）；①⑤本就能单跑 | ✅ 代码完成（要 LLM 出口才实跑） |
+| **P2** | 精确匹配评分器 | `scorers/2_body_edit.py`（句号F1）、`3_refine_deduct.py`（字符P/R）、`5_dedup_merge.py`（配对P/R）+ `_common.py` + `run_all.py` | ✅ 完成并自测：②自比对 1.0；③⑤合成自测 完美=1.0、漏/误删降分正确 |
+| **P3** | 重建去口水金标准 | `stages/3_refine_deduct/golden.json` 仍 TODO（种子 deletions 已失效，无法机械派生） | ⏳ 待 owner：用 `stage_run --stage refine_deduct` 跑一批当草稿 → 人工核 deletions 冻结 |
+| **P4** | 主观评分器 + 评委封装 | `scorers/1_topic_select.py`、`4_hook.py`（硬规则层已跑通并标红草稿缺口）+ `judge.py`（评委封装·要网络·留接口） | ✅ 硬规则层完成；覆盖率/打分卡待配 LLM 出口实跑 |
+| **P5** | 拍板冻结选题金标准 | `stages/1_topic_select/golden.json` 已派生**草稿**（缺 hit_dims/why） | ⏳ 待 owner：补 hit_dims/why + 拍板，删 `_seeded` 即冻结 |
+
+**给 owner 的下一步（三件事，按顺序）**：
+1. **①选题**：打开 `stages/1_topic_select/golden.json`，给每条补 `hit_dims`（命中富集维度·≥3）和 `why`，确认选题清单后删掉 `_seeded` 字段＝冻结。
+2. **④钩子**：打开 `stages/4_hook/golden.json`，每条挑 `best_stitched`、补 `must_keep_terms`（这条题不许丢的限定词/数字），删 `_seeded` 冻结。（旧草稿的钩子缺 `strategy`、有的超 30 字——评分器已如实标红，重跑 `stage_run --stage hook` 可生成带 strategy 的新草稿。）
+3. **③去口水**：`stage_run --stage refine_deduct` 跑一批草稿 → 人工核「删哪些字」→ 冻进 `stages/3_refine_deduct/golden.json`。⑤去重同理（标 `groups/drop/keep`）。
+
+冻结任一阶段金标准后，`python3 eval/scorers/run_all.py --dataset agent_eval_0613` 即自动把它纳入评测。
+
+---
+
 ## 6. 待你拍板（parked · 先按这些默认写）
 
 1. **金标准文件命名/拆分粒度**：§4.3 用了 `stageN_xxx.{input,golden}.json` 命名。若你想要别的组织方式（如每条切片一个目录），说一声。

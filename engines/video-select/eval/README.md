@@ -53,7 +53,16 @@ eval/
 │           └── 5_dedup_merge/{input.json, golden.json}
 ├── scorers/                 ← 评分器代码（每阶段一个·后续 P2/P4 实现）
 ├── runs/                    ← 每次跑的产物（gitignored·不入库）
+│   └── <run>/prompts/           ← 跑分时自动快照的提示词原文+版本（可复现）
 └── notes/                   ← 迭代经验笔记（入库）
+
+# 提示词版本账本不在 eval 下，在引擎的 prompts/（生产+评测共用·见 §5b）：
+../prompts/
+├── <name>.md                ← HEAD（runner 实际读这个）
+├── versions/<name>/vN.md    ← 里程碑版本归档
+├── versions.json            ← 当前版本指针（机器读）
+├── CHANGELOG.md             ← 改动账本（人看·记分变化）
+└── _version.py              ← bump（升版）/ snapshot（快照）工具
 ```
 
 ### 命名规范（钉死，后面不许改）

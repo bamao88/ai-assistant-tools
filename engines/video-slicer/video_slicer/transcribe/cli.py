@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     src.add_argument("--audio-url", dest="audio_url", help="已有公网音频直链（跳过抽音频+上传）")
     ap.add_argument("--backend", default="volc", choices=["volc", "aliyun"], help="主后端（默认火山）")
     ap.add_argument("--fallback", default="aliyun", choices=["aliyun", "volc", "none"], help="兜底后端（默认阿里；none 关闭）")
-    ap.add_argument("--uploader", default="public", choices=["public", "oss"], help="上传通道（默认公网；oss=阿里存储，备选）")
+    ap.add_argument("--uploader", default="public", choices=["public", "oss"], help="上传通道（默认公网 uguu/0x0，已走本地分流；oss=阿里存储，⚠ 2026-06 凭证过期暂不可用）")
     ap.add_argument("--out-dir", dest="out_dir", help="落 words.json 的目录")
     ap.add_argument("--env-file", dest="env_file", default=str(DEFAULT_ENV), help="KEY=VALUE 凭证文件")
     ap.add_argument("--skip-route-bypass", dest="skip_route_bypass", action="store_true",

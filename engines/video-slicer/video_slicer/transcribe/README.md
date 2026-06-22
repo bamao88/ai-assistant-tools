@@ -23,10 +23,15 @@
 
 ## 网络分流：转录走本地出口（复用发布的 route-bypass）
 
-整机挂海外 Tailscale exit node 时，调火山/阿里这类**国内** ASR 服务会从海外 IP 绕回国内——
-慢、且易触发地域限制。所以 CLI 转录前**自动**跑一次 route-bypass，把国内 ASR API 域名
-（`openspeech.bytedance.com` / `dashscope.aliyuncs.com`，及 `--uploader oss` 用到的 OSS 域名）
-钉到本地网关出口，其余流量照旧走海外（与 `platform-publish` 同一套机制）。
+整机挂海外 Tailscale exit node 时，转录链路从海外 IP 绕行——慢、且易触发地域限制。
+所以 CLI 转录前**自动**跑一次 route-bypass，把**整条转录链路**钉到本地网关出口
+（与 `platform-publish` 同一套机制），其余流量照旧走海外：
+
+- **国内 ASR API**：`openspeech.bytedance.com`（火山）/ `dashscope.aliyuncs.com`（阿里）。
+- **public 上传站**：`uguu.se` / `0x0.st`——"上传公域音频"这一步也走本地。这等价于
+  **手动关代理**那条能跑通的路径（上传 + 调 API 全本地），但 VPN 照开、不影响 LLM 翻墙。
+  实测：上传站走海外出口时，45MB/2.2h 大音频 8 次重试全空传不上去；走本地才稳。
+- OSS 域名也钉着（`--uploader oss` 用），但⚠ 2026-06 OSS 凭证已过期，该通道暂不可用。
 
 - 入口在 `cli.py: _route_bypass_preflight()`，调
   `engines/route-bypass/scripts/publish-network-preflight.zsh transcribe apply`，需要时弹一次

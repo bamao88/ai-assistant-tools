@@ -11,12 +11,12 @@
 登录态：
 
 - 账号按 slot 隔离，凭证保存在 `var/state/tencent-video-publish/accounts/<slot>/`。
-- 每个 slot 同时维护真实 Chrome profile（`chrome-profile/`）和 Playwright/patchright `storage_state.json`。
+- 正式登录态只认 Playwright/patchright `storage_state.json`；历史遗留的 `chrome-profile/` 只用于列表展示和诊断，不参与登录检查、扫码登录或发布。
 - 写入凭证时先写临时文件并校验 JSON，再替换正式文件。
 - 替换前保留最近的 `storage_state.json.bak_*` 备份。
 - `check-login` 会在凭证缺失或 JSON 损坏时自动尝试恢复最新有效备份。
-- 扫码登录成功后会再次打开发布页校验新凭证，校验通过才返回成功。
-- 手动拿到 Cookie header 时，用 `import-cookies` 写入对应 slot 的 profile 和 storage state；导入命令默认打开发布页验证，未登录会非零退出。
+- 扫码登录强制使用可见 Chromium；headless QR 登录回调不稳定。扫码成功后保存新的 `storage_state.json`；需要验证时继续运行 `check-login`。
+- 手动拿到 Cookie header 时，用 `import-cookies` 先写入候选 storage state；导入命令默认打开发布页验证，只有验证已登录才会替换正式 `storage_state.json`，未登录会非零退出且正式凭证不变。
 - 当前约定：`aipm` 是默认账号，也是测试号；`zhanghe` 是张和视频号真实账号。
 
 初始化：
@@ -55,6 +55,8 @@ rm -f /tmp/wxp.cookies
 ```
 
 不要把 Cookie 值写进文档、日志或提交。导入输出只会显示 cookie 名称、数量和登录验证结果，不回显 cookie 值。
+
+`--no-verify` 只保存候选凭证文件，不会替换正式 `storage_state.json`；只有验证通过的候选凭证才会被提升为正式凭证。
 
 封面说明：
 

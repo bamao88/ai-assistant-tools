@@ -138,6 +138,8 @@ def context_kwargs(storage_state: str | None = None) -> dict[str, Any]:
 
 
 def profile_dir_for_storage_state(storage_state: Path) -> Path:
+    # Kept for account summaries and legacy diagnostics only. Runtime auth uses
+    # storage_state.json as the single source of truth.
     return storage_state.parent / "chrome-profile"
 
 
@@ -425,6 +427,53 @@ async def save_storage_state(context, storage_state: Path) -> dict:
     return {"saved": True, "backup": str(backup) if backup else "", "reason": "updated"}
 
 
+def candidate_storage_state_path(storage_state: Path) -> Path:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    return storage_state.with_name(f"{storage_state.name}.candidate_{timestamp}")
+
+
+def promote_storage_state_candidate(candidate: Path, storage_state: Path) -> dict:
+    if candidate == storage_state:
+        raise RuntimeError("candidate storage state must not be the formal storage state")
+    if not storage_state_json_is_valid(candidate):
+        raise RuntimeError(f"refusing to promote invalid candidate storage state: {candidate}")
+
+    storage_state.parent.mkdir(parents=True, exist_ok=True)
+    backup = accounts.backup_storage_state(storage_state)
+    tmp_path = storage_state.with_name(f"{storage_state.name}.promote_tmp")
+    tmp_path.write_text(candidate.read_text(encoding="utf-8"), encoding="utf-8")
+    if not storage_state_json_is_valid(tmp_path):
+        tmp_path.unlink(missing_ok=True)
+        raise RuntimeError(f"refusing to write invalid storage state: {storage_state}")
+    tmp_path.replace(storage_state)
+    candidate.unlink(missing_ok=True)
+    return {
+        "promoted": True,
+        "backup": str(backup) if backup else "",
+        "candidate_removed": True,
+    }
+
+
+async def save_manual_cookie_candidate_state(
+    playwright,
+    candidate_path: Path,
+    cookies: list[dict[str, Any]],
+    *,
+    headless: bool,
+) -> dict:
+    browser = await playwright.chromium.launch(**launch_kwargs(headless=headless))
+    try:
+        context = await browser.new_context(**context_kwargs())
+        context = await harden_context(context)
+        try:
+            await context.add_cookies(cookies)
+            return await save_storage_state(context, candidate_path)
+        finally:
+            await context.close()
+    finally:
+        await browser.close()
+
+
 async def goto_upload_page_for_probe(page: Page) -> str:
     try:
         await page.goto(UPLOAD_URL, wait_until="domcontentloaded", timeout=60000)
@@ -446,63 +495,88 @@ async def import_cookies(
 ) -> dict:
     parsed_cookies = parse_cookie_string(cookie_string)
     storage_state.parent.mkdir(parents=True, exist_ok=True)
-    recovered_from_backup = restore_backup_if_needed(storage_state)
     profile_dir = profile_dir_for_storage_state(storage_state)
+    candidate_path = candidate_storage_state_path(storage_state)
 
     async with async_playwright() as playwright:
-        profile_dir.mkdir(parents=True, exist_ok=True)
-        context = await playwright.chromium.launch_persistent_context(
-            str(profile_dir),
-            **launch_kwargs(headless=headless),
-            **context_kwargs(),
+        save_result = await save_manual_cookie_candidate_state(
+            playwright,
+            candidate_path,
+            parsed_cookies,
+            headless=headless,
         )
-        context = await harden_context(context)
-        current_url = ""
-        verify_error = ""
-        logged_in = False
-        try:
-            if clear_existing:
-                await context.clear_cookies()
-            await context.add_cookies(parsed_cookies)
-            save_result = await save_storage_state(context, storage_state)
 
-            if verify:
-                page = await context.new_page()
-                try:
-                    verify_error = await goto_upload_page_for_probe(page)
-                    logged_in = await wait_for_login_completed(page, timeout_ms=20000)
-                    current_url = page.url
-                    save_result = await save_storage_state(context, storage_state)
-                except Exception as exc:
-                    verify_error = str(exc)
-                    current_url = page.url
+    if not verify:
+        return {
+            "success": True,
+            "imported": False,
+            "promoted": False,
+            "logged_in": None,
+            "status": "cookie_candidate_saved_unverified",
+            "cookie_count": len(parsed_cookies),
+            "cookie_names": [cookie["name"] for cookie in parsed_cookies],
+            "storage_state": str(storage_state),
+            "candidate_state": str(candidate_path),
+            "profile_dir": str(profile_dir),
+            "profile_ignored": True,
+            "credential_source": "manual_cookie_candidate",
+            "cleared_existing": False,
+            "clear_existing_requested": clear_existing,
+            "storage_state_saved": False,
+            "candidate_state_saved": save_result.get("saved", False),
+            "storage_state_backup": "",
+            "current_url": "",
+            "verify_error": "",
+        }
 
-            return {
-                "success": True,
-                "imported": True,
-                "logged_in": logged_in if verify else None,
-                "status": (
-                    "logged_in"
-                    if logged_in
-                    else "cookie_imported_but_not_logged_in"
-                    if verify
-                    else "cookie_imported_unverified"
-                ),
-                "cookie_count": len(parsed_cookies),
-                "cookie_names": [cookie["name"] for cookie in parsed_cookies],
-                "storage_state": str(storage_state),
-                "profile_dir": str(profile_dir),
-                "credential_source": "manual_cookie_import",
-                "cleared_existing": clear_existing,
-                "recovered_from_backup": str(recovered_from_backup) if recovered_from_backup else "",
-                "storage_state_saved": save_result.get("saved", False),
-                "storage_state_backup": save_result.get("backup", ""),
-                "current_url": current_url,
-                "navigation_warning": verify_error if logged_in else "",
-                "verify_error": "" if logged_in else verify_error,
-            }
-        finally:
-            await context.close()
+    verify_result = await check_login(candidate_path, headless=headless, save_on_success=False)
+    if not verify_result.get("logged_in"):
+        return {
+            "success": True,
+            "imported": False,
+            "promoted": False,
+            "logged_in": False,
+            "status": "cookie_candidate_invalid",
+            "cookie_count": len(parsed_cookies),
+            "cookie_names": [cookie["name"] for cookie in parsed_cookies],
+            "storage_state": str(storage_state),
+            "candidate_state": str(candidate_path),
+            "profile_dir": str(profile_dir),
+            "profile_ignored": True,
+            "credential_source": "manual_cookie_candidate",
+            "cleared_existing": False,
+            "clear_existing_requested": clear_existing,
+            "storage_state_saved": False,
+            "candidate_state_saved": save_result.get("saved", False),
+            "storage_state_backup": "",
+            "current_url": verify_result.get("current_url", ""),
+            "verify_error": verify_result.get("error", "") or verify_result.get("status", ""),
+            "verify_status": verify_result.get("status", ""),
+        }
+
+    promote_result = promote_storage_state_candidate(candidate_path, storage_state)
+    return {
+        "success": True,
+        "imported": True,
+        "promoted": True,
+        "logged_in": True,
+        "status": "logged_in",
+        "cookie_count": len(parsed_cookies),
+        "cookie_names": [cookie["name"] for cookie in parsed_cookies],
+        "storage_state": str(storage_state),
+        "candidate_state": str(candidate_path),
+        "profile_dir": str(profile_dir),
+        "profile_ignored": True,
+        "credential_source": "manual_cookie_import",
+        "cleared_existing": False,
+        "clear_existing_requested": clear_existing,
+        "storage_state_saved": True,
+        "candidate_state_saved": save_result.get("saved", False),
+        "storage_state_backup": promote_result.get("backup", ""),
+        "current_url": verify_result.get("current_url", ""),
+        "verify_error": "",
+        "verify_status": verify_result.get("status", ""),
+    }
 
 
 def validate_video_file(file_path: str | Path) -> Path:
@@ -685,76 +759,40 @@ async def refresh_qrcode(page: Page) -> None:
     raise RuntimeError("qrcode refresh control not found")
 
 
-async def check_login(storage_state: Path, headless: bool = True) -> dict:
+async def check_login(storage_state: Path, headless: bool = True, *, save_on_success: bool = True) -> dict:
     recovered_from_backup = restore_backup_if_needed(storage_state)
     profile_dir = profile_dir_for_storage_state(storage_state)
-    if not storage_state.exists() and not profile_dir.exists():
+    if not storage_state.exists():
         return {
             "success": True,
             "logged_in": False,
             "status": "missing_storage_state",
+            "credential_source": "",
             "storage_state": str(storage_state),
             "profile_dir": str(profile_dir),
+            "profile_ignored": True,
+            "latest_backup": str(accounts.latest_storage_state_backup(storage_state) or ""),
+        }
+    if not storage_state_json_is_valid(storage_state):
+        return {
+            "success": True,
+            "logged_in": False,
+            "status": "invalid_storage_state",
+            "credential_source": "",
+            "storage_state": str(storage_state),
+            "profile_dir": str(profile_dir),
+            "profile_ignored": True,
+            "recovered_from_backup": str(recovered_from_backup) if recovered_from_backup else "",
             "latest_backup": str(accounts.latest_storage_state_backup(storage_state) or ""),
         }
 
     async with async_playwright() as playwright:
-        profile_error = ""
-        profile_url = ""
-
         async def probe_context(context, save_on_success: bool, timeout_ms: int) -> tuple[bool, str, dict | None]:
             page = await context.new_page()
             await goto_upload_page_for_probe(page)
             logged_in = await wait_for_login_completed(page, timeout_ms=timeout_ms)
             save_result = await save_storage_state(context, storage_state) if logged_in and save_on_success else None
             return logged_in, page.url, save_result
-
-        if profile_dir.exists():
-            context = await playwright.chromium.launch_persistent_context(
-                str(profile_dir),
-                **launch_kwargs(headless=headless),
-                **context_kwargs(),
-            )
-            context = await harden_context(context)
-            try:
-                logged_in, current_url, save_result = await probe_context(
-                    context,
-                    save_on_success=True,
-                    timeout_ms=15000,
-                )
-                profile_url = current_url
-                if logged_in:
-                    return {
-                        "success": True,
-                        "logged_in": True,
-                        "status": "logged_in",
-                        "credential_source": "profile",
-                        "storage_state": str(storage_state),
-                        "profile_dir": str(profile_dir),
-                        "recovered_from_backup": str(recovered_from_backup) if recovered_from_backup else "",
-                        "storage_state_saved": bool(save_result and save_result.get("saved")),
-                        "storage_state_backup": save_result.get("backup", "") if save_result else "",
-                        "current_url": current_url,
-                    }
-            except Exception as exc:
-                profile_error = str(exc)
-            finally:
-                await context.close()
-
-        if not storage_state.exists():
-            return {
-                "success": True,
-                "logged_in": False,
-                "status": "cookie_invalid",
-                "credential_source": "profile",
-                "storage_state": str(storage_state),
-                "profile_dir": str(profile_dir),
-                "recovered_from_backup": str(recovered_from_backup) if recovered_from_backup else "",
-                "storage_state_saved": False,
-                "storage_state_backup": "",
-                "current_url": profile_url,
-                "profile_error": profile_error,
-            }
 
         browser = await playwright.chromium.launch(**launch_kwargs(headless=headless))
         try:
@@ -766,7 +804,11 @@ async def check_login(storage_state: Path, headless: bool = True) -> dict:
                 finally:
                     await context.close()
 
-            logged_in, current_url, save_result = await probe(storage_state, save_on_success=True, timeout_ms=15000)
+            logged_in, current_url, save_result = await probe(
+                storage_state,
+                save_on_success=save_on_success,
+                timeout_ms=15000,
+            )
             if logged_in:
                 return {
                     "success": True,
@@ -775,11 +817,11 @@ async def check_login(storage_state: Path, headless: bool = True) -> dict:
                     "credential_source": "storage_state",
                     "storage_state": str(storage_state),
                     "profile_dir": str(profile_dir),
+                    "profile_ignored": True,
                     "recovered_from_backup": str(recovered_from_backup) if recovered_from_backup else "",
                     "storage_state_saved": bool(save_result and save_result.get("saved")),
                     "storage_state_backup": save_result.get("backup", "") if save_result else "",
                     "current_url": current_url,
-                    "profile_error": profile_error,
                 }
 
             for backup in reversed(accounts.storage_state_backups(storage_state)[-3:]):
@@ -789,6 +831,7 @@ async def check_login(storage_state: Path, headless: bool = True) -> dict:
                     continue
                 backup_logged_in, backup_url, _ = await probe(backup, save_on_success=False, timeout_ms=6000)
                 if backup_logged_in:
+                    backup_result = accounts.backup_storage_state(storage_state)
                     storage_state.write_text(backup.read_text(encoding="utf-8"), encoding="utf-8")
                     return {
                         "success": True,
@@ -797,11 +840,11 @@ async def check_login(storage_state: Path, headless: bool = True) -> dict:
                         "credential_source": "backup_storage_state",
                         "storage_state": str(storage_state),
                         "profile_dir": str(profile_dir),
+                        "profile_ignored": True,
                         "recovered_from_backup": str(backup),
                         "storage_state_saved": False,
-                        "storage_state_backup": "",
+                        "storage_state_backup": str(backup_result) if backup_result else "",
                         "current_url": backup_url,
-                        "profile_error": profile_error,
                     }
 
             return {
@@ -811,11 +854,11 @@ async def check_login(storage_state: Path, headless: bool = True) -> dict:
                 "credential_source": "",
                 "storage_state": str(storage_state),
                 "profile_dir": str(profile_dir),
+                "profile_ignored": True,
                 "recovered_from_backup": str(recovered_from_backup) if recovered_from_backup else "",
                 "storage_state_saved": False,
                 "storage_state_backup": "",
                 "current_url": current_url,
-                "profile_error": profile_error,
             }
         except Exception as exc:
             return {
@@ -825,9 +868,9 @@ async def check_login(storage_state: Path, headless: bool = True) -> dict:
                 "credential_source": "",
                 "storage_state": str(storage_state),
                 "profile_dir": str(profile_dir),
+                "profile_ignored": True,
                 "recovered_from_backup": str(recovered_from_backup) if recovered_from_backup else "",
                 "error": str(exc),
-                "profile_error": profile_error,
             }
         finally:
             await browser.close()
@@ -837,14 +880,11 @@ async def login(storage_state: Path, qrcode_dir: Path, timeout: int = 180, headl
     storage_state.parent.mkdir(parents=True, exist_ok=True)
     qrcode_dir.mkdir(parents=True, exist_ok=True)
     profile_dir = profile_dir_for_storage_state(storage_state)
+    login_headless = False
 
     async with async_playwright() as playwright:
-        profile_dir.mkdir(parents=True, exist_ok=True)
-        context = await playwright.chromium.launch_persistent_context(
-            str(profile_dir),
-            **launch_kwargs(headless=headless),
-            **context_kwargs(),
-        )
+        browser = await playwright.chromium.launch(**launch_kwargs(headless=login_headless))
+        context = await browser.new_context(**context_kwargs())
         # Do not inject init scripts on the login page. Even the light webdriver
         # shim can prevent WeChat's QR iframe from rendering in Patchright.
         page = await context.new_page()
@@ -866,7 +906,10 @@ async def login(storage_state: Path, qrcode_dir: Path, timeout: int = 180, headl
                     "message": "already logged in",
                     "storage_state": str(storage_state),
                     "profile_dir": str(profile_dir),
-                    "credential_source": "profile",
+                    "profile_ignored": True,
+                    "credential_source": "storage_state",
+                    "headless_requested": headless,
+                    "headless_used": login_headless,
                     "storage_state_saved": save_result.get("saved", False),
                     "storage_state_backup": save_result.get("backup", ""),
                     "qrcode_path": "",
@@ -889,7 +932,10 @@ async def login(storage_state: Path, qrcode_dir: Path, timeout: int = 180, headl
                         "message": "login completed",
                         "storage_state": str(storage_state),
                         "profile_dir": str(profile_dir),
-                        "credential_source": "profile",
+                        "profile_ignored": True,
+                        "credential_source": "storage_state",
+                        "headless_requested": headless,
+                        "headless_used": login_headless,
                         "storage_state_saved": save_result.get("saved", False),
                         "storage_state_backup": save_result.get("backup", ""),
                         "qrcode_path": str(qrcode_path),
@@ -913,12 +959,16 @@ async def login(storage_state: Path, qrcode_dir: Path, timeout: int = 180, headl
                 "message": "waiting for login timed out",
                 "storage_state": str(storage_state),
                 "profile_dir": str(profile_dir),
-                "credential_source": "profile",
+                "profile_ignored": True,
+                "credential_source": "storage_state",
+                "headless_requested": headless,
+                "headless_used": login_headless,
                 "qrcode_path": str(qrcode_path) if qrcode_path else "",
                 "current_url": page.url,
             }
         finally:
             await context.close()
+            await browser.close()
 
 
 async def open_upload_page(page: Page) -> None:
@@ -1787,20 +1837,11 @@ async def upload_video(request: UploadVideoRequest) -> dict:
             f"login state invalid ({login_check.get('status')}), login first: {request.storage_state}"
         )
     credential_source = str(login_check.get("credential_source") or "storage_state")
-    use_profile = credential_source == "profile"
     profile_dir = profile_dir_for_storage_state(request.storage_state)
 
     async with async_playwright() as playwright:
-        browser = None
-        if use_profile:
-            context = await playwright.chromium.launch_persistent_context(
-                str(profile_dir),
-                **launch_kwargs(headless=request.headless),
-                **context_kwargs(),
-            )
-        else:
-            browser = await playwright.chromium.launch(**launch_kwargs(headless=request.headless))
-            context = await browser.new_context(**context_kwargs(str(request.storage_state)))
+        browser = await playwright.chromium.launch(**launch_kwargs(headless=request.headless))
+        context = await browser.new_context(**context_kwargs(str(request.storage_state)))
         context = await harden_context(context)
         try:
             page = await context.new_page()
@@ -1953,6 +1994,7 @@ async def upload_video(request: UploadVideoRequest) -> dict:
                     "file": str(request.file_path),
                     "storage_state": str(request.storage_state),
                     "profile_dir": str(profile_dir),
+                    "profile_ignored": True,
                     "credential_source": credential_source,
                     "route_status": route_status,
                     "storage_state_saved": save_result.get("saved", False),
@@ -1973,6 +2015,7 @@ async def upload_video(request: UploadVideoRequest) -> dict:
                 "file": str(request.file_path),
                 "storage_state": str(request.storage_state),
                 "profile_dir": str(profile_dir),
+                "profile_ignored": True,
                 "credential_source": credential_source,
                 "route_status": route_status,
                 "storage_state_saved": save_result.get("saved", False),
@@ -1983,5 +2026,4 @@ async def upload_video(request: UploadVideoRequest) -> dict:
             }
         finally:
             await context.close()
-            if browser:
-                await browser.close()
+            await browser.close()

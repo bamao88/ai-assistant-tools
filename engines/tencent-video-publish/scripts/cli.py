@@ -200,12 +200,12 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("--timeout", type=int, default=180)
     sub.set_defaults(func=cmd_login)
 
-    sub = subparsers.add_parser("import-cookies", help="import manually copied cookies into the account profile")
+    sub = subparsers.add_parser("import-cookies", help="import manually copied cookies into a verified storage-state candidate")
     sub.add_argument("--cookie-file", default="", help="file containing a Cookie header string; use - for stdin")
     sub.add_argument("--cookie-string", default="", help="Cookie header string; prefer --cookie-file or --stdin")
     sub.add_argument("--stdin", action="store_true", help="read Cookie header string from stdin")
-    sub.add_argument("--no-verify", action="store_true", help="save cookies without opening the publish page")
-    sub.add_argument("--keep-existing", action="store_true", help="do not clear existing cookies in this account profile")
+    sub.add_argument("--no-verify", action="store_true", help="save a candidate file without promoting it")
+    sub.add_argument("--keep-existing", action="store_true", help="deprecated no-op; formal storage_state is never changed before verification")
     sub.set_defaults(func=cmd_import_cookies)
 
     sub = subparsers.add_parser("upload-video", help="upload a video; default action saves draft")

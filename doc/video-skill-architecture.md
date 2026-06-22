@@ -57,8 +57,8 @@ tools/engines/
 │   ├── prompts/              ★ 5 条提示词全在此（按功能命名·改 prompt 不动代码）
 │   │                          topic-select(选题·基于 dbskill 选片灵魂+标题5铁律) / body-edit(总编·全局取证+精选合并)
 │   │                          refine-deduct(字级去口水决策) / hook(dbs-hook 内容·本项目整句优先排序) / dedup-merge(批量去重)
-│   ├── video_select/         topics(选题) / generate(候选·总编→组装→去口水→钩子) / dedup(流程二后内容级去重) / gates(精选合并门禁) / score(逼近度) / select_clips_a(方案A)
-│   ├── eval/                 Harness 数据：fixtures(评测集+冻结 golden 参照·入库) / runs(产物·不入库) / notes(经验·入库)；words.json 软链不入库
+│   ├── video_select/         topics(选题) / generate(候选·总编→组装→去口水→钩子) / dedup(流程二后内容级去重) / gates(精选合并门禁) / score(逼近度) / stage_run(单阶段测试口) / select_clips_a(方案A)
+│   ├── eval/                 Harness 数据 + 分阶段评测：fixtures(评测集；每数据集 stages/<N_阶段>/{input,golden}.json) / contracts(5 阶段契约) / scorers(5 把尺+judge+run_all) / build_inputs+seed_golden(派生脚本) / runs(产物·不入库) / notes(经验)；words.json 软链不入库
 │   └── capabilities.json     声明：topic_select / generate_candidate(stage=select) + dedup/gates/score/select_clips_a
 │   ▲ 选题/标题/钩子方法论蒸馏自 vendor/dbskill(dontbesilent·CC BY-NC 4.0) + videocut-zh 03§7/07；闭环 topics→generate→dedup→gates→score
 │

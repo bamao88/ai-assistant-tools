@@ -16,7 +16,7 @@
 | 小红书 Tailscale exit node 导致发布审核失败 | fixed-in-platform-publish | 不再临时关闭全局 exit node；发布前由 `publish-network-preflight.zsh xiaohongshu apply` 刷新小红书发布域名和上传 CDN 的本地路由。 |
 | 小红书 auth 缺少 `import-cookies` / `check-creator-login` | open, not blocking publish | 这是认证工具增强项：仅在“用户直接给 Cookie 字符串要求导入账号并验证 creator 后台登录态”时需要。正常扫码登录和当前 `platform-publish` 发布流程不依赖。 |
 | 抖音发布流程是否已打通 | tested-fill-only | 测试号 `测试号_抖音` 已跑通视频上传、标题/描述、5 个话题联想、竖版封面、自主声明，并停在发布页未点击发布。CLI 已有 `--fill-only` 安全门；正式自动发布仍需用户明确授权 `agent-submit` 和 `SAU_DOUYIN_ALLOW_SUBMIT=1`。 |
-| 抖音定时发布能力 | supported-needs-agent-submit-for-final-click | `sau douyin upload-video/upload-note` 已支持 `--schedule "YYYY-MM-DD HH:MM"`，底层会选择“定时发布”并填写时间。测试/人工确认场景可与 `--fill-only` 同用，停在最终发布前；真正完成定时提交需要用户明确授权 Agent 点击最终“发布/定时发布”。 |
+| 抖音定时发布能力 | tested-fill-only | `sau douyin upload-video --schedule "2026-06-23 20:30" --fill-only` 已用测试号跑通：底层选择“定时发布”、写入并校验时间值，最终停在发布页未点击发布；真正完成定时提交仍需用户明确授权 Agent 点击最终“发布/定时发布”。 |
 | 发布网络是否统一走本地网络 | in-progress | `platform-publish` 已把网络前置门上移：选定平台/账号/最终提交权限后，执行平台 reference 前先跑 `publish-network-preflight`。本次抖音视频慢/失败的根因是上传阶段出现新的动态 CDN 网段，且旧浏览器已有连接不会因后续补路由自动迁移；已补入观测到的抖音上传网段并重启浏览器复测通过。后续需要把 preflight 从“Skill 要求”下沉到发布 CLI/engine 的自动强制门。 |
 | Wechatsync 与小红书/公众号发布入口混淆 | fixed | `wechatsync.md` 已明确：`weixin` / `xiaohongshu` 不通过 Wechatsync 发布，继续留在 `platform-publish` 内对应 reference。 |
 | engine 文档误导为可触发小红书 Skill | fixed | `engines/xiaohongshu/README.md` / `SKILL.md` / `CLAUDE.md` 已改为底层 engine 文档，明确发布走 `skills/platform-publish`。 |
@@ -53,7 +53,7 @@ ls ~/.claude/skills | rg '^xhs-publish|^xhs-fetch|^gzh-publish$|^wechatsync$|^sh
 
 ## 后续待办
 
-1. 抖音：定时发布能力已存在，但还需要补一条真实定时 fill-only 复测记录，确认页面时间控件在当前版本稳定。
+1. 抖音：定时发布 fill-only 已用测试号复测通过；后续真实账号仍需先确认账号与 `agent-submit` 权限。
 2. 小红书 auth：如后续确实要支持“用户提供 Cookie 字符串导入账号”，再实现 `import-cookies` 和 `check-creator-login`。
 3. 小红书视频：继续坚持测试号稳定门槛；在测试号未连续跑通前，不对真实账号执行自动最终发布。
 4. 网络：任何平台上传阶段发现新动态 CDN 域名/IP，先补 `route-bypass` 并重新 `publish-network-preflight apply`，不要关闭全局 exit node。后续优化方向是发布 CLI/engine 自动执行并校验 preflight，而不是依赖 Agent 记得手动跑；如果运行中补了路由，必须重启浏览器/上传会话，让新 TCP 连接重新按本地路由建立。

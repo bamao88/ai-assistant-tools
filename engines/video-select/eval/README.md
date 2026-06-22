@@ -112,6 +112,19 @@ eval/
 
 ---
 
+## 5b. 提示词版本管理（两层 · 让版本对得上分数）
+
+改提示词必须能回答"v3→v4 分涨了没"，所以提示词有版本账（真源在 `../prompts/`，不在 eval 下）：
+
+| 层 | 在哪 | 干嘛 |
+|---|---|---|
+| **账本层**（人看） | `../prompts/versions/<name>/vN.md` + `../prompts/CHANGELOG.md` + `versions.json`(当前指针) | 里程碑版本归档 + 一行行记"vN·日期·改了啥·分变化" |
+| **快照层**（机器真相） | `runs/<run>/prompts/`（每次跑分自动复制） | 把当时 5 条提示词原文 + 版本号冻进 run，分数永远查得到是哪段文本跑的 |
+
+- **升版**（改完提示词后）：`python3 ../prompts/_version.py bump <name> "改了啥"` → 自动归档旧版、改指针、CHANGELOG 追一行（分变化先留"未测"，跑完评测再补）。
+- **跑分自动快照**：`generate.py`／`dedup.py` 跑完会把提示词原文+`versions.json` 写进 `runs/<run>/prompts/`，并把版本号记进 `golden_candidate.json` 的 `prompt_versions` 字段。**无需手动操作。**
+- **铁律**：CHANGELOG 的"分变化"栏没跑评测就写"未测"，别凭感觉填。
+
 ## 6. 给 owner：金标准怎么填
 
 1. 打开要填的阶段目录，如 `fixtures/agent_eval_0613/stages/2_body_edit/`。

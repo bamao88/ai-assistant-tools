@@ -26,6 +26,16 @@ Use the platform wrapper from skills and runbooks:
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh article-drafts apply
 ```
 
+Non-publish consumer: the `video-slicer` transcription line uses the same preflight
+with platform `transcribe` to pin domestic ASR API hosts (Volcengine / Aliyun, plus
+OSS upload hosts) to the local gateway before uploading audio for transcription.
+Its CLI (`engines/video-slicer/video_slicer/transcribe/cli.py`) runs this
+automatically before each transcription:
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh transcribe apply
+```
+
 `apply` is intentionally safe to rerun. It resolves the current platform IPs
 again, adds any newly returned IPs to the local gateway route set, and refreshes
 managed hosts when a platform needs that fallback. If a platform changes edge IPs

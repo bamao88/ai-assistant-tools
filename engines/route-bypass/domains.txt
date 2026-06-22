@@ -81,12 +81,17 @@ pstatp.com
 byteimg.com
 zijieapi.com
 
-# Cloud transcription (engines/video-slicer 字级转写). 国内 ASR 服务，必须本地出口，
-# 否则海外 IP 绕行慢/易触发地域限制。transcribe/cli.py 转录前经
+# Cloud transcription (engines/video-slicer 字级转写). 整条转录链路都钉本地出口，
+# 复刻"手动关代理"那条可跑通路径（无需真关 VPN）。transcribe/cli.py 转录前经
 # publish-network-preflight.zsh transcribe apply 显式钉这组。
-# OSS 两域名仅 --uploader oss 时用到；public 默认上传走海外 uguu.se（不在此钉）。
+#  - 国内 ASR API：火山 openspeech / 阿里 dashscope。
+#  - public 上传站：uguu.se / 0x0.st（上传公域音频那步也走本地，否则海外出口传大文件不稳）。
+#  - OSS 两域名：⚠ 2026-06 凭证已过期，--uploader oss 暂不可用；留作续期后用。
 openspeech.bytedance.com
 dashscope.aliyuncs.com
+uguu.se
+h.uguu.se
+0x0.st
 oss-cn-beijing.aliyuncs.com
 zh-0121.oss-cn-beijing.aliyuncs.com
 

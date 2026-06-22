@@ -68,6 +68,15 @@ pstatp.com
 byteimg.com
 zijieapi.com
 
+# Cloud transcription (engines/video-slicer 字级转写). 国内 ASR 服务，必须本地出口，
+# 否则海外 IP 绕行慢/易触发地域限制。transcribe/cli.py 转录前经
+# publish-network-preflight.zsh transcribe apply 显式钉这组。
+# OSS 两域名仅 --uploader oss 时用到；public 默认上传走海外 uguu.se（不在此钉）。
+openspeech.bytedance.com
+dashscope.aliyuncs.com
+oss-cn-beijing.aliyuncs.com
+zh-0121.oss-cn-beijing.aliyuncs.com
+
 ros-upload.xiaohongshu.com
 # 小红书视频/图片分片上传真实走 *.xhscdn.com 分片域（d1..dN 轮换），
 # 只钉 ros-upload.xiaohongshu.com 不够——分片域不钉则上传卡在 85% 走海外出口。

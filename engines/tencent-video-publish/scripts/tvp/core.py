@@ -425,6 +425,17 @@ async def save_storage_state(context, storage_state: Path) -> dict:
     return {"saved": True, "backup": str(backup) if backup else "", "reason": "updated"}
 
 
+async def goto_upload_page_for_probe(page: Page) -> str:
+    try:
+        await page.goto(UPLOAD_URL, wait_until="domcontentloaded", timeout=60000)
+        return ""
+    except Exception as exc:
+        if "Timeout" not in str(exc):
+            raise
+        await page.wait_for_timeout(3000)
+        return str(exc)
+
+
 async def import_cookies(
     storage_state: Path,
     cookie_string: str,
@@ -458,7 +469,7 @@ async def import_cookies(
             if verify:
                 page = await context.new_page()
                 try:
-                    await page.goto(UPLOAD_URL, wait_until="domcontentloaded", timeout=60000)
+                    verify_error = await goto_upload_page_for_probe(page)
                     logged_in = await wait_for_login_completed(page, timeout_ms=20000)
                     current_url = page.url
                     save_result = await save_storage_state(context, storage_state)
@@ -487,7 +498,8 @@ async def import_cookies(
                 "storage_state_saved": save_result.get("saved", False),
                 "storage_state_backup": save_result.get("backup", ""),
                 "current_url": current_url,
-                "verify_error": verify_error,
+                "navigation_warning": verify_error if logged_in else "",
+                "verify_error": "" if logged_in else verify_error,
             }
         finally:
             await context.close()
@@ -686,7 +698,7 @@ async def check_login(storage_state: Path, headless: bool = True) -> dict:
 
         async def probe_context(context, save_on_success: bool, timeout_ms: int) -> tuple[bool, str, dict | None]:
             page = await context.new_page()
-            await page.goto(UPLOAD_URL, wait_until="domcontentloaded", timeout=60000)
+            await goto_upload_page_for_probe(page)
             logged_in = await wait_for_login_completed(page, timeout_ms=timeout_ms)
             save_result = await save_storage_state(context, storage_state) if logged_in and save_on_success else None
             return logged_in, page.url, save_result

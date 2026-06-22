@@ -61,14 +61,13 @@ node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
 为避免 Tailscale exit node 导致小红书发布走海外出口，账号选定后、任何会访问小红书网页的 CLI 前，必须先刷新本地分流路由：
 
 ```bash
-tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply
 ```
 
 如果在无 TTY 环境中遇到 `sudo: a password is required`，允许改用 macOS 管理员授权窗口执行同一脚本：
 
 ```bash
-osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true; /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply" with administrator privileges'
+osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply" with administrator privileges'
 ```
 
 适用范围：
@@ -76,7 +75,9 @@ osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2
 - 图文流程：`fill-publish` 和 `save-draft` 前都必须完成。
 - 视频流程：`fill-publish-video` 和 `save-draft` 前都必须完成。
 
-**如果直接执行和管理员授权 fallback 都失败，立即停止发布流程并报告错误；不得继续打开发布页、填写表单或点击发布。不要手工散改 `/etc/hosts` 或手工 `route add/delete`；只能使用 `route-bypass apply/remove` 管理。**
+小红书 CLI 的正式发布入口还会自动做二次校验：先 `status` 探测路由和关键 HTTPS 主机，发现当前 IP 没走本地网关或上传域名不可连时自动刷新 `apply`，再校验；仍失败就停止。IP 变化时不要自行猜 IP，重复运行本步骤即可重新解析当前 IP 并刷新受控 hosts。
+
+**如果直接执行和管理员授权 fallback 都失败，立即停止发布流程并报告错误；不得继续打开发布页、填写表单或点击发布。不要手工散改 `/etc/hosts` 或手工 `route add/delete`；只能使用 `publish-network-preflight` / `route-bypass apply/remove` 管理。**
 
 ---
 
@@ -288,8 +289,7 @@ rm -rf "$OUTDIR"
 
 ```bash
 # 步骤 2（仅保存草稿时）:
-tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply
 
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
   /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py \
@@ -299,7 +299,7 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 填写完成后告知用户：
 > "内容已全部填写完毕，请：
 > 1. 在浏览器中检查标题、正文、图片是否正确
-> 2. 本地分流已应用；如果页面停留超过 30 分钟，点击发布前重新运行 `/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply`
+> 2. 本地分流已应用；如果页面停留超过 30 分钟，点击发布前重新运行 `/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply`
 > 3. 手动点击页面上的发布按钮
 > 发布完成后无需关闭或恢复 Tailscale exit node。"
 
@@ -353,7 +353,7 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 填写完成后告知用户：
 > "内容已全部填写完毕，请：
 > 1. 在浏览器中检查标题、正文、视频是否正确（视频处理最长需 10 分钟）
-> 2. 本地分流已应用；如果页面停留超过 30 分钟，点击发布前重新运行 `/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply`
+> 2. 本地分流已应用；如果页面停留超过 30 分钟，点击发布前重新运行 `/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply`
 > 3. 手动点击页面上的发布按钮
 > 发布完成后无需关闭或恢复 Tailscale exit node。"
 

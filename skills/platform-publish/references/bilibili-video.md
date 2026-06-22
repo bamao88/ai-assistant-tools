@@ -21,14 +21,13 @@ SAU="$ENGINE/.venv/bin/sau"      # CLI 入口；等价于 .venv/bin/python -m sa
 为避免 Tailscale exit node 或系统代理导致 B站 投稿走海外/代理出口（**异地 IP 投稿会触发 B站 风控**），任何 `bilibili` 子命令（check / login / upload-video）执行前，必须先刷新本地分流路由：
 
 ```bash
-tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh bilibili apply
 ```
 
 无 TTY 遇到 `sudo: a password is required` 时，改用管理员授权窗口执行同一脚本：
 
 ```bash
-osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true; /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply" with administrator privileges'
+osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh bilibili apply" with administrator privileges'
 ```
 
 验证 B站 核心域名已回到本地出口（出口网卡应是物理网卡如 `en0`，不是 `utun*`）：
@@ -37,7 +36,7 @@ osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2
 for h in member.bilibili.com api.bilibili.com passport.bilibili.com; do ip=$(dig +short $h | grep -E '^[0-9]' | head -1); echo -n "$h: "; route -n get "$ip" | awk '/interface:/{print $2}'; done
 ```
 
-**够用即可**：B站 账号风控只绑定在 `passport`(登录) + `member.bilibili.com`(预上传 token + 投稿提交) 这些腿上，route-bypass 已把它们钉到本地，账号安全无虞。剩下走 exit node 的只是视频字节传 `upos-*.bilivideo.com`（动态 CDN，host 路由穷举不到），不影响风控，无需处理。
+**够用即可**：B站 账号风控只绑定在 `passport`(登录) + `member.bilibili.com`(预上传 token + 投稿提交) 这些腿上，`publish-network-preflight` 已把它们钉到本地，账号安全无虞。剩下走 exit node 的只是视频字节传 `upos-*.bilivideo.com`（动态 CDN，host 路由穷举不到），不影响风控，无需处理。
 
 ⚠️ **绝不要用 `tailscale set --exit-node=` 关全局出口** —— 用户本地 Claude Code / Codex 靠该 exit node 访问 LLM API，关掉会断开发任务。若以后确需连上传字节也本地，只能走 route 方案（biliup `--line` 钉死线路 → 把对应 upos 主机加进 `domains.txt`），不动 exit node。
 

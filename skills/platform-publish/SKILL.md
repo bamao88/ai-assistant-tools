@@ -28,10 +28,30 @@ description: |
 **步骤 1 — 判断目标平台。**
 看用户表述定位到上表的一行。不确定就问，不要猜。
 
-**步骤 2 — 读对应的 reference。**
-一次只读一个 reference。reference 里有完整的 CLI 路径、账号选择、前置步骤（小红书/视频号的网络分流、文章直传的 dry-run 与白名单校验、浏览器草稿兜底）、子命令、失败兜底。**不要凭记忆拼命令** —— 照着 reference 抄。
+**步骤 2 — 发布前先做本地网络前置门。**
+所有平台发布都先走本地网络分流，不把登录、上传、写草稿、提交审核等发布动作交给 Tailscale exit node 或代理出口。不同平台的域名/IP 不一样，但动作统一：在任何会访问平台网页、API、上传入口、草稿接口的命令前，先运行 `publish-network-preflight` 对应平台的 `apply`。
 
-**步骤 3 — 执行并结构化汇报。**
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh <platform> apply
+```
+
+平台参数：
+
+| 目标 | platform |
+|---|---|
+| 小红书 | `xiaohongshu` |
+| 微信公众号 | `gongzhonghao` |
+| 视频号 | `shipinhao` |
+| B站视频 | `bilibili` |
+| 抖音视频/图文 | `douyin` |
+| 知乎/掘金/CSDN/百家号/思否/头条文章草稿 | `article-drafts` |
+
+`apply` 会重新解析当前平台域名的最新 IPv4、把新 IP 钉到本地网关路由，并刷新受控 `/etc/hosts` 块（目前小红书上传关键域名需要）。如果 IP 变了，重新跑同一条 `apply`；不要手工改 `/etc/hosts` 或手工 `route add/delete`。如果 `apply` 因管理员权限或路由校验失败而失败，停止发布，先解决网络前置门，不继续打开发布页、上传素材或提交。
+
+**步骤 3 — 读对应的 reference。**
+一次只读一个 reference。reference 里有完整的 CLI 路径、账号选择、平台专属前置步骤、子命令、失败兜底。**不要凭记忆拼命令** —— 照着 reference 抄。若 reference 与本文件冲突，以本文件的“本地网络前置门”为上位约束；reference 只能补充平台域名/账号/发布细节，不能跳过网络门。
+
+**步骤 4 — 执行并结构化汇报。**
 报告：发到了哪个平台/账号、是草稿还是已发布、草稿链接或 media_id/publish_id、需要用户手动确认的后续动作。
 
 ## 多笔记发布顺序

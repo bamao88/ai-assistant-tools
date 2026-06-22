@@ -37,6 +37,7 @@ var/      runtime: state, output, data, logs, drafts, review (gitignored)
 ## Skill layering
 
 - **L1 verb routers** (cross-platform entry points): `platform-fetch` (抓取), `platform-publish` (发布). These are thin routers — a `SKILL.md` + `references/<platform>.md` that dispatch to engines. They are the ONLY entry for their verb.
+- `platform-publish` has a cross-platform network gate: before any publish command touches a platform browser/API/upload/draft endpoint, run `engines/route-bypass/scripts/publish-network-preflight.zsh <platform> apply` for the target platform. Platform references may add details, but they do not make this optional.
 - **L2 workflows**: `blogger-research`, `xhs-ops`, `video-content`, `deep-research`.
 - **atomic / util**: `xhs-auth`, `xhs-interact`, `markdown-to-cards`, `find-images`, `humanizer`.
 

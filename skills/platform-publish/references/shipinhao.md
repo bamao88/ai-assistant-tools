@@ -31,14 +31,13 @@ uv sync --python 3.11
 为避免 Tailscale exit node 或系统代理导致视频号发布走海外/代理出口，账号选定后、任何会访问视频号网页的 CLI 前，必须先刷新本地分流路由：
 
 ```bash
-tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh shipinhao apply
 ```
 
 如果在无 TTY 环境中遇到 `sudo: a password is required`，允许改用 macOS 管理员授权窗口执行同一脚本：
 
 ```bash
-osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true; /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply" with administrator privileges'
+osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh shipinhao apply" with administrator privileges'
 ```
 
 适用范围：
@@ -46,6 +45,8 @@ osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2
 - `check-login` 前必须完成。
 - `login` 前必须完成。
 - `upload-video` 前必须完成，包括 `--fill-only`、保存草稿、正式发表、定时发表。
+
+`apply` 每次都会重新解析视频号相关域名的当前 IPv4，并把新 IP 钉到本地网关。平台边缘 IP 变化时，重复运行本步骤；不要手工改 hosts 或 route。
 
 **如果直接执行和管理员授权 fallback 都失败，立即停止视频号发布流程并报告错误；不得继续打开发布页、上传视频、保存草稿或发表。**
 

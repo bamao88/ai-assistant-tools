@@ -25,6 +25,11 @@ finder.video.qq.com
 wxapp.tc.qq.com
 aladin.wxqcloud.qq.com
 
+# WeChat Official Account draft/publish API.
+api.weixin.qq.com
+mmbiz.qpic.cn
+mmbiz.qlogo.cn
+
 # Bilibili video 投稿 (biliup). Account-bound legs: login / preupload / submit.
 # 必须本地出口，否则海外 IP 投稿触发异地风控。
 # 注意：实际视频上传走 upos-*.bilivideo.com 动态 CDN 主机，无法在此穷举，
@@ -41,6 +46,28 @@ creator.douyin.com
 www.douyin.com
 sso.douyin.com
 mcs.zijieapi.com
+
+# Article draft platforms used by platform-draft-direct / Wechatsync fallbacks.
+www.zhihu.com
+zhuanlan.zhihu.com
+api.zhihu.com
+juejin.cn
+api.juejin.cn
+mp.csdn.net
+blog.csdn.net
+bizapi.csdn.net
+img-blog.csdnimg.cn
+baijiahao.baidu.com
+bjh.baidu.com
+mbd.baidu.com
+segmentfault.com
+api.segmentfault.com
+mp.toutiao.com
+www.toutiao.com
+pstatp.com
+byteimg.com
+zijieapi.com
+
 ros-upload.xiaohongshu.com
 # 小红书视频/图片分片上传真实走 *.xhscdn.com 分片域（d1..dN 轮换），
 # 只钉 ros-upload.xiaohongshu.com 不够——分片域不钉则上传卡在 85% 走海外出口。

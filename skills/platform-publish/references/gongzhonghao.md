@@ -18,6 +18,28 @@
 npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts <file.md> [options]
 ```
 
+## 网络分流前置步骤（强制）
+
+微信公众号草稿/发布会访问微信公众平台 API、封面图上传和素材接口。任何会检查公众号凭证或写入微信后台的命令前，必须先刷新本地网络分流：
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh gongzhonghao apply
+```
+
+无 TTY 遇到 `sudo: a password is required` 时，改用管理员授权窗口执行同一脚本：
+
+```bash
+osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh gongzhonghao apply" with administrator privileges'
+```
+
+适用范围：
+
+- `--check-auth` 前必须完成。
+- 真实创建草稿前必须完成。
+- `--publish` 直接发布前必须完成。
+
+`apply` 每次都会重新解析公众号相关域名的当前 IPv4，并把新 IP 钉到本地网关。平台边缘 IP 变化时，重复运行本步骤；不要手工改 hosts 或 route。若直接执行和管理员授权 fallback 都失败，停止公众号发布流程并报告错误。
+
 ## 可用主题
 
 **经典系列：** claude(Claude，直觉机器漫谈 / MiaoDX 固定风格), medium(Medium), minimal(极简)
@@ -204,6 +226,9 @@ published: false        # false=未发布, draft=草稿, true=已发布
 4. **本地 .env 文件**：在文章所在目录创建 `.env` 文件
 
 验证凭证：
+
+执行前必须先完成“网络分流前置步骤”。
+
 ```bash
 npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts --check-auth
 npx tsx /Volumes/ExtSSD2601/AI_Assistant/tools/engines/gzh-publish/src/index.ts --check-auth --profile mdx

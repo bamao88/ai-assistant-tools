@@ -5,7 +5,7 @@
 
 ---
 
-## ⚠️ #1 强制前置：route-bypass apply（漏了它，后面全白搭）
+## ⚠️ #1 强制前置：publish-network-preflight apply（漏了它，后面全白搭）
 
 **症状**：视频/图片一直传不上去；上传卡死、转圈、超时；表面看是「网络慢」或「小红书抽风」，反复重试都不行。
 
@@ -14,20 +14,15 @@
 **解法（发布前必跑，不是可选项）**：
 
 ```bash
-tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply
 ```
 
-把小红书相关 IP 和已观测上传 CDN 网段钉到本地网关出口；当 Tailscale DNS 把 `www.xiaohongshu.com` / `ros-upload.xiaohongshu.com` 解析到坏边缘时，`route-bypass` 还会写一个带 BEGIN/END 标记的受控 `/etc/hosts` 块，改用本地网关 DNS 返回且可连接的边缘。**这一步通了，视频/图片秒传，后面标题/正文/标签/定时/封面才会一路顺。** 无 TTY 报 `sudo: a password is required` 时走 `osascript ... with administrator privileges` 兜底（见 `xiaohongshu.md`「网络分流前置步骤」）。
+把小红书相关 IP 和已观测上传 CDN 网段钉到本地网关出口；当 Tailscale DNS 把 `www.xiaohongshu.com` / `ros-upload.xiaohongshu.com` 解析到坏边缘时，`route-bypass` 还会写一个带 BEGIN/END 标记的受控 `/etc/hosts` 块，改用本地网关 DNS 返回且可连接的边缘。**这一步通了，视频/图片秒传，后面标题/正文/标签/定时/封面才会一路顺。** 无 TTY 报 `sudo: a password is required` 时走 `osascript ... with administrator privileges` 兜底（见 `xiaohongshu.md`「网络分流前置步骤」）。小红书 IP 或上传边缘变化时，重复运行同一条 `publish-network-preflight`，它会重新解析当前 IP 并刷新受控 hosts；不要手工猜 IP。
 
 **自检**：不要只看 `ping ros-upload.xiaohongshu.com`。上传分片可能走 Akamai/Tencent 的轮换边缘 IP，单域名 ping 正常也可能上传 0%。必须看完整路由校验：
 
 ```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh status \
-  creator.xiaohongshu.com edith.xiaohongshu.com \
-  ros-upload.xiaohongshu.com ros-upload.xhscdn.com \
-  ros-upload-d1.xhscdn.com ros-upload-d2.xhscdn.com ros-upload-d3.xhscdn.com ros-upload-d4.xhscdn.com \
-  ros-upload-d5.xhscdn.com ros-upload-d6.xhscdn.com ros-upload-d7.xhscdn.com ros-upload-d8.xhscdn.com
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu status
 ```
 
 `route decisions for route target IPv4` 中任意小红书主页、创作者中心或上传 IP 出现 `interface=utun*` 或 `destination=default`，都说明分流没生效，别往下走。CLI 还会实际探测 `https://www.xiaohongshu.com/explore` 和 `https://ros-upload.xiaohongshu.com/`；只看路由表不够，因为系统 DNS 曾把上传根域解析到 `43.159.95.157`，虽然路由走 `en1` 但 TCP 超时，导致上传 0%。2026-06-22 已观测到会导致上传 0% 或页面打不开的边缘包括 `23.59.252.*`、`96.7.244.*`、`184.27.185.*`、`212.129.158.241`、`43.159.95.157`。
@@ -72,4 +67,4 @@ realpath "<可能是软链的路径>"   # 用解析后的真实绝对路径去 -
 
 ## 一句话排查顺序
 
-传不上去 → **先看 #1（route-bypass status 不能走 `utun*`，CLI host probe 必须通过）**，九成是它 → 再看 #2 路径是不是软链 → 都没问题再怀疑登录态 / 平台本身。
+传不上去 → **先看 #1（publish-network-preflight status 不能走 `utun*`，CLI host probe 必须通过）**，九成是它 → 再看 #2 路径是不是软链 → 都没问题再怀疑登录态 / 平台本身。

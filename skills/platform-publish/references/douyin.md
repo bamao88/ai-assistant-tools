@@ -20,17 +20,16 @@ SAU="$ENGINE/.venv/bin/sau"
 为避免 Tailscale exit node 或系统代理导致抖音发布走海外/代理出口（**异地 IP 登录/发布会触发抖音风控**），任何 `douyin` 子命令（check / login / upload-video / upload-note）执行前，必须先刷新本地分流路由：
 
 ```bash
-tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin apply
 ```
 
 无 TTY 遇到 `sudo: a password is required` 时，改用管理员授权窗口执行同一脚本：
 
 ```bash
-osascript -e 'do shell script "tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true; /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply" with administrator privileges'
+osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin apply" with administrator privileges'
 ```
 
-**够用即可**：抖音账号风控只绑定在 `creator.douyin.com`(登录/创作中心) + 风控腿，route-bypass 已把它们钉到本地，账号安全无虞。剩下走 exit node 的只是视频字节传 `*.douyinvod.com`（动态 CDN，穷举不到），不影响风控，无需处理。
+**够用即可**：抖音账号风控只绑定在 `creator.douyin.com`(登录/创作中心) + 风控腿，`publish-network-preflight` 已把它们钉到本地，账号安全无虞。剩下走 exit node 的只是视频字节传 `*.douyinvod.com`（动态 CDN，穷举不到），不影响风控，无需处理。
 
 ⚠️ **绝不要用 `tailscale set --exit-node=` 关全局出口** —— 用户本地 Claude Code / Codex 靠该 exit node 访问 LLM API，关掉会断开发任务。若以后确需连上传字节也本地，只能走 route 方案（加 `*.douyinvod.com` 解析到的 CDN 网段进 route-bypass），不动 exit node。
 

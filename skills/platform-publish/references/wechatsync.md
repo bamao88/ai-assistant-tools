@@ -16,6 +16,29 @@
 - 不自动正式发布、提交审核、群发或点击平台后台的最终发布按钮。
 - 如果发现 Wechatsync 工具异常，按 `/Volumes/ExtSSD2601/AI_Assistant/tools/feedback/` 规则写反馈文件，不直接改工具源码。
 
+## 网络分流前置步骤（强制）
+
+文章草稿发布会访问各平台登录态、草稿接口、图片上传接口或浏览器编辑器。任何 `auth`、真实 `sync`、Wechatsync 回退、今日头条浏览器草稿流程执行前，必须先刷新本地网络分流：
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh article-drafts apply
+```
+
+无 TTY 遇到 `sudo: a password is required` 时，改用管理员授权窗口执行同一脚本：
+
+```bash
+osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh article-drafts apply" with administrator privileges'
+```
+
+适用范围：
+
+- `platform-draft-direct auth` 前必须完成。
+- 真实 `platform-draft-direct sync` 前必须完成；`--dry-run` 不访问平台 API，但真实同步前仍要重新跑一次。
+- Wechatsync `platforms --auth` 和真实 `sync` 前必须完成。
+- 今日头条 Chrome 编辑器草稿流程打开页面前必须完成。
+
+`apply` 每次都会重新解析当前文章平台域名的最新 IPv4，并把新 IP 钉到本地网关。平台边缘 IP 变化时，重复运行本步骤；不要手工改 hosts 或 route。若直接执行和管理员授权 fallback 都失败，停止草稿发布流程并报告错误。
+
 ## Wechatsync 前置条件
 
 只有回退到 Wechatsync CLI 或执行浏览器页面提取时，才依次检查：

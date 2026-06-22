@@ -1,9 +1,10 @@
 # route-bypass
 
 Route selected publishing hosts through the local Wi-Fi gateway while keeping the
-rest of the Mac on the current Tailscale exit node. It is used before publishing
-to Xiaohongshu and WeChat Channels so those platform requests do not leave via
-the exit-node/proxy path.
+rest of the Mac on the current Tailscale exit node. It is the required network
+preflight for `platform-publish`: before a platform publish command touches a
+browser, API, upload page, or draft endpoint, refresh that platform's routes here
+so publishing traffic does not leave via the exit-node/proxy path.
 
 This is a host-route helper with a small managed DNS fallback. It resolves
 configured domains to current IPv4 addresses, then adds `/32` host routes
@@ -14,26 +15,45 @@ answers change.
 
 ## Usage
 
+Use the platform wrapper from skills and runbooks:
+
 ```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh shipinhao apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh bilibili apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh gongzhonghao apply
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh article-drafts apply
 ```
+
+`apply` is intentionally safe to rerun. It resolves the current platform IPs
+again, adds any newly returned IPs to the local gateway route set, and refreshes
+managed hosts when a platform needs that fallback. If a platform changes edge IPs
+between publishes, run the same `apply` again; do not hand-edit `/etc/hosts` or
+add ad hoc routes.
 
 Inspect current routes without changing anything:
 
 ```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh status
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu status
+```
+
+Resolve only:
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu resolve
+```
+
+The lower-level helper remains available for debugging:
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
 ```
 
 Remove routes previously managed by this tool:
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh remove
-```
-
-Resolve only:
-
-```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh resolve
 ```
 
 ## Configuration
@@ -47,9 +67,12 @@ Default domains live in:
 The default list currently includes:
 
 - Xiaohongshu creator/publish hosts.
-- Tencent Meeting web/MCP hosts and recording CDN hosts.
 - WeChat Channels publish/login hosts and the Tencent Cloud media host observed
   during video publish flows.
+- WeChat Official Account draft/publish API and cover image hosts.
+- Bilibili and Douyin creator/login/submit hosts.
+- Zhihu, Juejin, CSDN, Baijiahao, SegmentFault, and Toutiao article draft hosts.
+- Tencent Meeting web/MCP hosts and recording CDN hosts.
 
 The script uses `Wi-Fi` by default. Override when needed:
 

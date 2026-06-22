@@ -69,7 +69,7 @@ result = transcribe_audio(audio="clip.mp4", out_dir="var/zh_main/asr")  # 火山
 - `backends.py` —— 火山 / 阿里两后端，统一归一化词表，失败抛 `BackendError`。
 - `upload.py` —— 公网 / OSS 两上传通道。
 - `__init__.py` —— 编排：抽音频 → 上传 → 主后端→兜底 → 落 words.json。
-- `cli.py` / `__main__.py` —— 命令行入口。
+- `cli.py` / `__main__.py` —— 命令行入口；转录前自动 route-bypass 前置（`--skip-route-bypass` 可关）。
 
 > 去口水/承接句的**判断知识**在 `engines/video-slicer/references/字级去口水与承接句保护.md`；
 > 本模块只负责"把声音变成带字级时间戳的词表"，不做删词决策。

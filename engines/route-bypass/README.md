@@ -83,6 +83,8 @@ The default list currently includes:
 - Bilibili and Douyin creator/login/submit hosts.
 - Zhihu, Juejin, CSDN, Baijiahao, SegmentFault, and Toutiao article draft hosts.
 - Tencent Meeting web/MCP hosts and recording CDN hosts.
+- Cloud transcription (video-slicer) hosts: Volcengine `openspeech.bytedance.com`,
+  Aliyun `dashscope.aliyuncs.com`, and the OSS upload endpoints (platform `transcribe`).
 
 The script uses `Wi-Fi` by default. Override when needed:
 

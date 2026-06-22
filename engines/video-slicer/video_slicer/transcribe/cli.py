@@ -6,9 +6,12 @@
 
 默认：火山主、阿里兜底、公网上传。产出 words.json 可直接喂 twostage/resolve.load_paraformer_words。
 
-转录前自动跑 route-bypass，把国内 ASR API 域名（火山/阿里）钉到本地网关出口，避免整机挂
-海外 Tailscale exit node 时绕行变慢/触发地域限制（与发布同一套机制）。`--skip-route-bypass`
-可关。路由是优化项不是硬前置：钉不上只告警、不挡转录。
+转录前自动跑 route-bypass，把**整条转录链路**钉到本地网关出口（与发布同一套机制）：
+国内 ASR API（火山/阿里）+ public 上传站（uguu.se/0x0.st）。这等价于"手动关代理"那条
+能跑通的路径——上传公域音频 + 调 API 全程走本地，但 VPN 照开、不影响 LLM 翻墙。
+`--skip-route-bypass` 可关。路由是优化项不是硬前置：钉不上只告警、不挡转录。
+
+注：`--uploader oss`（阿里 OSS）凭证 2026-06 已过期，暂不可用；请用默认 public。
 """
 from __future__ import annotations
 

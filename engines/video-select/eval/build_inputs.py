@@ -13,7 +13,7 @@
 金标准没填好之前，本脚本用「种子」(--seed，默认 fixtures/<ds>/golden.json 这份旧端到端
 金标准，含全部中间产物) 兜底派生，让 owner 先看到每阶段输入长什么样；金标准填好后
 重跑本脚本即从认可的金标准派生（--chained），输入随之刷新——这就是可追溯：input 永远
-是某个明确上游的函数，不是手�-写的孤儿数据。
+是某个明确上游的函数，不是手写的孤儿数据。
 
 输入忠实于真实提示词所见（对齐 video_select/generate.py 与 dedup.py 的取数逻辑）：
   ② = {title,one_argument,hook_line,audience,mainstream} + 全场句（共享 words.json）

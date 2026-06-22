@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -45,6 +46,25 @@ def storage_state_for(args: argparse.Namespace) -> Path:
     return accounts.account_state_path(getattr(args, "account", None))
 
 
+def roles_from_args(args: argparse.Namespace) -> list[str]:
+    roles = list(getattr(args, "roles", None) or [])
+    if getattr(args, "test", False):
+        roles.append("test")
+    return accounts.normalize_roles(roles)
+
+
+def read_cookie_string(args: argparse.Namespace) -> str:
+    if getattr(args, "cookie_string", ""):
+        return args.cookie_string
+    if getattr(args, "cookie_file", ""):
+        if args.cookie_file == "-":
+            return sys.stdin.read()
+        return Path(args.cookie_file).expanduser().read_text(encoding="utf-8")
+    if getattr(args, "stdin", False):
+        return sys.stdin.read()
+    raise ValueError("provide --cookie-file, --cookie-string, or --stdin")
+
+
 def cmd_list_accounts(args: argparse.Namespace) -> None:
     items = accounts.list_accounts()
     default_state = accounts.account_state_path(None)
@@ -63,7 +83,12 @@ def cmd_list_accounts(args: argparse.Namespace) -> None:
 
 
 def cmd_add_account(args: argparse.Namespace) -> None:
-    output({"success": True, "account": accounts.add_account(args.slot, args.description or "")})
+    output(
+        {
+            "success": True,
+            "account": accounts.add_account(args.slot, args.description or "", roles=roles_from_args(args)),
+        }
+    )
 
 
 def cmd_remove_account(args: argparse.Namespace) -> None:
@@ -72,6 +97,10 @@ def cmd_remove_account(args: argparse.Namespace) -> None:
 
 def cmd_set_default_account(args: argparse.Namespace) -> None:
     output({"success": True, "account": accounts.set_default_account(args.slot)})
+
+
+def cmd_set_account_roles(args: argparse.Namespace) -> None:
+    output({"success": True, "account": accounts.set_account_roles(args.slot, roles_from_args(args))})
 
 
 def cmd_check_login(args: argparse.Namespace) -> None:
@@ -93,6 +122,21 @@ def cmd_login(args: argparse.Namespace) -> None:
         )
     )
     output(result, 0 if result.get("logged_in") else 1)
+
+
+def cmd_import_cookies(args: argparse.Namespace) -> None:
+    from tvp.core import import_cookies
+
+    result = asyncio.run(
+        import_cookies(
+            storage_state_for(args),
+            read_cookie_string(args),
+            headless=not args.headed,
+            verify=not args.no_verify,
+            clear_existing=not args.keep_existing,
+        )
+    )
+    output(result, 0 if args.no_verify or result.get("logged_in") else 1)
 
 
 def cmd_upload_video(args: argparse.Namespace) -> None:
@@ -131,6 +175,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub = subparsers.add_parser("add-account", help="add a named account slot")
     sub.add_argument("--slot", required=True)
     sub.add_argument("--description", default="")
+    sub.add_argument("--roles", nargs="*", default=[], help="account roles, e.g. test")
+    sub.add_argument("--test", action="store_true", help="mark this account as a test account")
     sub.set_defaults(func=cmd_add_account)
 
     sub = subparsers.add_parser("remove-account", help="remove a named account slot")
@@ -141,12 +187,26 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("--slot", required=True)
     sub.set_defaults(func=cmd_set_default_account)
 
+    sub = subparsers.add_parser("set-account-roles", help="replace account role tags")
+    sub.add_argument("--slot", required=True)
+    sub.add_argument("--roles", nargs="*", default=[], help="role tags; empty clears roles")
+    sub.add_argument("--test", action="store_true", help="include test role")
+    sub.set_defaults(func=cmd_set_account_roles)
+
     sub = subparsers.add_parser("check-login", help="check login state")
     sub.set_defaults(func=cmd_check_login)
 
     sub = subparsers.add_parser("login", help="scan login qrcode and save storage state")
     sub.add_argument("--timeout", type=int, default=180)
     sub.set_defaults(func=cmd_login)
+
+    sub = subparsers.add_parser("import-cookies", help="import manually copied cookies into the account profile")
+    sub.add_argument("--cookie-file", default="", help="file containing a Cookie header string; use - for stdin")
+    sub.add_argument("--cookie-string", default="", help="Cookie header string; prefer --cookie-file or --stdin")
+    sub.add_argument("--stdin", action="store_true", help="read Cookie header string from stdin")
+    sub.add_argument("--no-verify", action="store_true", help="save cookies without opening the publish page")
+    sub.add_argument("--keep-existing", action="store_true", help="do not clear existing cookies in this account profile")
+    sub.set_defaults(func=cmd_import_cookies)
 
     sub = subparsers.add_parser("upload-video", help="upload a video; default action saves draft")
     sub.add_argument("--file", required=True, help="absolute video file path")

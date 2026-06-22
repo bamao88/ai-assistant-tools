@@ -10,11 +10,14 @@
 
 登录态：
 
-- 账号凭证保存为 Playwright/patchright `storage_state` JSON。
+- 账号按 slot 隔离，凭证保存在 `var/state/tencent-video-publish/accounts/<slot>/`。
+- 每个 slot 同时维护真实 Chrome profile（`chrome-profile/`）和 Playwright/patchright `storage_state.json`。
 - 写入凭证时先写临时文件并校验 JSON，再替换正式文件。
 - 替换前保留最近的 `storage_state.json.bak_*` 备份。
 - `check-login` 会在凭证缺失或 JSON 损坏时自动尝试恢复最新有效备份。
 - 扫码登录成功后会再次打开发布页校验新凭证，校验通过才返回成功。
+- 手动拿到 Cookie header 时，用 `import-cookies` 写入对应 slot 的 profile 和 storage state；导入命令默认打开发布页验证，未登录会非零退出。
+- 当前约定：`aipm` 是默认账号，也是测试号；`zhanghe` 是张和视频号真实账号。
 
 初始化：
 
@@ -34,11 +37,24 @@ uv sync --python 3.11
 ```bash
 .venv/bin/python scripts/cli.py list-accounts
 .venv/bin/python scripts/cli.py add-account --slot wxp --description "WXP 视频号"
+.venv/bin/python scripts/cli.py set-account-roles --slot aipm --test
 .venv/bin/python scripts/cli.py --account wxp login --timeout 180
 .venv/bin/python scripts/cli.py --account wxp check-login
+.venv/bin/python scripts/cli.py --account wxp import-cookies --cookie-file /tmp/wxp.cookies
 .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "标题" --desc "简介" --tags AI 工具
 .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "测试" --fill-only --hold-open -1 --upload-timeout 90 --cover-timeout 10
 ```
+
+手动 Cookie 导入：
+
+```bash
+umask 077
+printf '%s' "$COOKIE_HEADER" > /tmp/wxp.cookies
+.venv/bin/python scripts/cli.py --account wxp import-cookies --cookie-file /tmp/wxp.cookies
+rm -f /tmp/wxp.cookies
+```
+
+不要把 Cookie 值写进文档、日志或提交。导入输出只会显示 cookie 名称、数量和登录验证结果，不回显 cookie 值。
 
 封面说明：
 

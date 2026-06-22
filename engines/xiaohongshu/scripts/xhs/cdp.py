@@ -100,7 +100,12 @@ class Page:
     def navigate(self, url: str) -> None:
         """导航到指定 URL。"""
         logger.info("导航到: %s", url)
-        self._send_session("Page.navigate", {"url": url})
+        try:
+            self._send_session("Page.navigate", {"url": url})
+        except CDPError as e:
+            if "等待 session 响应超时" not in str(e):
+                raise
+            logger.warning("Page.navigate 响应超时，继续等待页面状态校验: %s", url)
 
     def wait_for_load(self, timeout: float = 60.0) -> None:
         """等待页面加载完成（通过轮询 document.readyState）。"""

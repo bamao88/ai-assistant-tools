@@ -7,9 +7,14 @@ STATE_DIR="${XHS_ROUTE_STATE_DIR:-$HOME/.xhs-route-bypass}"
 STATE_FILE="$STATE_DIR/managed-ips.txt"
 STATE_NET_FILE="$STATE_DIR/managed-nets.txt"
 SERVICE="${XHS_ROUTE_SERVICE:-Wi-Fi}"
-STATIC_IPS="${XHS_ROUTE_STATIC_IPS:-23.59.252.178 23.59.252.200 23.59.252.201 23.59.252.202 23.59.252.203 184.27.185.201 184.27.185.213 212.129.158.241}"
-STATIC_NETS="${XHS_ROUTE_STATIC_NETS:-23.59.252.0/24 23.52.128.0/24 184.27.185.0/24 212.129.158.0/24}"
+STATIC_IPS="${XHS_ROUTE_STATIC_IPS:-23.59.252.178 23.59.252.200 23.59.252.201 23.59.252.202 23.59.252.203 96.7.244.134 96.7.244.142 96.7.244.153 96.7.244.158 184.27.185.201 184.27.185.213 212.129.158.241}"
+STATIC_NETS="${XHS_ROUTE_STATIC_NETS:-23.59.252.0/24 23.52.128.0/24 96.7.244.0/24 184.27.185.0/24 212.129.158.0/24}"
 PRUNE_STALE="${XHS_ROUTE_PRUNE_STALE:-0}"
+MANAGE_HOSTS="${XHS_ROUTE_MANAGE_HOSTS:-1}"
+HOSTS_FILE="${XHS_ROUTE_HOSTS_FILE:-/etc/hosts}"
+HOST_OVERRIDE_DOMAINS="${XHS_ROUTE_HOST_OVERRIDE_DOMAINS:-www.xiaohongshu.com edith.xiaohongshu.com ros-upload.xiaohongshu.com}"
+HOSTS_BEGIN="# BEGIN xhs-route-bypass managed hosts"
+HOSTS_END="# END xhs-route-bypass managed hosts"
 
 usage() {
   cat <<USAGE
@@ -25,6 +30,9 @@ Environment:
   XHS_ROUTE_STATE_DIR     State directory, default: $STATE_DIR
   XHS_ROUTE_STATIC_IPS    Extra IPv4 host routes to always manage
   XHS_ROUTE_STATIC_NETS   Extra IPv4 CIDR routes to always manage
+  XHS_ROUTE_MANAGE_HOSTS  Set to 0 to skip managed /etc/hosts overrides
+  XHS_ROUTE_HOST_OVERRIDE_DOMAINS
+                          Domains resolved via local gateway DNS into a managed hosts block
   XHS_ROUTE_PRUNE_STALE   Set to 1 to delete managed routes absent from the latest resolve
 USAGE
 }
@@ -84,6 +92,128 @@ resolve_domains() {
 
   awk '/^[0-9]+(\.[0-9]+){3}$/ { print }' "$tmp" | sort -u
   rm -f "$tmp"
+}
+
+resolve_domain_via_gateway() {
+  local gw="$1"
+  local domain="$2"
+  [[ -n "$gw" ]] || return 0
+  dig @"$gw" +time=2 +tries=1 +short A "$domain" 2>/dev/null \
+    | awk '/^[0-9]+(\.[0-9]+){3}$/ { print }' \
+    | sort -u
+}
+
+host_probe_url() {
+  local domain="$1"
+  if [[ "$domain" == "www.xiaohongshu.com" ]]; then
+    print "https://$domain/explore"
+  else
+    print "https://$domain/"
+  fi
+}
+
+host_ip_connects() {
+  local domain="$1"
+  local ip="$2"
+  local url
+  url="$(host_probe_url "$domain")"
+  curl --connect-timeout 2 --max-time 5 -sS -o /dev/null \
+    --resolve "$domain:443:$ip" "$url" >/dev/null 2>&1
+}
+
+managed_host_lines() {
+  local gw="$1"
+  local domain ip selected candidates
+
+  for domain in ${(z)HOST_OVERRIDE_DOMAINS}; do
+    [[ -n "$domain" ]] || continue
+    candidates="$(resolve_domain_via_gateway "$gw" "$domain")"
+    selected=""
+    while read -r ip; do
+      [[ -n "$ip" ]] || continue
+      if host_ip_connects "$domain" "$ip"; then
+        selected="$ip"
+        break
+      fi
+      [[ -n "$selected" ]] || selected="$ip"
+    done <<<"$candidates"
+    [[ -n "$selected" ]] || continue
+    printf '%-15s %s\n' "$selected" "$domain"
+  done
+}
+
+strip_managed_hosts() {
+  awk -v begin="$HOSTS_BEGIN" -v end="$HOSTS_END" '
+    $0 == begin { skip = 1; next }
+    $0 == end { skip = 0; next }
+    !skip { print }
+  ' "$HOSTS_FILE"
+}
+
+write_hosts_file() {
+  local src="$1"
+  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+    cat "$src" >"$HOSTS_FILE"
+  else
+    sudo tee "$HOSTS_FILE" <"$src" >/dev/null
+  fi
+}
+
+flush_dns_cache() {
+  dscacheutil -flushcache >/dev/null 2>&1 || true
+  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+    killall -HUP mDNSResponder >/dev/null 2>&1 || true
+  else
+    sudo killall -HUP mDNSResponder >/dev/null 2>&1 || true
+  fi
+}
+
+apply_managed_hosts() {
+  [[ "$MANAGE_HOSTS" == "1" ]] || return 0
+  require_cmd curl
+
+  local gw="$1"
+  local lines base block new_hosts
+  lines="$(mktemp)"
+  base="$(mktemp)"
+  block="$(mktemp)"
+  new_hosts="$(mktemp)"
+
+  managed_host_lines "$gw" >"$lines"
+  strip_managed_hosts >"$base"
+
+  if [[ -s "$lines" ]]; then
+    {
+      print "$HOSTS_BEGIN"
+      cat "$lines"
+      print "$HOSTS_END"
+    } >"$block"
+
+    print "applying managed host overrides:"
+    sed 's/^/  /' "$lines"
+    {
+      cat "$base"
+      print ""
+      cat "$block"
+    } >"$new_hosts"
+  else
+    print "no managed host overrides resolved"
+    cat "$base" >"$new_hosts"
+  fi
+
+  write_hosts_file "$new_hosts"
+  flush_dns_cache
+  rm -f "$lines" "$base" "$block" "$new_hosts"
+}
+
+remove_managed_hosts() {
+  [[ -f "$HOSTS_FILE" ]] || return 0
+  local base
+  base="$(mktemp)"
+  strip_managed_hosts >"$base"
+  write_hosts_file "$base"
+  flush_dns_cache
+  rm -f "$base"
 }
 
 route_targets() {
@@ -206,6 +336,8 @@ apply_routes() {
     rm -f "$nets" "$old_nets"
   fi
 
+  apply_managed_hosts "$gw"
+
   print "route decisions:"
   while read -r ip; do
     [[ -n "$ip" ]] || continue
@@ -259,6 +391,21 @@ status_routes() {
     print "  none"
   fi
 
+  print "managed host overrides:"
+  local host_state
+  host_state="$(mktemp)"
+  awk -v begin="$HOSTS_BEGIN" -v end="$HOSTS_END" '
+    $0 == begin { in_block = 1; next }
+    $0 == end { in_block = 0; next }
+    in_block && NF { print }
+  ' "$HOSTS_FILE" 2>/dev/null >"$host_state" || true
+  if [[ -s "$host_state" ]]; then
+    sed 's/^/  /' "$host_state"
+  else
+    print "  none"
+  fi
+  rm -f "$host_state"
+
   print "route decisions for route target IPv4:"
   if [[ -s "$resolved" ]]; then
     while read -r ip; do
@@ -282,6 +429,7 @@ remove_routes() {
   [[ -s "$state" || -s "$net_state" ]] || {
     print "no managed routes recorded at $STATE_FILE"
     rm -f "$state" "$net_state"
+    remove_managed_hosts
     return
   }
 
@@ -304,6 +452,7 @@ remove_routes() {
   fi
 
   rm -f "$STATE_FILE" "$STATE_NET_FILE" "$state" "$net_state"
+  remove_managed_hosts
 }
 
 resolve_only() {

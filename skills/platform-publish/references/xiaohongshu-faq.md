@@ -18,7 +18,7 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
 ```
 
-把小红书相关 IP 和已观测上传 CDN 网段钉到本地网关出口，上传域名才通。**这一步通了，视频/图片秒传，后面标题/正文/标签/定时/封面才会一路顺。** 无 TTY 报 `sudo: a password is required` 时走 `osascript ... with administrator privileges` 兜底（见 `xiaohongshu.md`「网络分流前置步骤」）。
+把小红书相关 IP 和已观测上传 CDN 网段钉到本地网关出口；当 Tailscale DNS 把 `www.xiaohongshu.com` / `ros-upload.xiaohongshu.com` 解析到坏边缘时，`route-bypass` 还会写一个带 BEGIN/END 标记的受控 `/etc/hosts` 块，改用本地网关 DNS 返回且可连接的边缘。**这一步通了，视频/图片秒传，后面标题/正文/标签/定时/封面才会一路顺。** 无 TTY 报 `sudo: a password is required` 时走 `osascript ... with administrator privileges` 兜底（见 `xiaohongshu.md`「网络分流前置步骤」）。
 
 **自检**：不要只看 `ping ros-upload.xiaohongshu.com`。上传分片可能走 Akamai/Tencent 的轮换边缘 IP，单域名 ping 正常也可能上传 0%。必须看完整路由校验：
 
@@ -30,7 +30,7 @@ tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
   ros-upload-d5.xhscdn.com ros-upload-d6.xhscdn.com ros-upload-d7.xhscdn.com ros-upload-d8.xhscdn.com
 ```
 
-`route decisions for route target IPv4` 中任意上传 IP 出现 `interface=utun*` 或 `destination=default`，都说明分流没生效，别往下走。2026-06-22 已观测到会导致上传 0% 的边缘包括 `23.59.252.*`、`184.27.185.*`、`212.129.158.241`。
+`route decisions for route target IPv4` 中任意小红书主页、创作者中心或上传 IP 出现 `interface=utun*` 或 `destination=default`，都说明分流没生效，别往下走。CLI 还会实际探测 `https://www.xiaohongshu.com/explore` 和 `https://ros-upload.xiaohongshu.com/`；只看路由表不够，因为系统 DNS 曾把上传根域解析到 `43.159.95.157`，虽然路由走 `en1` 但 TCP 超时，导致上传 0%。2026-06-22 已观测到会导致上传 0% 或页面打不开的边缘包括 `23.59.252.*`、`96.7.244.*`、`184.27.185.*`、`212.129.158.241`、`43.159.95.157`。
 
 页面停留超过 ~30 分钟再点发布前，重跑一次 apply（路由会过期）。
 
@@ -54,22 +54,22 @@ realpath "<可能是软链的路径>"   # 用解析后的真实绝对路径去 -
 
 ---
 
-## #4 封面：用「已经开着的发布页」那一步改，别动引擎
+## #4 封面：视频发布必须走引擎内置封面步骤
 
-改封面走当前浏览器页面的原生交互：**修改封面 → 上传 → 确定**，在已打开的发布页上点。不要试图用 CLI/引擎重走一遍封面逻辑，会和页面状态打架。
+视频发布时 `--cover` 是必填项。正常流程直接用 `fill-publish-video` / `publish-video --cover ...`，引擎会在同一个发布页完成 **修改封面 → 上传 → 确定 → 等待发布按钮可点**。不要再调用 `/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/tmp/...` 下的临时封面脚本。
 
 ---
 
-## #5 验证发布流程：用 fill，**永远不点发布**
+## #5 验证发布流程：测试用 fill；正式发布才用一键入口
 
-要验证「能不能发出去」时，跑到填表（`fill-publish` / `fill-publish-video` / 长文走到 `next-step` 发布页）即可，**绝不调用 `click-publish` / `publish` / `publish-video`**。
+要验证「能不能发出去」时，跑到填表（`fill-publish` / `fill-publish-video` / 长文走到 `next-step` 发布页）即可，测试号演练不点击最终发布。
 
-- 测试 / 验证 / 演练 = 走到发布页就停，报告「测试通过」。
-- 图文/视频的真实发布由**用户手动点**发布按钮；只有长文「正式模式」按 `xiaohongshu.md` 明确放行才自动 `click-publish`。
+- 测试 / 验证 / 演练 = 走到发布页、确认按钮可点就停，报告「测试通过」。
+- 用户明确确认正式发布/定时发布，且测试号稳定性门槛已满足后，视频可逐条使用 `publish-video` 一键正式入口。多条笔记是队列，不是并发；一条成功并写状态后才进入下一条。
 - 用户中途取消 → 必须 `save-draft`，不要直接关 tab。
 
 ---
 
 ## 一句话排查顺序
 
-传不上去 → **先看 #1（route-bypass status 所有上传目标都不能走 `utun*`）**，九成是它 → 再看 #2 路径是不是软链 → 都没问题再怀疑登录态 / 平台本身。
+传不上去 → **先看 #1（route-bypass status 不能走 `utun*`，CLI host probe 必须通过）**，九成是它 → 再看 #2 路径是不是软链 → 都没问题再怀疑登录态 / 平台本身。

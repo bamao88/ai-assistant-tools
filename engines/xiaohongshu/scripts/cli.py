@@ -79,6 +79,8 @@ logging.basicConfig(
 logger = logging.getLogger("xhs-cli")
 
 XHS_ROUTE_VERIFY_DOMAINS = [
+    "xiaohongshu.com",
+    "www.xiaohongshu.com",
     "creator.xiaohongshu.com",
     "edith.xiaohongshu.com",
     "ros-upload.xiaohongshu.com",
@@ -91,6 +93,10 @@ XHS_ROUTE_VERIFY_DOMAINS = [
     "ros-upload-d6.xhscdn.com",
     "ros-upload-d7.xhscdn.com",
     "ros-upload-d8.xhscdn.com",
+]
+XHS_ROUTE_PROBE_URLS = [
+    "https://www.xiaohongshu.com/explore",
+    "https://ros-upload.xiaohongshu.com/",
 ]
 
 
@@ -233,6 +239,44 @@ def _find_nonlocal_route_decisions(status_output: str) -> list[str]:
     return bad
 
 
+def _probe_xhs_https_hosts(timeout: int = 8) -> list[str]:
+    """Probe critical hosts after routing.
+
+    A route can point at the local gateway while macOS/Chrome still resolves the
+    host through Tailscale DNS to a dead edge IP. The route table alone would look
+    correct, but uploads sit at 0%. Curl exits 0 for HTTP 401/403, which is fine:
+    we only need to prove TCP/TLS reached the selected host.
+    """
+    bad: list[str] = []
+    for url in XHS_ROUTE_PROBE_URLS:
+        result = subprocess.run(
+            [
+                "curl",
+                "--connect-timeout",
+                "3",
+                "--max-time",
+                str(timeout),
+                "-sS",
+                "-o",
+                "/dev/null",
+                "-w",
+                "remote_ip=%{remote_ip} http_code=%{http_code} time_connect=%{time_connect} time_total=%{time_total}",
+                url,
+            ],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=timeout + 2,
+            check=False,
+        )
+        if result.returncode != 0:
+            bad.append(
+                f"{url} probe failed rc={result.returncode} "
+                f"stdout={result.stdout.strip()} stderr={_tail_text(result.stderr, 300)}"
+            )
+    return bad
+
+
 def _verify_xhs_route_bypass() -> dict:
     result = _run_route_bypass_status()
     if result.returncode != 0:
@@ -243,10 +287,13 @@ def _verify_xhs_route_bypass() -> dict:
             "stderr": _tail_text(result.stderr),
         }
     bad = _find_nonlocal_route_decisions(result.stdout)
+    probe_failures = _probe_xhs_https_hosts()
     return {
-        "ok": not bad,
+        "ok": not bad and not probe_failures,
         "bad_routes": bad[:20],
+        "probe_failures": probe_failures[:10],
         "checked_domains": XHS_ROUTE_VERIFY_DOMAINS,
+        "probed_urls": XHS_ROUTE_PROBE_URLS,
     }
 
 

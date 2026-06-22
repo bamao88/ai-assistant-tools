@@ -84,6 +84,9 @@ def fill_publish_video_form(page: Page, content: PublishVideoContent) -> None:
         set_video_cover(page, content.cover_path)
         logger.info("视频封面已设置: %s", content.cover_path)
 
+    _wait_for_submit_publish_button(page, timeout=180.0)
+    logger.info("视频发布按钮已可点击")
+
 
 def click_publish_video_button(page: Page) -> None:
     """点击视频发布按钮。

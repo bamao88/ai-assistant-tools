@@ -5,9 +5,12 @@ rest of the Mac on the current Tailscale exit node. It is used before publishing
 to Xiaohongshu and WeChat Channels so those platform requests do not leave via
 the exit-node/proxy path.
 
-This is a host-route helper, not a true domain router. It resolves configured
-domains to current IPv4 addresses, then adds `/32` host routes through the local
-gateway. Run it again when DNS answers change.
+This is a host-route helper with a small managed DNS fallback. It resolves
+configured domains to current IPv4 addresses, then adds `/32` host routes
+through the local gateway. For Xiaohongshu publish-critical hosts, it can also
+write a marked `/etc/hosts` block using local-gateway DNS answers when the
+system resolver is pinned to the Tailscale DNS path. Run it again when DNS
+answers change.
 
 ## Usage
 
@@ -58,12 +61,24 @@ State is stored outside the repo:
 
 ```text
 ~/.xhs-route-bypass/managed-ips.txt
+~/.xhs-route-bypass/managed-nets.txt
 ```
+
+The managed hosts block is written directly in `/etc/hosts`:
+
+```text
+# BEGIN xhs-route-bypass managed hosts
+...
+# END xhs-route-bypass managed hosts
+```
+
+Do not add manual one-off hosts entries for publishing domains. Use `apply` to
+refresh the block and `remove` to delete it.
 
 ## Notes
 
 - `apply` and `remove` need administrator privileges because they edit the macOS
-  route table.
+  route table and the managed hosts block.
 - Tailscale should have LAN access enabled when an exit node is active:
   `tailscale set --exit-node-allow-lan-access=true`.
 - Only IPv4 is handled. The current Wi-Fi network has no IPv6 router, so this is

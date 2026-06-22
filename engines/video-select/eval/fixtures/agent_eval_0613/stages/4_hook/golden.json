@@ -1,6 +1,1038 @@
 {
-  "_status": "待填 · TODO_FILL_GOLDEN",
+  "_status": "草稿 · 待 owner 核（acceptable 来自 AI hook_options；best/must_keep_terms 需人工）",
+  "_seeded": true,
   "_contract": "eval/contracts/4_hook.md",
-  "_note": "金标准由 owner 整理后填入；字段与判分口径见 _contract。填好后重跑 build_inputs.py --chained。",
-  "items": []
+  "_note": "钩子无唯一答案：本草稿把 AI 跑出的 hook_options 当可接受集合种子。owner 需：①确认/增删 acceptable；②挑 best_stitched；③补 must_keep_terms（这条题不许丢的限定词/数字）。改完删 _seeded 即冻结。",
+  "items": [
+    {
+      "idx": 1,
+      "acceptable": [
+        {
+          "stitched": "你们500万的项目拿给我做，我给你做100万。不是因为卷，是因为同行还活在上一个时代",
+          "fragments": [
+            {
+              "sid": 1890,
+              "text": "你们500万的项目拿给我做，我给你做100万"
+            },
+            {
+              "sid": 1895,
+              "text": "不是，是因为同行还活在上一个时代，我进入下一个时代了"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "五百万、八百万、一千万太贵了，其实企业落地AI，可能一共就花一百万",
+          "fragments": [
+            {
+              "sid": 142,
+              "text": "五百万、八百万、一千万，哇，都太贵了"
+            },
+            {
+              "sid": 145,
+              "text": "可能整个公司一共花一百万"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "但其实企业需要的东西非常简单，部署个Codex，打通知识就行了",
+          "fragments": [
+            {
+              "sid": 143,
+              "text": "但其实企业需要的东西非常简单"
+            },
+            {
+              "sid": 144,
+              "text": "你帮他部署Codex，你帮他打通知识和应用"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "你们500万的项目拿给我做，我给你做100万。不是因为卷，是因为同行还活在上一个时代",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 2,
+      "acceptable": [
+        {
+          "stitched": "CODEX能解决百分之九十，低代码只能解决百分之三十，差了五倍到十倍",
+          "fragments": [
+            {
+              "sid": 40,
+              "text": "CODEX能解决百分之九十"
+            },
+            {
+              "sid": 41,
+              "text": "差了五倍到十倍"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "真的真的真的不要做低代码了，完全干不过Agent的",
+          "fragments": [
+            {
+              "sid": 39,
+              "text": "真的真的真的不要做低代码了"
+            },
+            {
+              "sid": 39,
+              "text": "完全干不过Agent的"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "在95%以上的场景下，不是一个量级的",
+          "fragments": [
+            {
+              "sid": 43,
+              "text": "在95%以上的场景下"
+            },
+            {
+              "sid": 42,
+              "text": "不是一个量级的"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "CODEX能解决百分之九十，低代码只能解决百分之三十，差了五倍到十倍",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 3,
+      "acceptable": [
+        {
+          "stitched": "美国封禁大模型越狠，我越兴奋——因为这让90%的程序员直接掉队",
+          "fragments": [
+            {
+              "sid": 122,
+              "text": "美国封禁前沿大模型越严重"
+            },
+            {
+              "sid": 125,
+              "text": "他把门槛变高了，那么百分之九十的 BAT 大厂的程序员"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "几百美元搞定访问问题，你就掌握了一个核弹",
+          "fragments": [
+            {
+              "sid": 132,
+              "text": "我掌握了一个核弹"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "越不普及，差距越大——你搞定了访问，你就赢了",
+          "fragments": [
+            {
+              "sid": 136,
+              "text": "越是不普及，认知差异越大"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "美国封禁大模型越狠，我越兴奋——因为这让90%的程序员直接掉队",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 4,
+      "acceptable": [
+        {
+          "stitched": "遇意外就卡死？它能应对一切异常",
+          "fragments": [
+            {
+              "sid": 765,
+              "text": "一旦遇到了意外，是不是就卡死了？"
+            },
+            {
+              "sid": 908,
+              "text": "他真的能应对一切异常"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "脚本遇意外就卡死？它能自己解决崩溃",
+          "fragments": [
+            {
+              "sid": 765,
+              "text": "一旦遇到了意外，是不是就卡死了？"
+            },
+            {
+              "sid": 771,
+              "text": "他就能自己去解决这个崩溃的问问题"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "Excel崩溃、脚本解不了、AI也不行？这时才能看出这套组合的价值",
+          "fragments": [
+            {
+              "sid": 813,
+              "text": "我的 Excel 崩溃"
+            },
+            {
+              "sid": 818,
+              "text": "脚本都解不了了，a技能也没办法了，只能用鼠标去点击"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "遇意外就卡死？它能应对一切异常",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 5,
+      "acceptable": [
+        {
+          "stitched": "传统的脚本已死，AI 的看护脚本永生。程序员总觉得自己必须解决一切自动化问题——实际上让 Agent 来管就完了。",
+          "fragments": [
+            {
+              "sid": 61,
+              "text": "传统的脚本已死，AI 的看护脚本永生"
+            },
+            {
+              "sid": 927,
+              "text": "这是一个很容易陷入的误区，就是我们太容易认为脚本是能解决一切问题的，而且程序员会给自己设立一个任务，我必须解决它"
+            },
+            {
+              "sid": 930,
+              "text": "实际上不是的，实际上让 Agent 帮你去管就完了"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "人类脚本遇到意外就卡死？Agent每隔5秒检查，崩了直接改脚本重新跑——让它自己管自己。",
+          "fragments": [
+            {
+              "sid": 765,
+              "text": "人类纯人类的脚本是什么呢？就是一旦遇到了意外，是不是就卡死了？"
+            },
+            {
+              "sid": 770,
+              "text": "他每隔5秒钟看一下这个现场有没有崩掉，崩掉了，他就说，我来改一下这个脚本，然后改完了以后，我重新运行一下这个脚本"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "传统的脚本已死，AI 的看护脚本永生——它能应对一切异常，你只管给它工具，剩下的让它自己迭代。",
+          "fragments": [
+            {
+              "sid": 61,
+              "text": "传统的脚本已死，AI 的看护脚本永生"
+            },
+            {
+              "sid": 908,
+              "text": "他真的能应对一切异常，只要你想让他应对，你给他合理的工具，然后你让他一直去打磨一个自动化运行的脚本"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "传统的脚本已死，AI 的看护脚本永生。程序员总觉得自己必须解决一切自动化问题——实际上让 Agent 来管就完了。",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 6,
+      "acceptable": [
+        {
+          "stitched": "评测机质量没提上去，花了很多时间在踩坑——血泪教训啊",
+          "fragments": [
+            {
+              "sid": 169,
+              "text": "血泪教训啊"
+            },
+            {
+              "sid": 167,
+              "text": "评测机的质量和清晰度没有提上去，然后我们就花了很多时间在踩坑啊"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "评测的优先级要大于训练——很多人搞反了",
+          "fragments": [
+            {
+              "sid": 172,
+              "text": "注意评测的优先级要大于训练的优先级"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "评测的终极产出不是评测，是迭代",
+          "fragments": [
+            {
+              "sid": 203,
+              "text": "评测的终极产出是这个迭代，不是评测本身"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "评测机质量没提上去，花了很多时间在踩坑——血泪教训啊",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 7,
+      "acceptable": [
+        {
+          "stitched": "十个 good case 的好感，远大于……一个 bad case 的痛感？",
+          "fragments": [
+            {
+              "sid": 463,
+              "text": "十个 good case 的好感"
+            },
+            {
+              "sid": 462,
+              "text": "远大于"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "一个坏的扣10分，十个好的只能加10分——用户感受不平均",
+          "fragments": [
+            {
+              "sid": 465,
+              "text": "你出现一个坏的"
+            },
+            {
+              "sid": 465,
+              "text": "一下就给你扣10分"
+            },
+            {
+              "sid": 466,
+              "text": "你还只能给你加10分"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "用户感受不平均——为什么评测集要均匀抽样就是错的？",
+          "fragments": [
+            {
+              "sid": 467,
+              "text": "用户的感受是不平均的"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "十个 good case 的好感，远大于……一个 bad case 的痛感？",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 8,
+      "acceptable": [
+        {
+          "stitched": "让 Agent 来触发和监管这个传统的 Python 代码",
+          "fragments": [
+            {
+              "sid": 86,
+              "text": "让 Agent 来触发和监管这个传统的 Python 代码"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "只要你让 Agent 来包住这个软件",
+          "fragments": [
+            {
+              "sid": 110,
+              "text": "包住这个软件"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "人只跟 Agent 说话，不需要跟代码说话",
+          "fragments": [
+            {
+              "sid": 92,
+              "text": "我直接让这个 agent 我与这个 agent 作为一个联系的入口"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "让 Agent 来触发和监管这个传统的 Python 代码",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 9,
+      "acceptable": [
+        {
+          "stitched": "我做了两个agent：一个每天筛查日志提交issue，一个自动去修",
+          "fragments": [
+            {
+              "sid": 1576,
+              "text": "我做了两个agent"
+            },
+            {
+              "sid": 1576,
+              "text": "一个agent每天筛查日志，提交issue"
+            },
+            {
+              "sid": 1600,
+              "text": "修复，对吧？"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "测出来bad case，直接提github issue，再让agent去修",
+          "fragments": [
+            {
+              "sid": 1579,
+              "text": "测出来这个 bad case"
+            },
+            {
+              "sid": 1581,
+              "text": "直接去把问题提到 github issue 上"
+            },
+            {
+              "sid": 1582,
+              "text": "再让另外一个 agent 根据 issue 的程度直接去修复"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "效果非常好，已经运行好几周了",
+          "fragments": [
+            {
+              "sid": 1589,
+              "text": "效果非常好"
+            },
+            {
+              "sid": 1588,
+              "text": "它就每天就在这里运行，已经运行好几周了"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "我做了两个agent：一个每天筛查日志提交issue，一个自动去修",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 10,
+      "acceptable": [
+        {
+          "stitched": "评测的终极产出是这个迭代，不是评测本身",
+          "fragments": [
+            {
+              "sid": 203,
+              "text": "评测的终极产出是这个迭代，不是评测本身"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "特斯拉自动驾驶怎么做数据闭环？两周就能迭代一版",
+          "fragments": [
+            {
+              "sid": 210,
+              "text": "特斯拉自动驾驶怎么做数据闭环"
+            },
+            {
+              "sid": 212,
+              "text": "从我发现一个场景的不足"
+            },
+            {
+              "sid": 213,
+              "text": "两周就能迭代一版"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "什么叫互联网思想？互联网思想就是要迭代",
+          "fragments": [
+            {
+              "sid": 207,
+              "text": "什么叫互联网思想"
+            },
+            {
+              "sid": 209,
+              "text": "互联网思想就是要迭代"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "评测的终极产出是这个迭代，不是评测本身",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 11,
+      "acceptable": [
+        {
+          "stitched": "固定住前五轮，运行第六轮，跑这一个query就行？",
+          "fragments": [
+            {
+              "sid": 1182,
+              "text": "固定住前五轮，运行第六轮"
+            },
+            {
+              "sid": 1183,
+              "text": "跑这一个 query 就行"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "不需要真跑多轮，只需要评单轮的，就能测出多轮能力？",
+          "fragments": [
+            {
+              "sid": 1189,
+              "text": "我们只需要评单轮的"
+            },
+            {
+              "sid": 1190,
+              "text": "就能论证大模型在多轮的表现"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "50万token上下文，一次query调用，就能测多轮能力？",
+          "fragments": [
+            {
+              "sid": 1245,
+              "text": "前五轮的历史日志的上下文打到50万 token"
+            },
+            {
+              "sid": 1248,
+              "text": "一次 query 调用"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "固定住前五轮，运行第六轮，跑这一个query就行？",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 12,
+      "acceptable": [
+        {
+          "stitched": "三分和四分，大模型根本分不清？一招解决，全部变成是和否",
+          "fragments": [
+            {
+              "sid": 1018,
+              "text": "三分和四分的差异，大模型在打分的时候很难有一个持续一致的标准"
+            },
+            {
+              "sid": 1027,
+              "text": "所有的评分都可以变成是和否"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "别让大模型打1-5分了，只要拆得够细，所有评分都能变成是和否",
+          "fragments": [
+            {
+              "sid": 1027,
+              "text": "所有的评分都可以变成是和否"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "翻译质量别打1~5分，拆成三个问题是和非，准确率飙升",
+          "fragments": [
+            {
+              "sid": 1022,
+              "text": "翻译质量的1~5分，就不要让他打1~5分"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "三分和四分，大模型根本分不清？一招解决，全部变成是和否",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 13,
+      "acceptable": [
+        {
+          "stitched": "让Agent开天眼，知其然也知其所以然，它裁判才准。",
+          "fragments": [
+            {
+              "sid": 1042,
+              "text": "开天天眼"
+            },
+            {
+              "sid": 1041,
+              "text": "知其然也知其所以然"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "你给他的活很小，但给他的信息源很大，他裁判就准得像人。",
+          "fragments": [
+            {
+              "sid": 1114,
+              "text": "给他任务很小，但信息量很大"
+            },
+            {
+              "sid": 1116,
+              "text": "给他信息量和信息源很大"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "给它看源码，它裁判真跟人一样，啥都能测。",
+          "fragments": [
+            {
+              "sid": 1117,
+              "text": "他真的跟人一样"
+            },
+            {
+              "sid": 1118,
+              "text": "啥都能测，都能给你一个还不错的裁判打分"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "让Agent开天眼，知其然也知其所以然，它裁判才准。",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 14,
+      "acceptable": [
+        {
+          "stitched": "你的评测报告，能直接问「这个 case 为什么会失败」吗？",
+          "fragments": [
+            {
+              "sid": 1446,
+              "text": "这个 case 为什么会失败？"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "我把 Claude Agent SDK 直接嵌入评测平台，让每个 case 都能回答「为什么会失败」",
+          "fragments": [
+            {
+              "sid": 1443,
+              "text": "我直接把 claude agent sdk 嵌入到了我的评测平台的"
+            },
+            {
+              "sid": 1446,
+              "text": "这个 case 为什么会失败"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "最牛逼的评测报告——每个 case 旁边都能直接问 Agent：为什么失败？",
+          "fragments": [
+            {
+              "sid": 1464,
+              "text": "最牛逼的评测报告是不是应该长这样"
+            },
+            {
+              "sid": 1446,
+              "text": "这个 case 为什么会失败"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "你的评测报告，能直接问「这个 case 为什么会失败」吗？",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 15,
+      "acceptable": [
+        {
+          "stitched": "不要超过一个星期，前端后端打通所有，一个星期就能搞定",
+          "fragments": [
+            {
+              "sid": 1901,
+              "text": "不要超过一个星期就应该能做出来"
+            },
+            {
+              "sid": 1902,
+              "text": "前端后端打通所有，一个星期就能搞定"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "产品经理完全可以自己搭一个完整的科学评测平台，Grader建设再也不用依赖研发了",
+          "fragments": [
+            {
+              "sid": 1766,
+              "text": "产品经理完全可以自己搭一个完整的科学评测的"
+            },
+            {
+              "sid": 1759,
+              "text": "Grader建设，产品经理还要依赖研发，现在都可以直接让AI帮你做"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "大厂里专门做内部平台的产品经理和研发都要完蛋了，AI coding时代最适合自己开发",
+          "fragments": [
+            {
+              "sid": 1776,
+              "text": "专门做后台的那些平台的产品经理和研发都要完蛋了"
+            },
+            {
+              "sid": 1779,
+              "text": "内部系统自己开发是非常适合AI coding时代的"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "不要超过一个星期，前端后端打通所有，一个星期就能搞定",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 16,
+      "acceptable": [
+        {
+          "stitched": "我就是要让更真实的东西体现在评测集里，只有这样才能让评测集略微超前于训练集",
+          "fragments": [
+            {
+              "sid": 299,
+              "text": "我就是要让更真实的东西体现在评测集里"
+            },
+            {
+              "sid": 301,
+              "text": "只有这样，我才能让我的评测集略微超前于训练集"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "训练集90%合成，评测集70%真实——这是做AI评测的反常识",
+          "fragments": [
+            {
+              "sid": 294,
+              "text": "百分之七十以上的真实数据"
+            },
+            {
+              "sid": 296,
+              "text": "合成数据"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "你用假相册测AI搜索，根本测不出用户手机上到底是什么体验",
+          "fragments": [
+            {
+              "sid": 307,
+              "text": "你这么做的话，你根本就测不出来咱们这个相册的 AI 搜索到底搜的是什么"
+            },
+            {
+              "sid": 320,
+              "text": "测出来的效果就特别特别能体现我们做的 AI 相册算法到底做得好不好"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "我就是要让更真实的东西体现在评测集里，只有这样才能让评测集略微超前于训练集",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 17,
+      "acceptable": [
+        {
+          "stitched": "最后就完蛋了，知道吧？这个做法在工业界里不能代表就是对的。",
+          "fragments": [
+            {
+              "sid": 245,
+              "text": "最后就完蛋了"
+            },
+            {
+              "sid": 248,
+              "text": "这个做法在工业界里不能代表就是对的"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "这个是很多学术圈的人都没想明白的事——同一个数据源也会产生过拟合问题。",
+          "fragments": [
+            {
+              "sid": 241,
+              "text": "很多学术圈的人都没想明白的事"
+            },
+            {
+              "sid": 257,
+              "text": "同一个数据源也会产生过拟合问题"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "见过的东西拿来评？不是，我跟大家讲正确的做法是什么。",
+          "fragments": [
+            {
+              "sid": 249,
+              "text": "见过的东西拿来评"
+            },
+            {
+              "sid": 259,
+              "text": "我跟大家讲正确的做法是什么"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "最后就完蛋了，知道吧？这个做法在工业界里不能代表就是对的。",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 18,
+      "acceptable": [
+        {
+          "stitched": "你想解决 AI 落地产品的效果问题，你最佳的投入产出比就是——花时间坐在那里看一百个。",
+          "fragments": [
+            {
+              "sid": 1293,
+              "text": "你想解决 AI 落地产品的效果问题，你最佳的投入产出比就是"
+            },
+            {
+              "sid": 1293,
+              "text": "花时间坐在那里看一百个"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "看10个、50个、100个、200个 case，你都会有不同的认知——但大多数人在10个就放弃了。",
+          "fragments": [
+            {
+              "sid": 1298,
+              "text": "看10个的时候，看50个的时候，看100个的时候，看200个的时候"
+            },
+            {
+              "sid": 1299,
+              "text": "你都会有不同的认知"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "评测做到极致，就是你像了解自己孩子性格一样了解这个 Agent。",
+          "fragments": [
+            {
+              "sid": 1300,
+              "text": "你要达到你就像了解一个孩子的性格一样"
+            },
+            {
+              "sid": 1301,
+              "text": "了解这个 agent 了解这个模型"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "你想解决 AI 落地产品的效果问题，你最佳的投入产出比就是——花时间坐在那里看一百个。",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 19,
+      "acceptable": [
+        {
+          "stitched": "那怎么能暴露出有价值的场景呢？",
+          "fragments": [
+            {
+              "sid": 411,
+              "text": "那怎么能暴露出有价值的场景呢？"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "特斯拉的影子模式就是一个非常典型的",
+          "fragments": [
+            {
+              "sid": 403,
+              "text": "特斯拉的影子模式就是一个非常典型的"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "用户满意不满意，大模型在后面做排裁判，不就能区分出来哪些是轻量模型效果不好的 case 了吗？",
+          "fragments": [
+            {
+              "sid": 430,
+              "text": "用户满意不满意，大模型在后面做排裁判，不就能区分出来哪些是轻量模型效果不好的 case 了吗？"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "那怎么能暴露出有价值的场景呢？",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 20,
+      "acceptable": [
+        {
+          "stitched": "所以 Agent 反而比 LM 省 token？因为它可以抽样、现场写脚本，不用全读完。",
+          "fragments": [
+            {
+              "sid": 1730,
+              "text": "所以 Agent 型的反而比 LM 省 token"
+            },
+            {
+              "sid": 1732,
+              "text": "因为它可以抽样，它现场写脚本，它不用全读完"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "人类写的日志筛选脚本，永远难以穷举新出现的报错规律。",
+          "fragments": [
+            {
+              "sid": 1734,
+              "text": "人类的代码有时候难以穷尽"
+            },
+            {
+              "sid": 1735,
+              "text": "穷举新出现的，报错的规律"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "Agent现场写代码、写脚本，还能持续迭代，这是一个很神奇的事情。",
+          "fragments": [
+            {
+              "sid": 1745,
+              "text": "用 Agent 的现场写代码，写脚本，然后还能持续迭代，是一个很神奇的事情"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "所以 Agent 反而比 LM 省 token？因为它可以抽样、现场写脚本，不用全读完。",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 21,
+      "acceptable": [
+        {
+          "stitched": "做不了这个的！你根本看不见Excel表在变",
+          "fragments": [
+            {
+              "sid": 1516,
+              "text": "做不了这个的"
+            },
+            {
+              "sid": 1511,
+              "text": "你 能看见 Excel 那个表嘚嘚嘚嘚在变"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "我为什么要把Agent放本地？因为我要说一句，它改一句",
+          "fragments": [
+            {
+              "sid": 1522,
+              "text": "我为什么要做到本地？"
+            },
+            {
+              "sid": 1514,
+              "text": "我跟它说一句，它改一句"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "为什么非要在本地跑？我要的是快速多轮迭代协作",
+          "fragments": [
+            {
+              "sid": 1510,
+              "text": "最开心的是运行在本地的"
+            },
+            {
+              "sid": 1513,
+              "text": "你可以和它进行快速的多轮迭代的协作"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "做不了这个的！你根本看不见Excel表在变",
+      "must_keep_terms": []
+    },
+    {
+      "idx": 22,
+      "acceptable": [
+        {
+          "stitched": "有老多老多行业的人每天干的就是这个活，从一堆PDF里把数据挪到Excel里",
+          "fragments": [
+            {
+              "sid": 1866,
+              "text": "有老多老多行业的人每天干的就是这个活"
+            },
+            {
+              "sid": 1866,
+              "text": "从一堆PDF里把数据挪出来，挪到Excel里"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "PDF里面的文档数据提取出来，填到Excel里，填到政府监管部门的网站上",
+          "fragments": [
+            {
+              "sid": 1865,
+              "text": "PDF里面的一堆的文档的数据提取出来，填到你想要的Excel的表格里"
+            },
+            {
+              "sid": 1866,
+              "text": "监管部门的网站上"
+            }
+          ],
+          "strategy": ""
+        },
+        {
+          "stitched": "为什么这种活没人做？每天无数人都在干这个",
+          "fragments": [
+            {
+              "sid": 1866,
+              "text": "每天都是干这个"
+            }
+          ],
+          "strategy": ""
+        }
+      ],
+      "best_stitched": "有老多老多行业的人每天干的就是这个活，从一堆PDF里把数据挪到Excel里",
+      "must_keep_terms": []
+    }
+  ]
 }

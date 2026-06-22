@@ -1,6 +1,488 @@
 {
-  "_status": "待填 · TODO_FILL_GOLDEN",
+  "_status": "草稿 · 待 owner 拍板（hit_dims/why 种子里没有，需人工补；条数/标题等可先自动评）",
+  "_seeded": true,
   "_contract": "eval/contracts/1_topic_select.md",
-  "_note": "金标准由 owner 整理后填入；字段与判分口径见 _contract。填好后重跑 build_inputs.py --chained。",
-  "items": []
+  "_note": "选题该不该选要 owner 拍板。本草稿从种子 clip 拼出标题/论点/受众/rough_sid_spans，但 hit_dims（命中富集维度·≥3）和 why 种子里没有 → 留空，硬规则评分会如实标红，提示这些字段待补。补全并拍板后删 _seeded 冻结。",
+  "items": [
+    {
+      "idx": 1,
+      "title": "为什么你花500万做的AI，我100万就能搞定？",
+      "one_argument": "企业AI落地不需要买火山引擎、阿里云那些又贵又不好用的套件，部署Codex+打通知识+MCP接入，可能100万就够了",
+      "hook_line": "你知道为什么你花500万的项目拿给我做，我给你做100万吗？",
+      "audience": "创业者老板/AI从业者",
+      "mainstream": "高",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          139,
+          142
+        ],
+        [
+          143,
+          146
+        ],
+        [
+          147,
+          150
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 2,
+      "title": "真的：低代码在Agent时代完全干不过AI",
+      "one_argument": "在95%以上的场景下，Codex+Agent的组合比程序员手写的低代码/工作流效率高5-10倍，不是一个量级",
+      "hook_line": "真的真的真的不要做低代码了，不要做工作流了，完全干不过Agent的",
+      "audience": "AI从业者/转型求职",
+      "mainstream": "高",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          39,
+          47
+        ],
+        [
+          53,
+          53
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 3,
+      "title": "美国封禁大模型越狠，给中国AI人的机会反而越大",
+      "one_argument": "门槛变高让90%的程序员掉队，但谁先搞定访问问题+掌握Claude Code，谁就拥有碾压级的效率优势",
+      "hook_line": "美国封禁前沿大模型越严重，AI认知差在中国给我们的机会就越大",
+      "audience": "AI从业者/破圈大众",
+      "mainstream": "高",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          122,
+          124
+        ],
+        [
+          125,
+          138
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 4,
+      "title": "Agent看护+Computer Use+传统脚本：自动化测试无敌组合",
+      "one_argument": "传统脚本遇到意外就卡死，但Agent作为大脑看护脚本+Computer Use兜底+脚本提效率，三合一可以应对一切异常",
+      "hook_line": "Agent看护加computer use加传统脚本，基本上就是无敌的，知道吧？",
+      "audience": "AI从业者",
+      "mainstream": "高",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          797,
+          799
+        ],
+        [
+          803,
+          807
+        ],
+        [
+          810,
+          820
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 5,
+      "title": "传统脚本已死，Agent看护脚本永生",
+      "one_argument": "人类脚本一旦遇到意外就卡死，但Agent会自己改脚本、自己解决崩溃、自己迭代——以后所有自动化场景都应该让Agent来管",
+      "hook_line": "传统脚本已死，Agent的看护脚本永生",
+      "audience": "AI从业者/AI产品经理",
+      "mainstream": "高",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          61,
+          63
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 6,
+      "title": "评测的优先级要大于训练——小米自动驾驶的血泪教训",
+      "one_argument": "做数据体系时如果评测优先级没提上去，会在训练阶段踩大量坑；评测的终极产出是迭代，不是评测本身",
+      "hook_line": "咱们在做数据体系的时候，一定要注意评测的优先级要大于训练的优先级，否则的话你就会吃亏",
+      "audience": "AI从业者",
+      "mainstream": "高",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          165,
+          169
+        ],
+        [
+          170,
+          172
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 7,
+      "title": "评测集的分布不应该是均匀抽样——困难case要故意放大",
+      "one_argument": "用户对1个bad case的痛感远大于10个good case的好感，所以评测集里要把困难case比例刻意提高，才能模拟真实体感",
+      "hook_line": "真实用户对一个bad case的这个痛感，会远大于十个good case的好感",
+      "audience": "AI从业者/AI产品经理",
+      "mainstream": "高",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          460,
+          463
+        ],
+        [
+          467,
+          467
+        ],
+        [
+          470,
+          471
+        ],
+        [
+          473,
+          473
+        ],
+        [
+          475,
+          477
+        ],
+        [
+          482,
+          484
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 8,
+      "title": "量化交易软件的正确开发方式：让Agent来包住Python脚本",
+      "one_argument": "量化交易不需要纯AI系统也不需要纯Python系统，而是让Agent作为OS入口来触发和监管传统脚本——人只跟Agent说话",
+      "hook_line": "让Agent来触发和监管这个传统的Python代码",
+      "audience": "AI从业者/创业者",
+      "mainstream": "中",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          86,
+          93
+        ],
+        [
+          98,
+          104
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 9,
+      "title": "Agent时代评测进化了：已经从发现问题升级到自动改代码",
+      "one_argument": "Agent可以每天跑测试、发现bad case、自动提交GitHub issue、另一个Agent自动修复并提PR——整个迭代闭环都不需要人工介入",
+      "hook_line": "评测已经从发现问题进化到了自动改代码的环节了",
+      "audience": "AI从业者",
+      "mainstream": "高",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1549,
+          1550
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 10,
+      "title": "评测不是测完就完事，而是产品质量的迭代永动机",
+      "one_argument": "评测的五个环节（数据集、环境、打分、分析、迭代）最终要形成一个闭环，评测驱动迭代、迭代推动评测持续进化",
+      "hook_line": "评测不是测完就能，而是产品质量的迭代的永动机",
+      "audience": "AI从业者/AI产品经理",
+      "mainstream": "中",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1796,
+          1797
+        ],
+        [
+          1798,
+          1801
+        ],
+        [
+          1802,
+          1802
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 11,
+      "title": "多轮对话评测不用真跑多轮：固定前五轮只测第六轮",
+      "one_argument": "多轮对话评测的技巧是把前五轮日志全部灌入上下文，只跑第六轮query——一次API调用就能验证多轮理解能力",
+      "hook_line": "固定住前三轮，固定前五轮，找一下前五轮的那个结论，然后你测第六轮的query，就可以验证多轮的可靠性",
+      "audience": "AI从业者",
+      "mainstream": "中",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1162,
+          1173
+        ],
+        [
+          1176,
+          1187
+        ],
+        [
+          1189,
+          1198
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 12,
+      "title": "打分别用1-5分：把任务拆碎，全部变成是/否二分类",
+      "one_argument": "大模型打李克特量表时标准很难一致，但如果把评分维度拆成多个是/否二分类，综合准确率会大幅提升",
+      "hook_line": "只要你拆的足够细，所有的评分都可以变成是和否",
+      "audience": "AI从业者",
+      "mainstream": "中",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1017,
+          1027
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 13,
+      "title": "Agent评分员要给它看源码——让它知其然也知其所以然",
+      "one_argument": "让Agent做裁判时，要把评测环境的代码库也给它，让它能看到完整日志、理解原理，从而给出更接近专业工程师的评价",
+      "hook_line": "我们要让这个Agent知其然也知其所以然",
+      "audience": "AI从业者",
+      "mainstream": "中",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1041,
+          1043
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 14,
+      "title": "评测报告新范式：每个case旁边放一个「和Agent对话」按钮",
+      "one_argument": "Agent时代的评测报告应该是可交互的网页，每个case都能下钻、能看原始Excel、能直接问Agent为什么失败",
+      "hook_line": "在这个每个case下面加一个叫Talk to AI Agent来",
+      "audience": "AI从业者/AI产品经理",
+      "mainstream": "中",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1434,
+          1436
+        ],
+        [
+          1443,
+          1450
+        ],
+        [
+          1456,
+          1464
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 15,
+      "title": "产品经理一个人，一周内可以搭完整评测平台",
+      "one_argument": "AI coding时代，前端后端数据库自动化脚本全部可以让AI帮你写，产品经理完全可以独立完成评测平台，绕过排需求",
+      "hook_line": "开发周期，不要超过一个星期就应该能做出来",
+      "audience": "AI产品经理",
+      "mainstream": "高",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1901,
+          1906
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 16,
+      "title": "评测集的数据构成：训练集90%合成的话，评测集要70%真实",
+      "one_argument": "评测集的数据质量必须领先于训练集——如果训练集大量用合成数据，评测集更应该用真实数据，且比例要倒置",
+      "hook_line": "哪怕训练集百分之九十是合成数据加百分之十的真实数据，那么我们的评测级的构成应最好是百分之七十以上的真实数据",
+      "audience": "AI从业者",
+      "mainstream": "中",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          285,
+          303
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 17,
+      "title": "数据集构建两大坑：评测集和训练集同构、用学术评测集测工业应用",
+      "one_argument": "学术圈习惯用同源数据分训练/测试集，这在工业界会导致严重过拟合；正确做法是故意采用不同的数据源让评测集领先",
+      "hook_line": "使用学术界的评测机去测评一个工业里的应用，这是错的",
+      "audience": "AI从业者",
+      "mainstream": "中",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          233,
+          234
+        ],
+        [
+          235,
+          236
+        ],
+        [
+          237,
+          238
+        ],
+        [
+          239,
+          241
+        ],
+        [
+          246,
+          248
+        ],
+        [
+          259,
+          262
+        ],
+        [
+          263,
+          264
+        ],
+        [
+          265,
+          266
+        ],
+        [
+          267,
+          271
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 18,
+      "title": "Look at the data：看100个case是AI落地最重要的实操经验",
+      "one_argument": "负责评测的人要把100个case的日志完整看一遍，理解Agent怎么犯错、犯什么错，最终能像了解孩子性格一样了解这个模型",
+      "hook_line": "Look at the data，看一百个case，是所有大家认为在AI落地过程中最重要的一个实操经验",
+      "audience": "AI从业者/AI产品经理",
+      "mainstream": "高",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1300,
+          1300
+        ],
+        [
+          1310,
+          1312
+        ],
+        [
+          1316,
+          1319
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 19,
+      "title": "影子模式2.0：用双模型对比自动筛选有价值的日志",
+      "one_argument": "用户一个query同时跑轻量级模型和大模型，轻量级给用户看，大模型在后面做裁判——这样就能自动暴露轻量模型效果差的case",
+      "hook_line": "用这种方式我们就能够像特斯拉一样暴露出潜在的有价值的场景",
+      "audience": "AI从业者",
+      "mainstream": "中",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          425,
+          431
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 20,
+      "title": "Agent日志分析比LM调用更省token",
+      "one_argument": "LM调用需要人类写好筛选脚本、穷举所有报错规律；但Agent会自己抽样、自己写脚本、自己聚类——反而比LM调用更智能更省token",
+      "hook_line": "Agent的反而比LM省token，因为他可以抽样，他现场写脚本，他不用全读完",
+      "audience": "AI从业者",
+      "mainstream": "中",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1730,
+          1732
+        ],
+        [
+          1733,
+          1745
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 21,
+      "title": "Excel Master的秘密：Agent跑在本地才能所见即所得",
+      "one_argument": "云端Agent做Excel会丢失实时性；跑在本地才能实现用户说一句Agent改一句、用户实时看到表格变化的协作体验",
+      "hook_line": "我最开心的是运行在本地的，是因为我想让他直接编辑Excel所见即所得",
+      "audience": "破圈大众",
+      "mainstream": "低",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1510,
+          1516
+        ],
+        [
+          1517,
+          1522
+        ]
+      ],
+      "why": ""
+    },
+    {
+      "idx": 22,
+      "title": "填表是AI落地最被低估的场景：中国每天有无数人在干这个",
+      "one_argument": "从一堆PDF里把数据提取出来填到Excel或政府网站——这个场景极其普遍，但几乎没人做好，这就是AI小甜甜这个产品的机会",
+      "hook_line": "有老多老多行业的人每天干的就是这个活，就从一堆PDF里把数据挪出来，挪到Excel里",
+      "audience": "破圈大众/创业者",
+      "mainstream": "低",
+      "hit_dims": [],
+      "rough_sid_spans": [
+        [
+          1863,
+          1865
+        ],
+        [
+          1866,
+          1868
+        ]
+      ],
+      "why": ""
+    }
+  ]
 }

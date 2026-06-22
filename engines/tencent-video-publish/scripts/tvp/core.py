@@ -1232,6 +1232,206 @@ async def shadow_checkbox_checked(page: Page, text: str) -> bool:
     return False
 
 
+async def original_statement_checked(page: Page) -> bool:
+    for text in ("声明原创", "视频为原创"):
+        if await shadow_checkbox_checked(page, text):
+            return True
+    return False
+
+
+async def click_original_statement_entry(page: Page) -> bool:
+    # 视频号新版发布页的入口文案是"声明原创"，旧版曾是"视频为原创"。
+    # 入口通常不是一个普通 button，而是表单行里的 checkbox + label。
+    for frame in page.frames:
+        try:
+            clicked = await frame.evaluate(
+                """() => {
+                    const seen = new Set();
+                    const labels = ["声明原创", "视频为原创"];
+                    function textOf(el) {
+                        return (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+                    }
+                    function visible(el) {
+                        const rect = el.getBoundingClientRect();
+                        return !!(rect.width || rect.height || el.getClientRects().length);
+                    }
+                    function disabled(el) {
+                        const cls = (el.className || "").toString();
+                        return !!el.disabled || cls.includes("disabled") || cls.includes("_disabled");
+                    }
+                    function closestCandidate(el) {
+                        let node = el;
+                        for (let i = 0; node && i < 7; i += 1, node = node.parentElement) {
+                            const text = textOf(node);
+                            if (!text) continue;
+                            if (
+                                labels.some(label => text.includes(label)) &&
+                                (text.includes("作品将展示原创标记") ||
+                                 text.includes("广告收入") ||
+                                 text.includes("原创标记") ||
+                                 node.querySelector('input[type="checkbox"]'))
+                            ) {
+                                return node;
+                            }
+                        }
+                        return el;
+                    }
+                    function tryClick(root) {
+                        const nodes = Array.from(root.querySelectorAll("*"));
+                        for (const el of nodes) {
+                            if (seen.has(el)) continue;
+                            seen.add(el);
+                            if (el.shadowRoot && tryClick(el.shadowRoot)) return true;
+                            if (!visible(el)) continue;
+                            const text = textOf(el);
+                            if (!labels.some(label => text === label || text.includes(label))) continue;
+                            if (text.includes("原创保护记录")) continue;
+                            const row = closestCandidate(el);
+                            const checkbox = row.querySelector && row.querySelector('input[type="checkbox"]');
+                            if (checkbox && visible(checkbox) && !disabled(checkbox)) {
+                                checkbox.click();
+                                return true;
+                            }
+                            if (!disabled(row)) {
+                                row.click();
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                    return tryClick(document);
+                }"""
+            )
+            if clicked:
+                return True
+        except Exception:
+            continue
+    return False
+
+
+async def original_rights_dialog_state(page: Page) -> dict[str, Any]:
+    for frame in page.frames:
+        try:
+            state = await frame.evaluate(
+                """() => {
+                    function textOf(el) {
+                        return (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+                    }
+                    function visible(el) {
+                        const rect = el.getBoundingClientRect();
+                        return !!(rect.width || rect.height || el.getClientRects().length);
+                    }
+                    function disabled(el) {
+                        const cls = (el.className || "").toString();
+                        return !!el.disabled ||
+                            el.getAttribute("aria-disabled") === "true" ||
+                            cls.includes("disabled") ||
+                            cls.includes("_disabled");
+                    }
+                    const dialogs = Array.from(document.querySelectorAll(".declare-original-dialog, [role='dialog'], .mp-dialog, .weui-desktop-dialog, div"))
+                        .filter(el => {
+                            if (!visible(el)) return false;
+                            const text = textOf(el);
+                            return text.includes("原创权益") &&
+                                text.includes("获得原创标记") &&
+                                text.includes("声明原创");
+                        })
+                        .sort((a, b) => textOf(a).length - textOf(b).length);
+                    const dialog = dialogs[0];
+                    if (!dialog) return { visible: false };
+
+                    const protocolCheckbox = Array.from(dialog.querySelectorAll('input[type="checkbox"]'))
+                        .find(el => visible(el) && !disabled(el));
+                    const protocolChecked = protocolCheckbox ? !!protocolCheckbox.checked : false;
+                    const buttons = Array.from(dialog.querySelectorAll("button"))
+                        .filter(el => visible(el) && textOf(el).trim() === "声明原创");
+                    const confirmButton = buttons.find(el => !disabled(el)) || null;
+                    const disabledConfirmButton = buttons.find(el => disabled(el)) || null;
+                    return {
+                        visible: true,
+                        protocol_found: !!protocolCheckbox,
+                        protocol_checked: protocolChecked,
+                        confirm_enabled: !!confirmButton,
+                        confirm_disabled: !!disabledConfirmButton && !confirmButton,
+                    };
+                }"""
+            )
+            if state.get("visible"):
+                return state
+        except Exception:
+            continue
+    return {"visible": False}
+
+
+async def confirm_original_rights_dialog(page: Page) -> bool:
+    # The "声明原创" entry opens a second-step modal named "原创权益".
+    # The flow must accept the protocol checkbox and then click the modal's
+    # orange "声明原创" button. Clicking only the page-level checkbox is not enough.
+    deadline = asyncio.get_running_loop().time() + 30
+    while asyncio.get_running_loop().time() < deadline:
+        clicked = False
+        for frame in page.frames:
+            try:
+                clicked = await frame.evaluate(
+                    """() => {
+                        function textOf(el) {
+                            return (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+                        }
+                        function visible(el) {
+                            const rect = el.getBoundingClientRect();
+                            return !!(rect.width || rect.height || el.getClientRects().length);
+                        }
+                        function disabled(el) {
+                            const cls = (el.className || "").toString();
+                            return !!el.disabled ||
+                                el.getAttribute("aria-disabled") === "true" ||
+                                cls.includes("disabled") ||
+                                cls.includes("_disabled");
+                        }
+                        const dialogs = Array.from(document.querySelectorAll(".declare-original-dialog, [role='dialog'], .mp-dialog, .weui-desktop-dialog, div"))
+                            .filter(el => {
+                                if (!visible(el)) return false;
+                                const text = textOf(el);
+                                return text.includes("原创权益") &&
+                                    text.includes("获得原创标记") &&
+                                    text.includes("声明原创");
+                            })
+                            .sort((a, b) => textOf(a).length - textOf(b).length);
+                        const dialog = dialogs[0];
+                        if (!dialog) return false;
+
+                        const protocolCheckbox = Array.from(dialog.querySelectorAll('input[type="checkbox"]'))
+                            .find(el => visible(el) && !disabled(el));
+                        if (protocolCheckbox && !protocolCheckbox.checked) {
+                            protocolCheckbox.click();
+                            return true;
+                        }
+
+                        const confirmButton = Array.from(dialog.querySelectorAll("button"))
+                            .find(el => visible(el) && textOf(el).trim() === "声明原创" && !disabled(el));
+                        if (confirmButton) {
+                            confirmButton.click();
+                            return true;
+                        }
+                        return false;
+                    }"""
+                )
+            except Exception:
+                clicked = False
+            if clicked:
+                await page.wait_for_timeout(1000)
+                state = await original_rights_dialog_state(page)
+                if not state.get("visible"):
+                    return True
+                if state.get("confirm_enabled"):
+                    continue
+        state = await original_rights_dialog_state(page)
+        if not state.get("visible"):
+            return False
+        await page.wait_for_timeout(500)
+    return False
+
+
 async def dump_original_debug(page: Page, page_diag: dict[str, list[dict]] | None, reason: str) -> str:
     dump_dir = Path("/tmp/tencent_video_debug")
     dump_dir.mkdir(exist_ok=True)
@@ -1283,6 +1483,9 @@ async def dump_original_debug(page: Page, page_diag: dict[str, list[dict]] | Non
     for name, selector in {
         "original_label": "label:has-text('视频为原创')",
         "original_text": "text=视频为原创",
+        "declare_entry_label": "label:has-text('声明原创')",
+        "declare_entry_text": "text=声明原创",
+        "original_rights_dialog": "text=原创权益",
         "agree_text": "text=我已阅读并同意",
         "declare_button": "button:has-text('声明原创')",
         "checkboxes": "input[type='checkbox']",
@@ -1374,28 +1577,40 @@ async def apply_original_statement(
     # 默认声明原创（即使没传 --category）。
     # category 只用于在弹出的"原创类型"下拉里选择具体类型（如 "知识"）；不传时跳过类型选择，但仍走声明流程。
     #
-    # 视频号"视频为原创"是 ant-design-vue <a-checkbox>，带 `:disabled="originalMarkDisabled"`，
-    # 视频处理完成前 disabled=true → click 不生效（2026-05-28 frame1 dump 确认）。
-    # 渲染后 DOM: <label class="ant-checkbox-wrapper">...<span>视频为原创</span></label>
-    # disabled 时 wrapper class 含 "ant-checkbox-wrapper-disabled"。
+    # 视频号原创入口文案会变：旧版是"视频为原创"，新版是表单行"声明原创"。
+    # 必须等视频上传、文案、封面、定时等内容都进入可编辑状态后再找，否则入口不会出现或
+    # checkbox disabled，点击会静默失败。
     try:
         await page.keyboard.press("End")
         await page.wait_for_timeout(500)
     except Exception:
         pass
-    if not await shadow_checkbox_checked(page, "视频为原创"):
+    if not await original_statement_checked(page):
         clicked_original = False
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 60
         while loop.time() < deadline:
-            clicked_original = await click_shadow_text(page, "视频为原创", exact=False)
+            clicked_original = await click_original_statement_entry(page)
+            if not clicked_original:
+                clicked_original = await click_shadow_text(page, "声明原创", exact=True)
+            if not clicked_original:
+                clicked_original = await click_shadow_text(page, "视频为原创", exact=False)
             if clicked_original:
                 await page.wait_for_timeout(1000)
+                await confirm_original_rights_dialog(page)
                 break
             await asyncio.sleep(1)
         if not clicked_original:
             debug = await dump_original_debug(page, page_diag, "original_entry_missing")
-            raise RuntimeError(f"未找到可点击的“视频为原创”入口; debug={debug}")
+            raise RuntimeError(f"未找到可点击的原创声明入口; debug={debug}")
+
+    dialog_state = await original_rights_dialog_state(page)
+    if dialog_state.get("visible"):
+        confirmed = await confirm_original_rights_dialog(page)
+        dialog_state = await original_rights_dialog_state(page)
+        if not confirmed and dialog_state.get("visible"):
+            debug = await dump_original_debug(page, page_diag, "original_dialog_unconfirmed")
+            raise RuntimeError(f"未能完成原创权益弹窗确认; debug={debug}")
 
     await click_shadow_text(page, "我已阅读并同意", exact=False)
 
@@ -1411,11 +1626,19 @@ async def apply_original_statement(
             await page.wait_for_timeout(1000)
 
     await page.wait_for_timeout(1000)
+    dialog_state = await original_rights_dialog_state(page)
+    if dialog_state.get("visible"):
+        confirmed = await confirm_original_rights_dialog(page)
+        dialog_state = await original_rights_dialog_state(page)
+        if not confirmed and dialog_state.get("visible"):
+            debug = await dump_original_debug(page, page_diag, "original_dialog_unconfirmed")
+            raise RuntimeError(f"未能完成原创权益弹窗确认; debug={debug}")
+
     clicked_declare = await click_shadow_text(page, "声明原创", exact=True, tag_names=["BUTTON"])
     if not clicked_declare:
         clicked_declare = await click_shadow_text(page, "声明原创", exact=False, tag_names=["BUTTON"])
     if not clicked_declare:
-        if await shadow_checkbox_checked(page, "视频为原创"):
+        if await original_statement_checked(page):
             return
         debug = await dump_original_debug(page, page_diag, "original_declare_missing")
         raise RuntimeError(f"未能点击“声明原创”按钮; debug={debug}")
@@ -1853,18 +2076,10 @@ async def upload_video(request: UploadVideoRequest) -> dict:
             await upload_video_file(page, request.file_path)
             await fill_title_tags_desc(page, request.title, request.tags or [], request.desc)
             await set_short_title(page, request.title, request.short_title)
-            # 等视频上传 + 后端处理完成后，再做原创声明 + 封面 —— 这些操作的入口在视频处理
-            # 完成前是"未就绪"状态（apply_original_statement 找不到 label / set_thumbnail
-            # 区域显示"生成中"），过早调用会静默失败。
+            # 等视频上传 + 后端处理完成后，再填封面、定时、原创等后续项。
+            # 这些入口在视频处理完成前是"未就绪"状态，过早调用会静默失败。
             await wait_for_upload_complete(page, timeout_seconds=request.upload_timeout, page_diag=page_diag)
             original_warning: str | None = None
-            try:
-                await apply_original_statement(page, request.category, page_diag=page_diag)
-            except RuntimeError as exc:
-                if request.fill_only and "视频为原创" in str(exc):
-                    original_warning = str(exc)
-                else:
-                    raise
             # 封面失败时：fill-only 模式下只 log warning 不阻断（方便人工在浏览器里诊断 DOM）；
             # 非 fill-only 模式仍然 raise，避免静默以为传上了。
             thumbnail_warning: str | None = None
@@ -1975,6 +2190,13 @@ async def upload_video(request: UploadVideoRequest) -> dict:
             if request.schedule_at:
                 await set_schedule_time(page, request.schedule_at)
             await set_short_title(page, request.title, request.short_title)
+            try:
+                await apply_original_statement(page, request.category, page_diag=page_diag)
+            except RuntimeError as exc:
+                if request.fill_only and ("原创" in str(exc)):
+                    original_warning = str(exc)
+                else:
+                    raise
             if request.fill_only:
                 if request.hold_open_seconds < 0:
                     if original_warning:

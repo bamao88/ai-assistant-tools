@@ -94,8 +94,10 @@ The default list currently includes:
   can rotate immediately after a host-route apply.
 - Zhihu, Juejin, CSDN, Baijiahao, SegmentFault, and Toutiao article draft hosts.
 - Tencent Meeting web/MCP hosts and recording CDN hosts.
-- Cloud transcription (video-slicer) hosts: Volcengine `openspeech.bytedance.com`,
-  Aliyun `dashscope.aliyuncs.com`, and the OSS upload endpoints (platform `transcribe`).
+- Cloud transcription (video-slicer) hosts (platform `transcribe`): Volcengine
+  `openspeech.bytedance.com`, Aliyun `dashscope.aliyuncs.com`, the public upload
+  stations `uguu.se` / `0x0.st`, and the OSS upload endpoints (OSS channel disabled —
+  credentials expired 2026-06).
 
 The script uses `Wi-Fi` by default. Override when needed:
 

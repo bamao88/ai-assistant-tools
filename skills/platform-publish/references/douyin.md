@@ -15,9 +15,20 @@ SAU="$ENGINE/.venv/bin/sau"
 - 浏览器用 patchright Chromium（安装时已 `patchright install chromium`）。
 - 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.douyin`（当前：`张和`）。账号标识约定：`张和` = 本项目（assistant_zh，负责张和全部自媒体）名下的抖音号，cookie 落 `douyin_张和.json`。**只发这个账号**，发别的先与用户确认。
 
+## 当前状态（2026-06-22）
+
+抖音发布入口存在，但**当前不算已打通**：
+
+- `sau douyin check --account 张和` 返回 `invalid`。
+- 当前 cookies 目录没有 `douyin_张和.json`。
+- 最近日志里的登录尝试停在二维码登录阶段，最终报 `Target page, context or browser has been closed`。
+- `upload-video` / `upload-note` 没有 fill-only / draft / manual-submit 模式，流程尾部会直接点击“发布”。除非用户明确授权 `agent-submit`，否则不要调用这两个上传命令。
+
+恢复流程：先在测试号或低风险账号上完成 `login` + `check`，再补一个不会自动点最终发布的填表模式；未补齐前，不要把抖音作为真实账号的一键发布通路。
+
 ## 网络分流前置步骤（强制）
 
-为避免 Tailscale exit node 或系统代理导致抖音发布走海外/代理出口（**异地 IP 登录/发布会触发抖音风控**），任何 `douyin` 子命令（check / login / upload-video / upload-note）执行前，必须先刷新本地分流路由：
+为避免 Tailscale exit node 或系统代理导致抖音发布走海外/代理出口（异地 IP 登录/发布会触发抖音风控，上传链路也会变慢或失败），任何 `douyin` 子命令（check / login / upload-video / upload-note）执行前，必须先刷新本地分流路由：
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin apply
@@ -29,9 +40,9 @@ SAU="$ENGINE/.venv/bin/sau"
 osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin apply" with administrator privileges'
 ```
 
-**够用即可**：抖音账号风控只绑定在 `creator.douyin.com`(登录/创作中心) + 风控腿，`publish-network-preflight` 已把它们钉到本地，账号安全无虞。剩下走 exit node 的只是视频字节传 `*.douyinvod.com`（动态 CDN，穷举不到），不影响风控，无需处理。
+如果上传时发现新的字节/CDN 域名（例如 DevTools/日志里出现未覆盖的 `douyinvod` 或 `vod` 上传域），先把解析到的域名/IP 补进 `route-bypass` 并重新 `apply`，再继续测试；不要把“动态 CDN 不好穷举”当作可以走海外出口的理由。
 
-⚠️ **绝不要用 `tailscale set --exit-node=` 关全局出口** —— 用户本地 Claude Code / Codex 靠该 exit node 访问 LLM API，关掉会断开发任务。若以后确需连上传字节也本地，只能走 route 方案（加 `*.douyinvod.com` 解析到的 CDN 网段进 route-bypass），不动 exit node。
+⚠️ **绝不要用 `tailscale set --exit-node=` 关全局出口** —— 用户本地 Claude Code / Codex 靠该 exit node 访问 LLM API，关掉会断开发任务。确需补上传字节链路时，只走 route 方案，不动 exit node。
 
 如分流 apply 或出口验证失败，**停止发布并报告**，不要带着海外出口发（登录腿必须本地）。
 
@@ -47,6 +58,7 @@ osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/ro
 ```bash
 "$SAU" douyin check --account <account_name>
 ```
+上传前必须先跑 `check`。如果不是有效登录态，先 `login`，不要直接上传。
 
 **发视频：**
 ```bash
@@ -79,8 +91,9 @@ osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/ro
 
 ## ⚠️ 安全
 
-- 上传走真实创作者中心。发布前把 标题/简介/标签/封面/视频 与用户确认，**用户确认后再执行**。
-- 若 CLI 停在草稿/待发布页，按返回提示汇报，需要用户手动点最终发布的不替用户点。
+- 上传走真实创作者中心。发布前把 标题/简介/标签/封面/视频 与用户确认。
+- 当前 CLI 不会停在草稿/待发布页，而是会直接点击“发布”；所以默认 `manual-submit` 场景下必须停止，不得调用 `upload-video` / `upload-note`。
+- 只有用户明确授权机器点击最终“发布/定时发布”（`agent-submit`）时，才允许执行当前上传命令。
 - check 失效 / 报 cookie missing or expired → 让用户重跑 `douyin login`。
 
 ## 素材准备（可选）

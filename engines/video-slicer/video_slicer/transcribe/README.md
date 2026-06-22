@@ -21,6 +21,21 @@
 
 句级线（腾讯会议 minutes）**不走本模块**。
 
+## 网络分流：转录走本地出口（复用发布的 route-bypass）
+
+整机挂海外 Tailscale exit node 时，调火山/阿里这类**国内** ASR 服务会从海外 IP 绕回国内——
+慢、且易触发地域限制。所以 CLI 转录前**自动**跑一次 route-bypass，把国内 ASR API 域名
+（`openspeech.bytedance.com` / `dashscope.aliyuncs.com`，及 `--uploader oss` 用到的 OSS 域名）
+钉到本地网关出口，其余流量照旧走海外（与 `platform-publish` 同一套机制）。
+
+- 入口在 `cli.py: _route_bypass_preflight()`，调
+  `engines/route-bypass/scripts/publish-network-preflight.zsh transcribe apply`，需要时弹一次
+  管理员授权框。
+- **路由是优化项不是硬前置**：钉不上只告警、不挡转录（与发布"失败即停"不同——发布上传会卡
+  0%，转录失败只是慢）。
+- `--skip-route-bypass`：跳过前置（路由已钉过、或纯 `--audio-url` 不在意国内出口时用）。
+- 默认 `--uploader public` 的上传站（uguu.se/0x0.st，海外）**不在钉的范围内**，仍走海外出口。
+
 ## 用法
 
 ```bash

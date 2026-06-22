@@ -69,6 +69,7 @@ tools/engines/
 │   │   ├── subtitle_protect.py   ④别动清单钉回(自造词如「爱马仕」防 LLM 改) + 1:1/无吞字结构自检
 │   │   └── profiles/zh_main/keeplist.json  别动清单（受保护词数组）
 │   │   └── transcribe/       字级转写：火山 seedasr v3 主 / 阿里 paraformer 兜底；公网/OSS 上传
+│   │                          ★第①环固定入口=engines/video-slicer/transcribe-01.sh <视频>(runbook: doc/转录标准流程-01.md)
 │   │                          转录前自动 route-bypass 把国内 ASR API 钉本地出口(--skip-route-bypass 可关)
 │   │                          + align.py(句级带标点 ITN ↔ 字级时间 对齐) + segment.py(分句·优先原生语义句)
 │   ├── personas/zh_main.md   张和选题 persona（含问答可剪）

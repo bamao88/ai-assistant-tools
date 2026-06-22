@@ -129,6 +129,12 @@
 - `score_dedup.py`：去重配对 P/R。
 - （可选）一个 `judge.py`：主观维度的 LLM 评委通用封装。
 
+### 4.2b 提示词版本管理（两层 · 让版本对得上分数）
+改提示词必须能回答"v3→v4 分涨了没"，否则评测白做。两层：
+- **账本层**（人看）：`prompts/versions/<name>/vN.md`（每版原文归档）+ `prompts/versions.json`（当前指针）+ `prompts/CHANGELOG.md`（一行行记 vN·日期·改了啥·分变化）。升版工具 `prompts/_version.py bump <name> "改了啥"`。
+- **快照层**（机器真相）：`generate.py`／`dedup.py` 跑分时自动把当时 5 条提示词原文 + 版本号冻进 `runs/<run>/prompts/`，并记进 golden 的 `prompt_versions` 字段——分数永远查得到是哪段提示词文本跑出来的。
+> 大白话：账本是你翻的"改版日记"，快照是法庭证据"这个分到底哪段话跑的"。只做日记会手滑漏记，只做证据你看不出哪版最好，所以两层都要。
+
 ### 4.3 金标准目录：从"一份压扁答案"拆成"按阶段分文件"
 现状 `fixtures/agent_eval_0613/golden.json` 一份混装。改造成按阶段分文件，每阶段一份冻结输入 + 一份金标准（命名待定，例）：
 ```

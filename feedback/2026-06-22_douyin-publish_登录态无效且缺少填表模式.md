@@ -14,6 +14,8 @@ fixed
 
 2026-06-22：修复网络 preflight：无 TTY 时使用 macOS 管理员授权窗口，抖音新增静态 `/24` 网段兜底，避免 DNS 换边缘 IP 后又落回 Tailscale/proxy。
 
+2026-06-22：追加网络反馈：这次视频上传慢/失败不是 Skill 完全没写本地网络要求，而是抖音上传阶段出现了新动态 CDN 网段，且浏览器已建立的旧 TCP 连接不会因为后面补路由自动切换出口。后续应把 `publish-network-preflight` 下沉到 CLI/engine 的自动强制门，并在上传期审计浏览器 NetworkService 的远端 IP；发现平台相关连接仍从 Tailscale/代理出口出去时，应自动失败并提示补路由、重启上传会话。
+
 ## 发现日期
 
 2026-06-22

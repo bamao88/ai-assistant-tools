@@ -2,8 +2,11 @@
 
 两条通道，**单向解耦**于转写后端：
 - public：免凭证的公网托管（uguu.se 主，0x0.st 兜底）。**默认通道**。
-- oss   ：上传到我们自己的阿里 OSS，返回 1h 签名直链。**代码写好、默认不用**；
-          公网托管出问题（限流/隐私/合规）时切到它，凭证走 var/credentials/aliyun.env。
+          上传站域名（uguu.se / 0x0.st）已纳入 route-bypass 的 `transcribe` 平台本地分流，
+          所以"上传公域"这一步也走本地出口（复刻手动关代理那条可跑通路径，无需真关 VPN）。
+- oss   ：上传到我们自己的阿里 OSS，返回 1h 签名直链。
+          ⚠ 2026-06：OSS 凭证已过期，`--uploader oss` 暂不可用（续期前请用 public）。
+          续期后把新凭证写回 var/credentials/aliyun.env 即可恢复；代码本身不动。
 
 返回统一 (url, cleanup)：cleanup 可为 None；oss 通道返回删临时对象的回调。
 """

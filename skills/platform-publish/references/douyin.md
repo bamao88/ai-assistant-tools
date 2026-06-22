@@ -17,14 +17,14 @@ SAU="$ENGINE/.venv/bin/sau"
 
 ## 当前状态（2026-06-22）
 
-抖音发布工具入口存在，已补上人工最终确认需要的填表模式；账号态还需要恢复：
+抖音发布工具入口已恢复，支持人工最终确认需要的填表模式：
 
-- `sau douyin check --account 张和` 返回 `invalid`。
-- 当前 cookies 目录没有 `douyin_张和.json`。
-- 最近日志里的登录尝试停在二维码登录阶段，最终报 `Target page, context or browser has been closed`。
-- `upload-video` / `upload-note` 已支持 `--fill-only`：上传素材、填写标题/正文/标签/封面/定时时间后停在发布页，不点击最终“发布”。
+- 测试号 `测试号_抖音` 已通过真实 fill-only 复测：上传测试视频、填写标题/简介/话题、上传横版和竖版封面、选择自主声明，最终停在发布页，未点击“发布”。
+- `upload-video` / `upload-note` 支持 `--fill-only`：上传素材、填写标题/正文/标签/封面/定时时间后停在发布页，不点击最终“发布”。
+- 新版创作者中心必须先点左侧“高清发布”菜单里的“发布视频/发布图文”；底层 CLI 已内置该入口，不再直接等旧的 `div[class^='container'] input`。
+- 视频发布页表单渲染可能在文件解析后才出现，当前 CLI 最长等待 120s；不要把这段等待误判为卡死。
 
-恢复流程：先在测试号或低风险账号上完成 `login` + `check`，再用 `--fill-only --hold-seconds <秒数>` 跑通上传、封面、标签和定时设置；复测通过前，不要把抖音作为真实账号的自动最终发布通路。
+真实账号使用前仍必须按总入口契约确认账号和最终提交权限。若 `张和` 等真实账号 cookie 失效，先完成 `login` + `check`，再执行上传。
 
 ## 网络分流前置步骤（强制）
 
@@ -34,17 +34,22 @@ SAU="$ENGINE/.venv/bin/sau"
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin apply
 ```
 
-无 TTY 遇到 `sudo: a password is required` 时，改用管理员授权窗口执行同一脚本：
+无 TTY 时脚本会自动使用 macOS 管理员授权窗口。若用户取消授权或 `apply` 后 `status` 仍显示 `destination=default` / `interface=utun*`，停止发布，重新处理网络前置门。
 
-```bash
-osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin apply" with administrator privileges'
-```
-
-如果上传时发现新的字节/CDN 域名（例如 DevTools/日志里出现未覆盖的 `douyinvod` 或 `vod` 上传域），先把解析到的域名/IP 补进 `route-bypass` 并重新 `apply`，再继续测试；不要把“动态 CDN 不好穷举”当作可以走海外出口的理由。
+抖音 DNS 会快速轮换边缘 IP，preflight 已配置常见 `/24` 网段兜底。若上传时仍发现新的字节/CDN 域名或新网段（例如 DevTools/日志里出现未覆盖的 `douyinvod` 或 `vod` 上传域），先把解析到的域名/IP/网段补进 `route-bypass` 并重新 `apply`，再继续测试；不要把“动态 CDN 不好穷举”当作可以走海外出口的理由。
 
 ⚠️ **绝不要用 `tailscale set --exit-node=` 关全局出口** —— 用户本地 Claude Code / Codex 靠该 exit node 访问 LLM API，关掉会断开发任务。确需补上传字节链路时，只走 route 方案，不动 exit node。
 
 如分流 apply 或出口验证失败，**停止发布并报告**，不要带着海外出口发（登录腿必须本地）。
+
+快速校验：
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin status \
+  | awk '/route decisions for route target IPv4:/{flag=1;next} flag && /destination=default|interface=utun|gateway=-/{print}'
+```
+
+期望无输出；有输出表示仍有目标 IP 没走本地网络。
 
 ## 命令
 

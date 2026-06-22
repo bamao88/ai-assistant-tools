@@ -338,6 +338,10 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 
 ## 9. 验收门(怎么算 Harness 闭环跑通)
 
+> **口径升级(2026-06-22)**:原"单一 `golden.json` 端到端评审"的验收口径**太笼统**——成片烂了分不清是哪一步坏的,针对单条提示词优化没抓手。已升级为**分阶段评测(5 条提示词各一把尺)**,真源子计划 [`视频剪辑skill-第二环选片-分阶段评测-plan.md`](./视频剪辑skill-第二环选片-分阶段评测-plan.md)。下面 §9.1 是已落地的结构门(不变),§9.2 是分阶段评测门(替代原最后一条端到端评审门)。
+
+### 9.1 结构门(已落地)
+
 - [x] `engines/video-select/` 独立成形,**Eval Harness** 能脱离 baselines/ 单独跑(`generate → gates → score`);`check-tools.py` 0 error;registry/架构文档同步。
 - [x] 固定评测集(agent_eval_0613·22 条)上:Runner 可跑(`generate`);`score_report.json` 可出基线分(冻结 golden 自比对 F1/IoU=1.0)。
 - [x] **门禁代码化**(`gates.py`):精选合并/无重叠/正文≥60s/字级决策可执行/零编造(不靠手工 `_merge_segments.py`)。〔注:冻结 golden 仍有 2 条正文<60s,是真实质量信号,留待下一轮选段迭代。〕
@@ -345,7 +349,14 @@ doc/video-skill-architecture.md / registry.yaml    🔶 引擎拆分后同步(�
 - [x] 总编 prompt 升级(`body-edit.md` 加逻辑编排 + 精选合并);出口自动过 `gates.merge_segments`。〔效果对照待下一轮全量重跑。〕
 - [x] 去口水产出**可执行的字级删除决策**(`deletions[{sid,text}]`,gates 校验是否原话子串)。
 - [x] 钩子整句优先(`hook.md` 三级策略),不丢限定词。
-- [ ] 人工评审环可更新 `golden.json` 冻结参照;下一轮 Scorer 能自动对照。〔机制已就位(fixtures/golden.json + candidates/clip_NN.md),待 owner 实际评审升版。〕
+
+### 9.2 分阶段评测门(替代原"端到端 golden 评审"·真源见子计划 §5)
+
+- [x] **分阶段骨架成形**:`eval/{contracts(5份),fixtures/<ds>/stages/<5阶段>/{input,golden},scorers,build_inputs.py}` 就位;5 阶段 `input.json` 由 `build_inputs.py` 从源/上游金标准**可复现派生**(忠实真实提示词所见),`golden.json` 为待填占位。
+- [x] **提示词版本管理(两层)**:账本层(`prompts/versions/<name>/vN.md` + `versions.json` + `CHANGELOG.md` + `_version.py bump`)+ 快照层(`generate.py`/`dedup.py` 跑分自动把提示词原文+版本冻进 `runs/<run>/prompts/`,记入 golden 的 `prompt_versions`);当前 5 条已冻 v1 基线。
+- [ ] **金标准逐阶段冻结**(owner 填):按 `contracts/<阶段>.md` 把标准答案填进各 `stages/<阶段>/golden.json`;建议序 ②总编→③去口水→⑤去重(可自动评)→①选题、④钩子(评委)。
+- [ ] **评分器逐阶段接入**(`eval/scorers/<阶段>.py`):②总编复用现成 `score.py`;③去口水(删除字 P/R)、⑤去重(配对 P/R)纯代码;①选题、④钩子(硬规则 + LLM 评委 rubric)。每阶段:冻结金标准自比对=满分,改提示词能看出分变化。
+- [ ] **单阶段单跑口**:`generate.py` 暴露按冻结输入单跑某一中间阶段(总编/去口水/钩子)的入口,使评测只动一层、不串味(现状三步在一次内存里连跑)。
 
 ---
 

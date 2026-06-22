@@ -159,7 +159,12 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("--schedule-at", default="", help='local time, e.g. "2026-05-27 21:30"; requires --publish')
     sub.add_argument("--publish", action="store_true", help="click publish; omit to save draft")
     sub.add_argument("--fill-only", action="store_true", help="fill the publish form and stop before saving draft/publishing")
-    sub.add_argument("--hold-open", type=int, default=0, help="seconds to keep the browser open after --fill-only")
+    sub.add_argument(
+        "--hold-open",
+        type=int,
+        default=0,
+        help="seconds to keep the browser open after --fill-only; use -1 to keep it open until interrupted",
+    )
     sub.add_argument("--upload-timeout", type=int, default=300, help="seconds to wait for video upload completion")
     sub.add_argument("--cover-timeout", type=int, default=60, help="seconds to wait for official cover generation before custom cover upload")
     sub.set_defaults(func=cmd_upload_video)

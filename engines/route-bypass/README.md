@@ -37,10 +37,16 @@ automatically before each transcription:
 ```
 
 `apply` is intentionally safe to rerun. It resolves the current platform IPs
-again, adds any newly returned IPs to the local gateway route set, and refreshes
-managed hosts when a platform needs that fallback. If a platform changes edge IPs
-between publishes, run the same `apply` again; do not hand-edit `/etc/hosts` or
-add ad hoc routes.
+again, adds any newly returned IPs to the local gateway route set, applies
+platform static network routes when configured, and refreshes managed hosts when
+a platform needs that fallback. If a platform changes edge IPs between
+publishes, run the same `apply` again; do not hand-edit `/etc/hosts` or add ad
+hoc routes.
+
+When there is no interactive TTY, the helper falls back to macOS
+`osascript ... with administrator privileges` so Codex/Claude sessions can still
+show the normal administrator authorization window instead of failing with
+`sudo: a password is required`.
 
 Inspect current routes without changing anything:
 
@@ -80,7 +86,9 @@ The default list currently includes:
 - WeChat Channels publish/login hosts and the Tencent Cloud media host observed
   during video publish flows.
 - WeChat Official Account draft/publish API and cover image hosts.
-- Bilibili and Douyin creator/login/submit hosts.
+- Bilibili and Douyin creator/login/submit hosts. Douyin also has static `/24`
+  network routes for observed creator/CDN edge ranges because its DNS answers
+  can rotate immediately after a host-route apply.
 - Zhihu, Juejin, CSDN, Baijiahao, SegmentFault, and Toutiao article draft hosts.
 - Tencent Meeting web/MCP hosts and recording CDN hosts.
 - Cloud transcription (video-slicer) hosts: Volcengine `openspeech.bytedance.com`,
@@ -113,7 +121,8 @@ refresh the block and `remove` to delete it.
 ## Notes
 
 - `apply` and `remove` need administrator privileges because they edit the macOS
-  route table and the managed hosts block.
+  route table and the managed hosts block. In non-interactive shells, confirm the
+  macOS administrator authorization dialog when it appears.
 - Tailscale should have LAN access enabled when an exit node is active:
   `tailscale set --exit-node-allow-lan-access=true`.
 - Only IPv4 is handled. The current Wi-Fi network has no IPv6 router, so this is

@@ -46,12 +46,62 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "missing required command: $1"
 }
 
-route_cmd() {
+shell_join() {
+  local -a quoted
+  quoted=()
+  local arg
+  for arg in "$@"; do
+    quoted+=("${(q)arg}")
+  done
+  print -r -- "${(j: :)quoted}"
+}
+
+run_admin_shell() {
+  local command="$1"
+  local escaped="${command//\\/\\\\}"
+  escaped="${escaped//\"/\\\"}"
+  osascript -e "do shell script \"$escaped\" with administrator privileges"
+}
+
+privileged_cmd() {
   if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
-    /sbin/route "$@"
+    "$@"
+  elif sudo -n true >/dev/null 2>&1; then
+    sudo "$@"
+  elif [[ -t 0 ]]; then
+    sudo "$@"
   else
-    sudo /sbin/route "$@"
+    run_admin_shell "$(shell_join "$@")"
   fi
+}
+
+privileged_shell() {
+  local command="$1"
+  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+    eval "$command"
+  elif sudo -n true >/dev/null 2>&1; then
+    sudo /bin/zsh -c "$command"
+  elif [[ -t 0 ]]; then
+    sudo /bin/zsh -c "$command"
+  else
+    run_admin_shell "$command"
+  fi
+}
+
+route_cmd() {
+  privileged_cmd /sbin/route "$@"
+}
+
+append_route_line() {
+  local script="$1"
+  shift
+  print -r -- "$*" >>"$script"
+}
+
+run_route_script() {
+  local script="$1"
+  [[ -s "$script" ]] || return 0
+  privileged_cmd /bin/zsh "$script"
 }
 
 local_gateway() {
@@ -155,7 +205,7 @@ write_hosts_file() {
   if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
     cat "$src" >"$HOSTS_FILE"
   else
-    sudo tee "$HOSTS_FILE" <"$src" >/dev/null
+    privileged_shell "cat ${(q)src} > ${(q)HOSTS_FILE}"
   fi
 }
 
@@ -164,7 +214,7 @@ flush_dns_cache() {
   if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
     killall -HUP mDNSResponder >/dev/null 2>&1 || true
   else
-    sudo killall -HUP mDNSResponder >/dev/null 2>&1 || true
+    privileged_cmd killall -HUP mDNSResponder >/dev/null 2>&1 || true
   fi
 }
 
@@ -223,7 +273,7 @@ route_targets() {
   tmp="$(mktemp)"
 
   resolve_domains "$gw" "$@" >"$tmp"
-  if [[ -n "$STATIC_IPS" ]]; then
+  if [[ -n "$STATIC_IPS" && "$STATIC_IPS" != "__none__" ]]; then
     printf '%s\n' ${(z)STATIC_IPS} >>"$tmp"
   fi
 
@@ -251,9 +301,25 @@ read_state_ips() {
   fi
 }
 
-write_state_ips() {
+write_state_file() {
+  local target="$1"
+  local tmp
+  tmp="$(mktemp)"
+  sort -u >"$tmp"
   mkdir -p "$STATE_DIR"
-  sort -u >"$STATE_FILE"
+  if { cat "$tmp" >"$target" } 2>/dev/null; then
+    rm -f "$tmp"
+    return
+  fi
+
+  local owner_group
+  owner_group="$(id -un):$(id -gn)"
+  privileged_shell "mkdir -p ${(q)STATE_DIR} && cat ${(q)tmp} > ${(q)target} && chown ${(q)owner_group} ${(q)target} ${(q)STATE_DIR}"
+  rm -f "$tmp"
+}
+
+write_state_ips() {
+  write_state_file "$STATE_FILE"
 }
 
 read_state_nets() {
@@ -263,8 +329,7 @@ read_state_nets() {
 }
 
 write_state_nets() {
-  mkdir -p "$STATE_DIR"
-  sort -u >"$STATE_NET_FILE"
+  write_state_file "$STATE_NET_FILE"
 }
 
 apply_routes() {
@@ -285,6 +350,9 @@ apply_routes() {
   new="$(mktemp)"
   old="$(mktemp)"
   stale="$(mktemp)"
+  local route_script
+  route_script="$(mktemp)"
+  print "set -e" >"$route_script"
 
   route_targets "$gw" "${domains[@]}" >"$new"
   [[ -s "$new" ]] || die "no IPv4 addresses resolved; refusing to change routes"
@@ -305,7 +373,7 @@ apply_routes() {
     while read -r ip; do
       [[ -n "$ip" ]] || continue
       print "  $ip"
-      route_cmd -n delete -host "$ip" >/dev/null 2>&1 || true
+      append_route_line "$route_script" "/sbin/route -n delete -host ${(q)ip} >/dev/null 2>&1 || true"
     done <"$stale"
   elif [[ "$PRUNE_STALE" != "1" ]]; then
     print "retaining stale managed routes (set XHS_ROUTE_PRUNE_STALE=1 to prune)"
@@ -315,12 +383,10 @@ apply_routes() {
   while read -r ip; do
     [[ -n "$ip" ]] || continue
     print "  $ip -> $gw"
-    route_cmd -n add -host "$ip" "$gw" >/dev/null 2>&1 || route_cmd -n change -host "$ip" "$gw" >/dev/null
+    append_route_line "$route_script" "/sbin/route -n add -host ${(q)ip} ${(q)gw} >/dev/null 2>&1 || /sbin/route -n change -host ${(q)ip} ${(q)gw} >/dev/null"
   done <"$new"
 
-  cat "$old" "$new" | write_state_ips
-
-  if [[ -n "$STATIC_NETS" ]]; then
+  if [[ -n "$STATIC_NETS" && "$STATIC_NETS" != "__none__" ]]; then
     print "applying static network routes:"
     local nets old_nets
     nets="$(mktemp)"
@@ -330,10 +396,22 @@ apply_routes() {
     while read -r net; do
       [[ -n "$net" ]] || continue
       print "  $net -> $gw"
-      route_cmd -n add -net "$net" "$gw" >/dev/null 2>&1 || route_cmd -n change -net "$net" "$gw" >/dev/null
+      append_route_line "$route_script" "/sbin/route -n add -net ${(q)net} ${(q)gw} >/dev/null 2>&1 || /sbin/route -n change -net ${(q)net} ${(q)gw} >/dev/null"
     done <"$nets"
-    cat "$old_nets" "$nets" | write_state_nets
     rm -f "$nets" "$old_nets"
+  fi
+
+  run_route_script "$route_script"
+
+  cat "$old" "$new" | write_state_ips
+  if [[ -n "$STATIC_NETS" && "$STATIC_NETS" != "__none__" ]]; then
+    local nets_for_state old_nets_for_state
+    nets_for_state="$(mktemp)"
+    old_nets_for_state="$(mktemp)"
+    printf '%s\n' ${(z)STATIC_NETS} | awk '/^[0-9]+(\.[0-9]+){3}\/[0-9]+$/ { print }' | sort -u >"$nets_for_state"
+    read_state_nets >"$old_nets_for_state"
+    cat "$old_nets_for_state" "$nets_for_state" | write_state_nets
+    rm -f "$nets_for_state" "$old_nets_for_state"
   fi
 
   apply_managed_hosts "$gw"
@@ -344,7 +422,7 @@ apply_routes() {
     route_summary "$ip"
   done <"$new"
 
-  rm -f "$new" "$old" "$stale"
+  rm -f "$new" "$old" "$stale" "$route_script"
 }
 
 status_routes() {

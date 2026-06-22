@@ -22,8 +22,15 @@ mp.weixin.qq.com
 store.mp.video.tencent-cloud.com
 finderpre.video.qq.com
 finder.video.qq.com
+finderassistancea.video.qq.com
+finderassistanceb.video.qq.com
+finderassistancec.video.qq.com
+finderassistanced.video.qq.com
+finderassistancee.video.qq.com
 wxapp.tc.qq.com
 aladin.wxqcloud.qq.com
+mmec.wxqcloud.qq.com.cn
+res.wxqcloud.qq.com.cn
 
 # WeChat Official Account draft/publish API.
 api.weixin.qq.com
@@ -46,6 +53,12 @@ creator.douyin.com
 www.douyin.com
 sso.douyin.com
 mcs.zijieapi.com
+security.zijieapi.com
+mon.zijieapi.com
+lf-fe-creator.douyinstatic.com
+lf-ucenter-web.yhgfb-cn-static.com
+lf3-static.bytednsdoc.com
+lf3-config.bytetcc.com
 
 # Article draft platforms used by platform-draft-direct / Wechatsync fallbacks.
 www.zhihu.com

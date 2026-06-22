@@ -23,6 +23,12 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish
 uv sync --python 3.11
 ```
 
+网络预检：
+
+- 发布前会自动执行视频号本地网络预检。
+- 视频上传阶段会访问独立 CDN：`finderassistancea/b/c/d/e.video.qq.com`、`mmec.wxqcloud.qq.com.cn`、`res.wxqcloud.qq.com.cn`。
+- 这些域名必须和 `channels.weixin.qq.com` 一起走本地网络，否则上传可能卡在 0% 或明显变慢。
+
 常用命令：
 
 ```bash
@@ -30,8 +36,8 @@ uv sync --python 3.11
 .venv/bin/python scripts/cli.py add-account --slot wxp --description "WXP 视频号"
 .venv/bin/python scripts/cli.py --account wxp login --timeout 180
 .venv/bin/python scripts/cli.py --account wxp check-login
-.venv/bin/python scripts/cli.py --account wxp upload-video --file /abs/video.mp4 --title "标题" --desc "简介" --tags AI 工具
-.venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "测试" --fill-only --upload-timeout 90 --cover-timeout 10
+.venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "标题" --desc "简介" --tags AI 工具
+.venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "测试" --fill-only --hold-open -1 --upload-timeout 90 --cover-timeout 10
 ```
 
 封面说明：
@@ -39,3 +45,4 @@ uv sync --python 3.11
 - 视频号会先自动生成默认封面；页面停在“生成中”时，手动上传封面的入口不可用。
 - 传入 `--thumbnail` 时，CLI 默认等待 `--cover-timeout 60` 秒后再上传自定义封面。
 - 如果超时仍在“生成中”，`--fill-only` 会返回 `thumbnail_warning` 并停在提交前；保存草稿/正式发表会直接失败，避免误以为封面已上传。
+- 用户要求上传完成后停在页面时，使用 `--fill-only --hold-open -1`；这不会点击“保存草稿”或“发表”。

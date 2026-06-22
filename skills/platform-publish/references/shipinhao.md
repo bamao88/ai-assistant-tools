@@ -13,7 +13,8 @@
 - 支持扫码登录、登录态检查、上传视频、保存草稿、正式发表、定时发表。
 - 暂不支持视频号图文。`dreammis/social-auto-upload` 上游的 `TencentNote` 仍是未完成骨架，因此本 skill 不宣称图文可用。
 - 默认只保存草稿；只有用户明确要求“正式发布 / 发出去 / 定时发布”并确认后，才加 `--publish`。
-- 测试发布流程时使用 `--fill-only`，只填到提交前，不点击“保存草稿”或“发表”。
+- 如果用户要求“上传完成后停在页面 / 不保存草稿 / 不要后续动作”，必须使用 `--fill-only --hold-open -1`，只上传并填表，不点击“保存草稿”或“发表”。
+- 真实账号上传时默认加 `--headed`，让用户能在前台看到 Chrome 窗口、上传进度和平台提示；只有用户明确要求后台执行时才省略。
 
 ## 首次初始化
 
@@ -144,6 +145,7 @@ Agent 必须把这张二维码图片展示给用户扫码，不能只转述路�
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
   /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/scripts/cli.py \
   [--account <slot>] \
+  --headed \
   upload-video \
   --file "/abs/path/video.mp4" \
   --title "视频标题" \
@@ -163,7 +165,7 @@ Agent 必须把这张二维码图片展示给用户扫码，不能只转述路�
 
 ## 只填表，不提交（测试流程）
 
-用于测试自动化发布链路，停在最终提交前：
+用于测试自动化发布链路，或按用户要求“上传完成后停在页面，不保存草稿/不发表”：
 
 执行本步骤前，必须先完成“网络分流前置步骤”。
 
@@ -178,12 +180,12 @@ Agent 必须把这张二维码图片展示给用户扫码，不能只转述路�
   --desc "这是自动化流程测试内容，请勿发布。" \
   --tags "流程测试" "请勿发布" \
   --fill-only \
-  --hold-open 30
+  --hold-open -1
 ```
 
-`--fill-only` 返回 `action: filled_ready_to_submit` 和 `submitted: false`，表示没有点击任何提交按钮。
+`--fill-only` 会完成上传、填标题/正文/标签、等待上传完成，然后停在发布页；返回 `action: filled_ready_to_submit` 和 `submitted: false`，表示没有点击任何提交按钮。
 
-`--hold-open <seconds>` 只在 `--fill-only` 下用于保留可见浏览器窗口，方便人工观察页面状态；等待结束后浏览器会关闭。
+`--hold-open <seconds>` 只在 `--fill-only` 下用于保留可见浏览器窗口，方便人工观察页面状态；等待结束后浏览器会关闭。`--hold-open -1` 表示一直停在页面，直到用户关窗口或 Agent 中断命令。
 
 ## 封面卡在“生成中”
 
@@ -197,6 +199,9 @@ Agent 必须把这张二维码图片展示给用户扫码，不能只转述路�
 
 - 视频号官方封面抽帧依赖 blob worker + `rhino_video.wasm`，engine 的浏览器 context 已启用 `bypass_csp=True`，避免官方 worker 被 CSP 拦截。
 - `aladin.wxqcloud.qq.com` 已加入 route-bypass，用于官方封面/视频处理相关 wasm 资源走本地网络。
+- 视频上传阶段会走独立上传/CDN 域名，不等同于页面域名。2026-06-22 实测必须覆盖：
+  `finderassistancea/b/c/d/e.video.qq.com`、`mmec.wxqcloud.qq.com.cn`、`res.wxqcloud.qq.com.cn`。
+  发布前 `publish-network-preflight.zsh shipinhao apply/status` 必须同时校验这些上传域名，否则视频可能卡在 0% 或明显变慢。
 - 上传完成和封面可编辑不是同一状态；engine 会继续等待“取消上传 / 文件上传中，请等待完成后再编辑 / 视频处理中，请等待完成后再编辑”消失，再点击封面编辑入口。
 
 ## 正式发表
@@ -254,7 +259,7 @@ Agent 必须把这张二维码图片展示给用户扫码，不能只转述路�
 
 - `--short-title`：视频号短标题，不传时自动从标题截取。
 - `--category`：声明原创时的"原创类型"下拉选项（如 "知识"/"生活"）。**自 2026-05-28 起，upload-video 默认就会声明原创**（勾选"视频为原创" + 同意条款 + 点声明原创按钮）；不传 `--category` 时仍会声明原创，只是不选具体类型。
-- `--headed`：打开可见 Chrome 窗口，适合调试页面变化；默认 headless。
+- `--headed`：打开可见 Chrome 窗口。真实账号草稿上传默认使用，便于用户观察上传进度；无人值守测试才考虑省略。
 - `--upload-timeout`：等待视频上传完成的秒数；测试小视频可设为 `90`，正式视频保留默认或调大。
 
 ## 视频号发布页字段映射（重要）

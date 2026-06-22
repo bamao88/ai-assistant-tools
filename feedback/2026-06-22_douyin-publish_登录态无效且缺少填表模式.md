@@ -2,13 +2,17 @@
 
 ## 状态
 
-partially_fixed
+fixed
 
 ## 处理进展
 
 2026-06-22：已给 `sau douyin upload-video` / `upload-note` 增加 `--fill-only` 和 `--hold-seconds`。`--fill-only` 会强制有头浏览器，上传并填写内容后停在最终发布按钮前，不点击“发布”。已补单元测试覆盖 fill-only 分支不会调用最终发布 callback。
 
-仍未完成：当前账号 cookie 仍无效，需要完成测试号或低风险账号 `login` + `check`，再跑真实上传复测。
+2026-06-22：测试号 `测试号_抖音` 已通过真实 fill-only 复测：本地网络 preflight 后，视频上传进入 `post/video`，标题/简介/话题填入，横版/竖版封面上传，自主声明选择完成，最终停在发布页并输出 `Douyin video filled, ready for manual submit`，未点击发布。
+
+2026-06-22：修复新版创作者中心入口：先打开左侧“高清发布”菜单并选择“发布视频/发布图文”，再等待对应 `input[type=file]`；同时将发布页表单等待延长到 120s，并改用新版标题/简介 selector。
+
+2026-06-22：修复网络 preflight：无 TTY 时使用 macOS 管理员授权窗口，抖音新增静态 `/24` 网段兜底，避免 DNS 换边缘 IP 后又落回 Tailscale/proxy。
 
 ## 发现日期
 
@@ -25,11 +29,8 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/vendor/social-auto-upload
 ## 当前行为
 
 - `sau douyin` 有 `login` / `check` / `upload-video` / `upload-note` 入口。
-- `sau douyin check --account 张和` 返回 `invalid`。
-- `tools/var/state/social-auto-upload/cookies/` 当前没有 `douyin_张和.json`。
-- 最近 `vendor/social-auto-upload/logs/douyin.log` 里的登录尝试停在二维码登录阶段，最终报 `Target page, context or browser has been closed`。
 - 修复前：`upload-video` / `upload-note` 在流程尾部直接点击“发布”，没有 fill-only / draft / manual-submit 模式。
-- 修复后：已支持 `--fill-only`，但登录态尚未恢复，真实上传链路仍需复测。
+- 修复后：已支持 `--fill-only`，测试号真实上传填表链路已通过；真实账号发布仍需先确认账号和最终提交权限。
 
 ## 期望行为
 
@@ -40,5 +41,5 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/vendor/social-auto-upload
 ## 建议修复
 
 1. ~~给 `sau douyin upload-video` / `upload-note` 增加 `--fill-only` 或 `--draft` 参数，默认不点击最终发布。~~
-2. 给 CLI 输出明确的账号态检查结果，缺 cookie / cookie 失效 / creator 登录态失效要分开返回。
-3. 用测试号跑通视频上传、封面、标签、定时发布或人工停留页，再更新 `skills/platform-publish/references/douyin.md` 的当前状态。
+2. ~~用测试号跑通视频上传、封面、标签、人工停留页，再更新 `skills/platform-publish/references/douyin.md` 的当前状态。~~
+3. 后续可继续细化 CLI 账号态错误分类：缺 cookie / cookie 失效 / creator 登录态失效分开返回。

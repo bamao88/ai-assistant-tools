@@ -98,8 +98,15 @@ case "$platform" in
       store.mp.video.tencent-cloud.com
       finderpre.video.qq.com
       finder.video.qq.com
+      finderassistancea.video.qq.com
+      finderassistanceb.video.qq.com
+      finderassistancec.video.qq.com
+      finderassistanced.video.qq.com
+      finderassistancee.video.qq.com
       wxapp.tc.qq.com
       aladin.wxqcloud.qq.com
+      mmec.wxqcloud.qq.com.cn
+      res.wxqcloud.qq.com.cn
     )
     manage_hosts=1
     host_overrides="res.wx.qq.com"
@@ -119,7 +126,14 @@ case "$platform" in
       www.douyin.com
       sso.douyin.com
       mcs.zijieapi.com
+      security.zijieapi.com
+      mon.zijieapi.com
+      lf-fe-creator.douyinstatic.com
+      lf-ucenter-web.yhgfb-cn-static.com
+      lf3-static.bytednsdoc.com
+      lf3-config.bytetcc.com
     )
+    static_nets="${DOUYIN_ROUTE_STATIC_NETS:-101.47.85.0/24 103.216.136.0/24 111.13.104.0/24 111.13.110.0/24 111.31.37.0/24 111.32.168.0/24 111.132.33.0/24 111.132.35.0/24 111.132.43.0/24 111.132.45.0/24 111.47.233.0/24 111.47.235.0/24 111.62.47.0/24 111.62.187.0/24 117.161.15.0/24 117.161.26.0/24 117.161.66.0/24 117.161.134.0/24 117.161.138.0/24 117.169.5.0/24 120.233.80.0/24 120.255.47.0/24 139.177.246.0/24 155.102.209.0/24 163.181.39.0/24 183.201.204.0/24 183.201.235.0/24 183.201.251.0/24 27.222.17.0/24 36.143.194.0/24 36.143.201.0/24 39.136.88.0/24 39.137.66.0/24 59.80.57.0/24}"
     ;;
   gongzhonghao|gzh|wechat-official-account|weixin-mp)
     domains=(

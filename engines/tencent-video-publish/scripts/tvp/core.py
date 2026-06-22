@@ -3,11 +3,16 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import platform
+import shlex
+import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from patchright.async_api import Page, async_playwright
 
@@ -30,6 +35,39 @@ PAGE_DIAG_RELEVANT_HOSTS = (
     "store.mp.video.tencent-cloud.com",
     "res.wx.qq.com",
     "wxqcloud.qq.com",
+)
+PAGE_DIAG_RELEVANT_TOKENS = (
+    "upload",
+    "video",
+    "finder",
+    "qcloud",
+    "tencent",
+    "cos",
+    "vod",
+    "weixin",
+    "wxqcloud",
+)
+SHIPINHAO_ROUTE_VERIFY_DOMAINS = (
+    "channels.weixin.qq.com",
+    "open.weixin.qq.com",
+    "res.wx.qq.com",
+    "mp.weixin.qq.com",
+    "store.mp.video.tencent-cloud.com",
+    "finderpre.video.qq.com",
+    "finder.video.qq.com",
+    "finderassistancea.video.qq.com",
+    "finderassistanceb.video.qq.com",
+    "finderassistancec.video.qq.com",
+    "finderassistanced.video.qq.com",
+    "finderassistancee.video.qq.com",
+    "wxapp.tc.qq.com",
+    "aladin.wxqcloud.qq.com",
+    "mmec.wxqcloud.qq.com.cn",
+    "res.wxqcloud.qq.com.cn",
+)
+SHIPINHAO_ROUTE_PROBE_URLS = (
+    "https://channels.weixin.qq.com/",
+    "https://res.wx.qq.com/",
 )
 STEALTH_ARGS = [
     "--disable-blink-features=AutomationControlled",
@@ -106,7 +144,117 @@ def append_limited(items: list[dict], item: dict, limit: int = MAX_PAGE_DIAG_ITE
 
 
 def relevant_url(url: str) -> bool:
-    return any(host in url for host in PAGE_DIAG_RELEVANT_HOSTS)
+    try:
+        parsed = urlparse(url)
+        haystack = f"{parsed.netloc}{parsed.path}".lower()
+    except Exception:
+        haystack = url.lower()
+    return any(host in url for host in PAGE_DIAG_RELEVANT_HOSTS) or any(
+        token in haystack for token in PAGE_DIAG_RELEVANT_TOKENS
+    )
+
+
+def route_preflight_script() -> Path:
+    return accounts.tools_root() / "engines" / "route-bypass" / "scripts" / "publish-network-preflight.zsh"
+
+
+def tail_text(text: str, max_chars: int = 2000) -> str:
+    text = text.strip()
+    return text[-max_chars:] if len(text) > max_chars else text
+
+
+def find_nonlocal_route_decisions(status_output: str) -> list[str]:
+    local_interface = ""
+    bad: list[str] = []
+    for line in status_output.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("service="):
+            for token in stripped.split():
+                if token.startswith("interface="):
+                    local_interface = token.split("=", 1)[1]
+            continue
+        if not local_interface or " interface=" not in stripped or "destination=" not in stripped:
+            continue
+        interface = ""
+        destination = ""
+        for token in stripped.split():
+            if token.startswith("interface="):
+                interface = token.split("=", 1)[1]
+            elif token.startswith("destination="):
+                destination = token.split("=", 1)[1]
+        if interface != local_interface or destination == "default":
+            bad.append(stripped)
+    return bad
+
+
+def run_shipinhao_preflight(action: str, timeout: int = 240) -> subprocess.CompletedProcess[str]:
+    script = route_preflight_script()
+    return subprocess.run(
+        [str(script), "shipinhao", action],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def run_shipinhao_preflight_with_admin(timeout: int = 300) -> subprocess.CompletedProcess[str]:
+    script = route_preflight_script()
+    log_path = Path(tempfile.gettempdir()) / "shipinhao-route-bypass-apply.log"
+    command = (
+        f"{shlex.quote(str(script))} shipinhao apply > {shlex.quote(str(log_path))} 2>&1; "
+        "status=$?; "
+        f"tail -200 {shlex.quote(str(log_path))}; "
+        "exit $status"
+    )
+    return subprocess.run(
+        ["osascript", "-e", f"do shell script {json.dumps(command)} with administrator privileges"],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def verify_shipinhao_route_bypass() -> dict:
+    result = run_shipinhao_preflight("status")
+    if result.returncode != 0:
+        return {
+            "ok": False,
+            "error": "route-bypass status failed",
+            "stdout": tail_text(result.stdout),
+            "stderr": tail_text(result.stderr),
+        }
+    bad_routes = find_nonlocal_route_decisions(result.stdout)
+    return {
+        "ok": not bad_routes,
+        "bad_routes": bad_routes[:30],
+        "checked_domains": list(SHIPINHAO_ROUTE_VERIFY_DOMAINS),
+    }
+
+
+def ensure_shipinhao_route_bypass() -> dict:
+    verify = verify_shipinhao_route_bypass()
+    if verify.get("ok"):
+        return {"verified": True, "already_applied": True}
+
+    result = run_shipinhao_preflight("apply")
+    needs_admin = "sudo:" in result.stderr or "password is required" in result.stderr
+    if result.returncode != 0 and platform.system() == "Darwin" and needs_admin:
+        result = run_shipinhao_preflight_with_admin()
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            "视频号本地网络分流未能应用，停止上传。"
+            f" stdout={tail_text(result.stdout)} stderr={tail_text(result.stderr)}"
+        )
+
+    verify = verify_shipinhao_route_bypass()
+    if not verify.get("ok"):
+        raise RuntimeError(f"视频号本地网络分流校验失败，停止上传: {json.dumps(verify, ensure_ascii=False)}")
+    return {"verified": True, "applied": True}
 
 
 def attach_page_diagnostics(page: Page) -> dict[str, list[dict]]:
@@ -115,7 +263,17 @@ def attach_page_diagnostics(page: Page) -> dict[str, list[dict]]:
         "page_errors": [],
         "request_failed": [],
         "http_errors": [],
+        "requests": [],
+        "hosts": [],
     }
+
+    def record_host(url: str) -> None:
+        try:
+            host = urlparse(url).netloc
+        except Exception:
+            host = ""
+        if host and host not in diag["hosts"]:
+            append_limited(diag["hosts"], host, limit=200)
 
     def on_console(msg) -> None:
         try:
@@ -135,6 +293,7 @@ def attach_page_diagnostics(page: Page) -> dict[str, list[dict]]:
             url = str(getattr(request, "url", ""))
             if not relevant_url(url):
                 return
+            record_host(url)
             failure = getattr(request, "failure", "")
             if callable(failure):
                 failure = failure()
@@ -149,11 +308,28 @@ def attach_page_diagnostics(page: Page) -> dict[str, list[dict]]:
         try:
             status = int(getattr(response, "status", 0) or 0)
             url = str(getattr(response, "url", ""))
+            if relevant_url(url):
+                record_host(url)
             if status >= 400 and relevant_url(url):
                 append_limited(diag["http_errors"], {"status": status, "url": url[:1000]})
         except Exception as exc:
             append_limited(diag["http_errors"], {"error": str(exc)})
 
+    def on_request(request) -> None:
+        try:
+            url = str(getattr(request, "url", ""))
+            if not relevant_url(url):
+                return
+            record_host(url)
+            append_limited(
+                diag["requests"],
+                {"method": str(getattr(request, "method", "")), "url": url[:1000]},
+                limit=120,
+            )
+        except Exception as exc:
+            append_limited(diag["requests"], {"error": str(exc)})
+
+    page.on("request", on_request)
     page.on("console", on_console)
     page.on("pageerror", on_page_error)
     page.on("requestfailed", on_request_failed)
@@ -618,12 +794,366 @@ async def login(storage_state: Path, qrcode_dir: Path, timeout: int = 180, headl
 async def open_upload_page(page: Page) -> None:
     await page.goto(UPLOAD_URL, wait_until="domcontentloaded", timeout=60000)
     await page.wait_for_timeout(1500)
+    if await has_upload_form_marker(page):
+        return
+
+    # 2026-06: 视频号新版后台会把 /platform/post/create 重定向回
+    # /platform，发布入口挂在 wujie-app 的 shadow DOM 里。旧直达 URL
+    # 失败时，从首页点击“发表视频”进入同一个发布表单。
+    deadline = asyncio.get_event_loop().time() + 30
+    while asyncio.get_event_loop().time() < deadline:
+        if await has_upload_form_marker(page):
+            return
+        if await click_shadow_button_by_exact_text(page, "发表视频"):
+            await wait_for_upload_form_marker(page)
+            return
+        await page.wait_for_timeout(500)
+    raise RuntimeError(f"publish entry not found after redirect; url={page.url}")
+
+
+async def has_upload_form_marker(page: Page) -> bool:
+    markers = (
+        page.locator('input[type="file"]').first,
+        page.locator('div.post-create-wrap').first,
+        page.get_by_text("视频管理/发表动态", exact=False).first,
+        page.get_by_text("上传时长8小时内", exact=False).first,
+    )
+    for marker in markers:
+        try:
+            if await marker.count():
+                return True
+        except Exception:
+            continue
+    try:
+        return bool(
+            await page.evaluate(
+                """() => {
+                    const seen = new Set();
+                    function walk(root) {
+                        for (const el of Array.from(root.querySelectorAll("*"))) {
+                            if (seen.has(el)) continue;
+                            seen.add(el);
+                            if (el.matches && el.matches('input[type="file"]')) return true;
+                            const text = (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+                            if (text.includes("视频管理/发表动态") || text.includes("上传时长8小时内")) return true;
+                            if (el.shadowRoot && walk(el.shadowRoot)) return true;
+                        }
+                        return false;
+                    }
+                    return walk(document);
+                }"""
+            )
+        )
+    except Exception:
+        return False
+
+
+async def wait_for_upload_form_marker(page: Page, timeout_ms: int = 30000) -> None:
+    deadline = asyncio.get_event_loop().time() + timeout_ms / 1000
+    while asyncio.get_event_loop().time() < deadline:
+        if await has_upload_form_marker(page):
+            return
+        await page.wait_for_timeout(500)
+    raise RuntimeError(f"upload form did not open within {timeout_ms}ms; url={page.url}")
+
+
+async def click_shadow_button_by_exact_text(page: Page, text: str) -> bool:
+    try:
+        clicked = await page.evaluate(
+            """targetText => {
+                const seen = new Set();
+                function normalized(el) {
+                    return (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+                }
+                function walk(root) {
+                    for (const el of Array.from(root.querySelectorAll("*"))) {
+                        if (seen.has(el)) continue;
+                        seen.add(el);
+                        if (el.tagName === "BUTTON" && normalized(el) === targetText) {
+                            el.click();
+                            return true;
+                        }
+                        if (el.shadowRoot && walk(el.shadowRoot)) return true;
+                    }
+                    return false;
+                }
+                return walk(document);
+            }""",
+            text,
+        )
+        if clicked:
+            return True
+    except Exception:
+        pass
+
+    button = page.locator(f'button:has-text("{text}")').first
+    try:
+        if await button.count():
+            await button.click()
+            return True
+    except Exception:
+        pass
+    return False
+
+
+async def click_text_locator(page: Page, text: str, *, exact: bool = False, tag_names: list[str] | None = None) -> bool:
+    roots = [page, *page.frames]
+    for root in roots:
+        try:
+            if tag_names:
+                selector = ",".join(tag.lower() for tag in tag_names)
+                locators = [root.locator(selector).filter(has_text=text)]
+            else:
+                # For checkboxes, the wrapping label is the most reliable click target.
+                locators = [
+                    root.locator("label").filter(has_text=text),
+                    root.get_by_text(text, exact=exact),
+                ]
+            for locator in locators:
+                count = await locator.count()
+                for idx in range(min(count, 20)):
+                    item = locator.nth(idx)
+                    try:
+                        if not await item.is_visible():
+                            continue
+                        class_name = (await item.get_attribute("class")) or ""
+                        aria_disabled = (await item.get_attribute("aria-disabled")) or ""
+                        disabled_attr = await item.get_attribute("disabled")
+                        if (
+                            disabled_attr is not None
+                            or aria_disabled.lower() == "true"
+                            or "disabled" in class_name
+                            or "_disabled" in class_name
+                        ):
+                            continue
+                        await item.scroll_into_view_if_needed(timeout=3000)
+                        await item.click(timeout=5000)
+                        return True
+                    except Exception:
+                        continue
+        except Exception:
+            continue
+    return False
+
+
+async def click_shadow_text(page: Page, text: str, *, exact: bool = False, tag_names: list[str] | None = None) -> bool:
+    if await click_text_locator(page, text, exact=exact, tag_names=tag_names):
+        return True
+
+    try:
+        for frame in page.frames:
+            clicked = await frame.evaluate(
+                """({ targetText, exact, tagNames }) => {
+                    const seen = new Set();
+                    const candidates = [];
+                    function normalized(el) {
+                        return (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+                    }
+                    function visible(el) {
+                        const rect = el.getBoundingClientRect();
+                        return !!(rect.width || rect.height || el.getClientRects().length);
+                    }
+                    function disabled(el) {
+                        const cls = (el.className || "").toString();
+                        return el.disabled || cls.includes("disabled") || cls.includes("_disabled");
+                    }
+                    function addCandidate(el) {
+                        const text = normalized(el);
+                        if (!text) return;
+                        const matched = exact ? text === targetText : text.includes(targetText);
+                        if (!matched || !visible(el)) return;
+                        if (tagNames && tagNames.length && !tagNames.includes(el.tagName)) return;
+                        let target = el;
+                        const label = el.closest && el.closest("label");
+                        if (label) target = label;
+                        if (disabled(target)) return;
+                        const rect = target.getBoundingClientRect();
+                        candidates.push({
+                            el: target,
+                            area: Math.max(1, rect.width * rect.height),
+                            textLen: normalized(target).length || text.length,
+                        });
+                    }
+                    function walk(root) {
+                        for (const el of Array.from(root.querySelectorAll("*"))) {
+                            if (seen.has(el)) continue;
+                            seen.add(el);
+                            addCandidate(el);
+                            if (el.shadowRoot) walk(el.shadowRoot);
+                        }
+                    }
+                    walk(document);
+                    candidates.sort((a, b) => a.textLen - b.textLen || a.area - b.area);
+                    if (!candidates.length) return false;
+                    candidates[0].el.click();
+                    return true;
+                }""",
+                {"targetText": text, "exact": exact, "tagNames": tag_names},
+            )
+            if clicked:
+                return True
+    except Exception:
+        pass
+    return False
+
+
+async def shadow_checkbox_checked(page: Page, text: str) -> bool:
+    for root in [page, *page.frames]:
+        try:
+            labels = root.locator("label").filter(has_text=text)
+            count = await labels.count()
+            for idx in range(min(count, 20)):
+                label = labels.nth(idx)
+                try:
+                    checkbox = label.locator('input[type="checkbox"]').first
+                    if await checkbox.count() and await checkbox.is_checked():
+                        return True
+                    checked_marker = label.locator(
+                        ".ant-checkbox-checked, .weui-desktop-form__checkbox_checked, [class*='checked']"
+                    ).first
+                    if await checked_marker.count():
+                        return True
+                except Exception:
+                    continue
+        except Exception:
+            continue
+
+    try:
+        for frame in page.frames:
+            checked = await frame.evaluate(
+                """targetText => {
+                    const seen = new Set();
+                    const candidates = [];
+                    function normalized(el) {
+                        return (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+                    }
+                    function walk(root) {
+                        for (const el of Array.from(root.querySelectorAll("*"))) {
+                            if (seen.has(el)) continue;
+                            seen.add(el);
+                            const text = normalized(el);
+                            if (text === targetText || text.includes(targetText)) {
+                                const label = el.closest && el.closest("label");
+                                const input = (label || el).querySelector && (label || el).querySelector('input[type="checkbox"]');
+                                if (input) candidates.push(input);
+                            }
+                            if (el.shadowRoot) walk(el.shadowRoot);
+                        }
+                    }
+                    walk(document);
+                    return candidates.some(input => input.checked);
+                }""",
+                text,
+            )
+            if checked:
+                return True
+    except Exception:
+        pass
+    return False
+
+
+async def dump_original_debug(page: Page, page_diag: dict[str, list[dict]] | None, reason: str) -> str:
+    dump_dir = Path("/tmp/tencent_video_debug")
+    dump_dir.mkdir(exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    screenshot = dump_dir / f"{reason}_{ts}.png"
+    data_path = dump_dir / f"{reason}_{ts}.json"
+    try:
+        await page.screenshot(path=str(screenshot), full_page=True)
+    except Exception:
+        pass
+
+    frame_diag = []
+    for idx, frame in enumerate(page.frames):
+        try:
+            diag = await frame.evaluate(
+                """() => {
+                    const matches = [];
+                    const clickable = [];
+                    const textRe = /.{0,80}(原创|声明|授权|视频为原创|我已阅读).{0,140}/g;
+                    for (const el of Array.from(document.querySelectorAll("*"))) {
+                        const text = (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+                        if (!text) continue;
+                        let match;
+                        while ((match = textRe.exec(text)) && matches.length < 40) {
+                            matches.push(match[0]);
+                        }
+                        if (/原创|声明|授权/.test(text) && clickable.length < 80) {
+                            const rect = el.getBoundingClientRect();
+                            const cls = (el.className || "").toString();
+                            clickable.push({
+                                tag: el.tagName,
+                                className: cls.slice(0, 180),
+                                text: text.slice(0, 240),
+                                visible: !!(rect.width || rect.height || el.getClientRects().length),
+                                disabled: !!el.disabled || cls.includes("disabled") || cls.includes("_disabled"),
+                            });
+                        }
+                    }
+                    return { url: location.href, matches, clickable };
+                }"""
+            )
+            diag["frame_idx"] = idx
+            diag["frame_url"] = frame.url
+            frame_diag.append(diag)
+        except Exception as exc:
+            frame_diag.append({"frame_idx": idx, "frame_url": frame.url, "error": str(exc)})
+
+    locator_diag: dict[str, Any] = {}
+    for name, selector in {
+        "original_label": "label:has-text('视频为原创')",
+        "original_text": "text=视频为原创",
+        "agree_text": "text=我已阅读并同意",
+        "declare_button": "button:has-text('声明原创')",
+        "checkboxes": "input[type='checkbox']",
+    }.items():
+        locator = page.locator(selector)
+        item = locator.first
+        try:
+            count = await locator.count()
+            if count:
+                locator_diag[name] = {
+                    "selector": selector,
+                    "count": count,
+                    "visible": await item.is_visible(),
+                    "text": (await item.text_content() or "")[:1000],
+                    "outer_html": (await item.evaluate("e => e.outerHTML"))[:4000],
+                }
+            else:
+                locator_diag[name] = {"selector": selector, "count": 0}
+        except Exception as exc:
+            locator_diag[name] = {"selector": selector, "error": str(exc)}
+
+    data = {
+        "reason": reason,
+        "url": page.url,
+        "locator_diag": locator_diag,
+        "frame_diag": frame_diag,
+        "page_events": page_diag or {},
+    }
+    data_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return f"{data_path} {screenshot}"
 
 
 async def upload_video_file(page: Page, file_path: Path) -> None:
     file_input = page.locator('input[type="file"]').first
     await file_input.wait_for(state="attached", timeout=30000)
     await file_input.set_input_files(str(file_path))
+
+
+async def focus_editor_end(editor) -> None:
+    await editor.click()
+    await editor.evaluate(
+        """el => {
+            el.focus();
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }"""
+    )
 
 
 async def fill_title_tags_desc(page: Page, title: str, tags: list[str], desc: str) -> None:
@@ -633,22 +1163,34 @@ async def fill_title_tags_desc(page: Page, title: str, tags: list[str], desc: st
     # 用户明确要求描述 editor 顺序：标题 → 换行 → 正文 → 换行 → 标签。
     editor = page.locator("div.input-editor").first
     await editor.wait_for(state="visible", timeout=30000)
-    await editor.click()
+    await focus_editor_end(editor)
     if title:
         await page.keyboard.insert_text(title)
         await page.keyboard.press("Enter")
+    desc = desc.strip()
     if desc:
         await page.keyboard.insert_text(desc)
+    if tags:
+        await focus_editor_end(editor)
         await page.keyboard.press("Enter")
     for tag in tags:
         tag = tag.strip().lstrip("#")
         if not tag:
             continue
-        await page.keyboard.insert_text("#" + tag)
+        # 标签必须逐个输入并等待平台识别；不要把标签和正文一次性粘贴。
+        await focus_editor_end(editor)
+        await page.keyboard.type("#", delay=30)
+        await page.keyboard.type(tag, delay=30)
+        await page.wait_for_timeout(500)
         await page.keyboard.press("Space")
+        await page.wait_for_timeout(900)
 
 
-async def apply_original_statement(page: Page, category: str | None) -> None:
+async def apply_original_statement(
+    page: Page,
+    category: str | None,
+    page_diag: dict[str, list[dict]] | None = None,
+) -> None:
     # 默认声明原创（即使没传 --category）。
     # category 只用于在弹出的"原创类型"下拉里选择具体类型（如 "知识"）；不传时跳过类型选择，但仍走声明流程。
     #
@@ -657,41 +1199,25 @@ async def apply_original_statement(page: Page, category: str | None) -> None:
     # 渲染后 DOM: <label class="ant-checkbox-wrapper">...<span>视频为原创</span></label>
     # disabled 时 wrapper class 含 "ant-checkbox-wrapper-disabled"。
     try:
-        wrapper = page.locator("label.ant-checkbox-wrapper").filter(has_text="视频为原创").first
-        if not await wrapper.count():
-            text_loc = page.get_by_text("视频为原创", exact=True).first
-            if not await text_loc.count():
-                return  # 不支持原创
-            ancestor = text_loc.locator("xpath=ancestor::label[contains(@class,'ant-checkbox-wrapper')][1]")
-            wrapper = ancestor if await ancestor.count() else text_loc
-        # 等 ant-checkbox-wrapper-disabled 消失（视频处理完才会 enabled，最长 60s）
+        await page.keyboard.press("End")
+        await page.wait_for_timeout(500)
+    except Exception:
+        pass
+    if not await shadow_checkbox_checked(page, "视频为原创"):
+        clicked_original = False
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 60
         while loop.time() < deadline:
-            cls = (await wrapper.get_attribute("class")) or ""
-            if "ant-checkbox-wrapper-disabled" not in cls and "ant-checkbox-disabled" not in cls:
+            clicked_original = await click_shadow_text(page, "视频为原创", exact=False)
+            if clicked_original:
+                await page.wait_for_timeout(1000)
                 break
             await asyncio.sleep(1)
-        # 已勾选则跳过，否则 click wrapper 触发 toggle
-        try:
-            cb_input = wrapper.locator("input[type='checkbox']").first
-            already_checked = await cb_input.count() and await cb_input.is_checked()
-        except Exception:
-            already_checked = False
-        if not already_checked:
-            await wrapper.click()
-    except Exception:
-        return
+        if not clicked_original:
+            debug = await dump_original_debug(page, page_diag, "original_entry_missing")
+            raise RuntimeError(f"未找到可点击的“视频为原创”入口; debug={debug}")
 
-    try:
-        agree_text = page.get_by_text("我已阅读并同意", exact=False).first
-        if await agree_text.count():
-            await agree_text.click()
-            declare_btn = page.locator('button:has-text("声明原创")').first
-            if await declare_btn.count():
-                await declare_btn.click()
-    except Exception:
-        pass
+    await click_shadow_text(page, "我已阅读并同意", exact=False)
 
     if category:
         original_type_form = page.locator('div.original-type-form > div.form-label:has-text("原创类型"):visible')
@@ -704,9 +1230,15 @@ async def apply_original_statement(page: Page, category: str | None) -> None:
             ).first.click()
             await page.wait_for_timeout(1000)
 
-    declare_button = page.locator('button:has-text("声明原创"):visible')
-    if await declare_button.count():
-        await declare_button.click()
+    await page.wait_for_timeout(1000)
+    clicked_declare = await click_shadow_text(page, "声明原创", exact=True, tag_names=["BUTTON"])
+    if not clicked_declare:
+        clicked_declare = await click_shadow_text(page, "声明原创", exact=False, tag_names=["BUTTON"])
+    if not clicked_declare:
+        if await shadow_checkbox_checked(page, "视频为原创"):
+            return
+        debug = await dump_original_debug(page, page_diag, "original_declare_missing")
+        raise RuntimeError(f"未能点击“声明原创”按钮; debug={debug}")
 
 
 async def upload_edit_blocking_status(page: Page) -> tuple[bool, str]:
@@ -727,9 +1259,88 @@ async def upload_edit_blocking_status(page: Page) -> tuple[bool, str]:
     return False, ""
 
 
-async def wait_for_upload_complete(page: Page, timeout_seconds: int = 300) -> None:
+async def collect_upload_status_text(page: Page) -> str:
+    texts: list[str] = []
+    status_candidates = (
+        page.locator("div.status-msg").first,
+        page.locator("div.media-status-content").first,
+        page.locator("div.upload-progress").first,
+        page.locator('text=/上传|处理|失败|%/').first,
+    )
+    for status in status_candidates:
+        try:
+            if await status.count() and await status.is_visible():
+                text = (await status.inner_text()).strip()
+                if text:
+                    texts.append(" ".join(text.split())[:300])
+        except Exception:
+            continue
+
+    try:
+        shadow_text = await page.evaluate(
+            """() => {
+                const seen = new Set();
+                const chunks = [];
+                const re = /.{0,30}(上传|处理|失败|网络异常|\\d+\\s*%).{0,80}/g;
+                function visible(el) {
+                    const rect = el.getBoundingClientRect();
+                    return !!(rect.width || rect.height || el.getClientRects().length);
+                }
+                function walk(root) {
+                    for (const el of Array.from(root.querySelectorAll("*"))) {
+                        if (seen.has(el)) continue;
+                        seen.add(el);
+                        if (visible(el)) {
+                            const text = (el.innerText || el.textContent || "").replace(/\\s+/g, " ").trim();
+                            let match;
+                            while ((match = re.exec(text)) && chunks.length < 20) {
+                                chunks.push(match[0]);
+                            }
+                        }
+                        if (el.shadowRoot) walk(el.shadowRoot);
+                    }
+                }
+                walk(document);
+                return chunks.join(" | ");
+            }"""
+        )
+        if shadow_text:
+            texts.append(shadow_text[:500])
+    except Exception:
+        pass
+    return " | ".join(dict.fromkeys(texts))[:1000]
+
+
+async def dump_upload_debug(page: Page, page_diag: dict[str, list[dict]] | None, reason: str) -> str:
+    dump_dir = Path("/tmp/tencent_video_debug")
+    dump_dir.mkdir(exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    screenshot = dump_dir / f"{reason}_{ts}.png"
+    data_path = dump_dir / f"{reason}_{ts}.json"
+    try:
+        await page.screenshot(path=str(screenshot), full_page=True)
+    except Exception:
+        pass
+    data = {
+        "reason": reason,
+        "url": page.url,
+        "status_text": await collect_upload_status_text(page),
+        "network_diag": page_diag or {},
+        "route_verify": verify_shipinhao_route_bypass(),
+    }
+    data_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return f"{data_path} {screenshot}"
+
+
+async def wait_for_upload_complete(
+    page: Page,
+    timeout_seconds: int = 300,
+    page_diag: dict[str, list[dict]] | None = None,
+) -> None:
     deadline = asyncio.get_event_loop().time() + timeout_seconds
     last_status = ""
+    last_status_at = asyncio.get_event_loop().time()
+    stalled_wait_seconds = min(180, max(60, timeout_seconds // 3))
     while asyncio.get_event_loop().time() < deadline:
         publish_button = page.get_by_role("button", name="发表").first
         try:
@@ -743,27 +1354,30 @@ async def wait_for_upload_complete(page: Page, timeout_seconds: int = 300) -> No
         except Exception:
             pass
 
-        status_candidates = (
-            page.locator("div.status-msg").first,
-            page.locator("div.media-status-content").first,
-            page.locator("div.upload-progress").first,
-        )
-        for status in status_candidates:
-            try:
-                if await status.count() and await status.is_visible():
-                    text = (await status.inner_text()).strip()
-                    if text:
-                        last_status = text[:200]
-                        break
-            except Exception:
-                continue
+        status_text = await collect_upload_status_text(page)
+        if status_text:
+            now = asyncio.get_event_loop().time()
+            if status_text != last_status:
+                last_status = status_text
+                last_status_at = now
+            elif ("%" in status_text or "上传" in status_text) and now - last_status_at > stalled_wait_seconds:
+                dump = await dump_upload_debug(page, page_diag, "upload_stalled")
+                raise RuntimeError(
+                    f"video upload status stalled for {stalled_wait_seconds}s: {last_status}; "
+                    f"debug={dump}; hosts={(page_diag or {}).get('hosts', [])}"
+                )
 
         upload_failed = await page.locator("div.status-msg.error").count()
         delete_button = await page.locator('div.media-status-content div.tag-inner:has-text("删除")').count()
         if upload_failed and delete_button:
-            raise RuntimeError(f"video upload failed on page: {last_status}")
+            dump = await dump_upload_debug(page, page_diag, "upload_failed")
+            raise RuntimeError(f"video upload failed on page: {last_status}; debug={dump}")
         await asyncio.sleep(2)
-    raise RuntimeError(f"video upload did not complete within {timeout_seconds}s; last_status={last_status}; url={page.url}")
+    dump = await dump_upload_debug(page, page_diag, "upload_timeout")
+    raise RuntimeError(
+        f"video upload did not complete within {timeout_seconds}s; "
+        f"last_status={last_status}; url={page.url}; debug={dump}; hosts={(page_diag or {}).get('hosts', [])}"
+    )
 
 
 async def cover_generation_loading(page: Page) -> tuple[bool, str]:
@@ -1036,6 +1650,7 @@ async def upload_video(request: UploadVideoRequest) -> dict:
     if not request.title.strip():
         raise ValueError("title is required")
 
+    route_status = ensure_shipinhao_route_bypass()
     login_check = await check_login(request.storage_state, headless=request.headless)
     if not login_check.get("logged_in"):
         raise RuntimeError(
@@ -1070,8 +1685,15 @@ async def upload_video(request: UploadVideoRequest) -> dict:
             # 等视频上传 + 后端处理完成后，再做原创声明 + 封面 —— 这些操作的入口在视频处理
             # 完成前是"未就绪"状态（apply_original_statement 找不到 label / set_thumbnail
             # 区域显示"生成中"），过早调用会静默失败。
-            await wait_for_upload_complete(page, timeout_seconds=request.upload_timeout)
-            await apply_original_statement(page, request.category)
+            await wait_for_upload_complete(page, timeout_seconds=request.upload_timeout, page_diag=page_diag)
+            original_warning: str | None = None
+            try:
+                await apply_original_statement(page, request.category, page_diag=page_diag)
+            except RuntimeError as exc:
+                if request.fill_only and "视频为原创" in str(exc):
+                    original_warning = str(exc)
+                else:
+                    raise
             # 封面失败时：fill-only 模式下只 log warning 不阻断（方便人工在浏览器里诊断 DOM）；
             # 非 fill-only 模式仍然 raise，避免静默以为传上了。
             thumbnail_warning: str | None = None
@@ -1183,6 +1805,13 @@ async def upload_video(request: UploadVideoRequest) -> dict:
                 await set_schedule_time(page, request.schedule_at)
             await set_short_title(page, request.title, request.short_title)
             if request.fill_only:
+                if request.hold_open_seconds < 0:
+                    if original_warning:
+                        print(f"ORIGINAL_WARNING={original_warning}", flush=True)
+                    if thumbnail_warning:
+                        print(f"THUMBNAIL_WARNING={thumbnail_warning}", flush=True)
+                    print(f"FILL_ONLY_READY={page.url}", flush=True)
+                    await asyncio.Event().wait()
                 if request.hold_open_seconds > 0:
                     await asyncio.sleep(request.hold_open_seconds)
                 save_result = await save_storage_state(context, request.storage_state)
@@ -1195,11 +1824,13 @@ async def upload_video(request: UploadVideoRequest) -> dict:
                     "storage_state": str(request.storage_state),
                     "profile_dir": str(profile_dir),
                     "credential_source": credential_source,
+                    "route_status": route_status,
                     "storage_state_saved": save_result.get("saved", False),
                     "storage_state_backup": save_result.get("backup", ""),
                     "current_url": page.url,
                     "scheduled_at": request.schedule_at.isoformat() if request.schedule_at else None,
                     "submitted": False,
+                    "original_warning": original_warning,
                     "thumbnail_warning": thumbnail_warning,
                 }
             action = await submit(page, request.publish)
@@ -1213,6 +1844,7 @@ async def upload_video(request: UploadVideoRequest) -> dict:
                 "storage_state": str(request.storage_state),
                 "profile_dir": str(profile_dir),
                 "credential_source": credential_source,
+                "route_status": route_status,
                 "storage_state_saved": save_result.get("saved", False),
                 "storage_state_backup": save_result.get("backup", ""),
                 "current_url": page.url,

@@ -20,10 +20,15 @@ video_select/    代码包（只管逻辑；提示词一律从 prompts/ 读）
   generate.py       候选 Runner          → golden_candidate.json + candidates/clip_NN.md
   dedup.py          批量去重 Runner      → golden_dedup.json（流程二后·内容级去重）
   gates.py          门禁（精选合并 + 时长 + 可执行 + 零编造）
-  score.py          打分器（候选 vs 冻结 golden 参照）
+  score.py          打分器（候选 vs 冻结 golden 参照·端到端）
+  stage_run.py      单阶段测试口（从冻结 input 单跑 body_edit/refine_deduct/hook）
   select_clips_a.py 方案A·单阶段（备用对照）
   adapt_tencent.py  腾讯会议逐字稿(minutes·多说话人) → words.json（保留 speaker/is_host）
-eval/            Harness 数据（fixtures 入库 / runs 不入库 / words 软链 / notes 经验）
+eval/            Harness 数据 + 分阶段评测（详见 eval/README.md）
+  contracts/        5 阶段判分契约（真源）
+  fixtures/<ds>/stages/<N_阶段>/{input,golden}.json   每阶段冻结输入 + 金标准
+  scorers/          5 把尺（1_topic_select … 5_dedup_merge）+ judge.py + run_all.py
+  build_inputs.py / seed_golden.py   派生各阶段 input / golden 种子
 ```
 
 **依赖方向**：`video-select → video-slicer`（单向 import 它的 `transcribe.segment` / `llm` / `twostage.index`，复用「逐字稿→句/时间」核心，不重复造）。

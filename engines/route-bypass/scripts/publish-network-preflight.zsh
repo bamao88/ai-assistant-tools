@@ -168,12 +168,19 @@ case "$platform" in
     )
     ;;
   transcribe|asr|video-transcribe)
-    # Cloud transcription (engines/video-slicer). 国内 ASR 服务，必须本地出口，
-    # 否则海外 IP 绕行慢/易触发地域限制。OSS 两域名仅 --uploader oss 用到，
-    # public 默认上传走海外 uguu.se（不在此钉，留海外出口）；钉了不用也无害。
+    # Cloud transcription (engines/video-slicer). 把整条转录链路都钉到本地出口，
+    # 复刻"手动关代理"那条能跑通的路径（无需真关 VPN）：
+    #  - 国内 ASR API：火山 openspeech / 阿里 dashscope（控制面调用走本地）。
+    #  - public 上传站：uguu.se / 0x0.st（"上传公域音频"这一步也走本地，
+    #    否则海外出口传大文件不稳——2026-06 实测 45MB/2.2h 走海外 8 次重试全空）。
+    # OSS 两域名：⚠ 2026-06 OSS 凭证已过期，--uploader oss 暂不可用；
+    #            域名留作续期后用，钉着无害。
     domains=(
       openspeech.bytedance.com
       dashscope.aliyuncs.com
+      uguu.se
+      h.uguu.se
+      0x0.st
       oss-cn-beijing.aliyuncs.com
       zh-0121.oss-cn-beijing.aliyuncs.com
     )

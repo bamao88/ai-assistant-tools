@@ -163,6 +163,58 @@ def cmd_upload_video(args: argparse.Namespace) -> None:
     output(result)
 
 
+def cmd_publish_item(args: argparse.Namespace) -> None:
+    from tvp.core import UploadVideoRequest, upload_video, validate_image_file, validate_video_file
+    from tvp.item import load_item_publish_copy
+
+    item = load_item_publish_copy(
+        Path(args.item_dir),
+        video_path=Path(args.file) if args.file else None,
+        thumbnail_path=Path(args.thumbnail) if args.thumbnail else None,
+    )
+    payload = {
+        "success": True,
+        "action": "parsed_item",
+        "platform": "tencent_video",
+        "item_dir": str(item.item_dir),
+        "publish_copy": str(item.publish_copy),
+        "title": item.title,
+        "desc": item.desc,
+        "tags": item.tags,
+        "file": str(item.video_path),
+        "thumbnail": str(item.thumbnail_path),
+        "scheduled_at": parse_schedule(args.schedule_at).isoformat() if args.schedule_at else None,
+        "publish": args.publish,
+        "fill_only": args.fill_only,
+    }
+    if args.dry_run:
+        output(payload)
+
+    request = UploadVideoRequest(
+        storage_state=storage_state_for(args),
+        file_path=validate_video_file(item.video_path),
+        title=item.title,
+        desc=item.desc,
+        tags=item.tags,
+        publish=args.publish,
+        schedule_at=parse_schedule(args.schedule_at),
+        thumbnail_path=validate_image_file(item.thumbnail_path),
+        short_title=args.short_title,
+        category=args.category,
+        fill_only=args.fill_only,
+        hold_open_seconds=args.hold_open,
+        upload_timeout=args.upload_timeout,
+        cover_timeout=args.cover_timeout,
+        headless=not args.headed,
+    )
+    result = asyncio.run(upload_video(request))
+    result["item_dir"] = str(item.item_dir)
+    result["publish_copy"] = str(item.publish_copy)
+    result["thumbnail"] = str(item.thumbnail_path)
+    result["tags"] = item.tags
+    output(result)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Video publisher for WeChat Channels")
     parser.add_argument("--account", default="", help="named account slot; omit to use default account")
@@ -228,6 +280,29 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("--upload-timeout", type=int, default=300, help="seconds to wait for video upload completion")
     sub.add_argument("--cover-timeout", type=int, default=60, help="seconds to wait for official cover generation before custom cover upload")
     sub.set_defaults(func=cmd_upload_video)
+
+    sub = subparsers.add_parser(
+        "publish-item",
+        help="publish one assistant_zh item dir by reading publish_copy.md, 成片.mp4, and cover.png",
+    )
+    sub.add_argument("--item-dir", required=True, help="content item directory containing publish_copy.md")
+    sub.add_argument("--file", default="", help="override video file path; defaults to 成片.mp4")
+    sub.add_argument("--thumbnail", default="", help="override cover image path; defaults to cover.png")
+    sub.add_argument("--short-title", default="")
+    sub.add_argument("--category", default="知识", help="original category, only used when declaring original")
+    sub.add_argument("--schedule-at", default="", help='local time, e.g. "2026-05-27 21:30"; requires --publish')
+    sub.add_argument("--publish", action="store_true", help="click publish; omit to save draft")
+    sub.add_argument("--fill-only", action="store_true", help="fill the publish form and stop before saving draft/publishing")
+    sub.add_argument(
+        "--hold-open",
+        type=int,
+        default=0,
+        help="seconds to keep the browser open after --fill-only; use -1 to keep it open until interrupted",
+    )
+    sub.add_argument("--upload-timeout", type=int, default=300, help="seconds to wait for video upload completion")
+    sub.add_argument("--cover-timeout", type=int, default=60, help="seconds to wait for official cover generation before custom cover upload")
+    sub.add_argument("--dry-run", action="store_true", help="parse item dir and print upload payload without opening browser")
+    sub.set_defaults(func=cmd_publish_item)
 
     return parser
 

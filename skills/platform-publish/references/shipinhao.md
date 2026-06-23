@@ -154,7 +154,58 @@ rm -f /tmp/shipinhao.cookies
 - 标题
 - 简介/正文（可选）
 - 话题标签（可选，不要带 `#` 也可以）
-- 封面图（可选）。**张和口播竖屏视频**的封面用 `assets/video-cover/zhanghe`（底图池轮换 + 黑块黄字 Heavy 标题）生成，调用契约见该目录 `cover-kit.json` 的 `invoke`；仅限张和本人口播 9:16，适用边界见 `usage.do_not_use_for`。视频号要把生成的封面**烧进视频首帧**或经平台取帧，不能像抖音/小红书那样单独上传。
+- 封面图（可选）。**张和口播竖屏视频**的封面优先使用内容目录里的 `cover.png`。视频号 engine 已支持通过 `--thumbnail` 等官方封面生成完成后上传自定义封面；不要再要求把封面烧进视频首帧。
+
+## 内容目录一键发布（推荐）
+
+当内容来自 `assistant_zh/content/.../items/<content_id>/` 目录时，优先使用 `publish-item`，不要手动从 `publish_copy.md` 拼 `upload-video` 参数。
+
+`publish-item` 会自动读取：
+
+- `publish_copy.md` 里带 ✅ 的标题候选。✅ 可在行首，也可在标题末尾；如果没有唯一 ✅ 标题会失败退出，避免误选。
+- `## 正文` 作为视频号描述正文。
+- `视频号精简（5 个）` 作为视频号标签；如果缺失，才退回中文关键词前 5 个。
+- 同目录 `成片.mp4` 作为视频。
+- 同目录 `cover.png` 作为封面。
+
+定时发布示例：
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
+  /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/scripts/cli.py \
+  --account zhanghe \
+  --headed \
+  publish-item \
+  --item-dir "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/content/zh_main/items/ZHC20260613_evc04_001" \
+  --publish \
+  --schedule-at "2026-07-04 20:20" \
+  --upload-timeout 360 \
+  --cover-timeout 90
+```
+
+只解析不打开浏览器：
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
+  /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/scripts/cli.py \
+  --account zhanghe \
+  publish-item \
+  --item-dir "/abs/item_dir" \
+  --dry-run
+```
+
+测试号填表停住：
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
+  /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/scripts/cli.py \
+  --account aipm \
+  --headed \
+  publish-item \
+  --item-dir "/abs/item_dir" \
+  --fill-only \
+  --hold-open -1
+```
 
 命令：
 

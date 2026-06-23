@@ -43,7 +43,11 @@ uv sync --python 3.11
 .venv/bin/python scripts/cli.py --account wxp import-cookies --cookie-file /tmp/wxp.cookies
 .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "标题" --desc "简介" --tags AI 工具
 .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "测试" --fill-only --hold-open -1 --upload-timeout 90 --cover-timeout 10
+.venv/bin/python scripts/cli.py --account zhanghe --headed publish-item --item-dir /abs/item_dir --publish --schedule-at "2026-07-04 20:20" --upload-timeout 360 --cover-timeout 90
+.venv/bin/python scripts/cli.py --account zhanghe publish-item --item-dir /abs/item_dir --dry-run
 ```
+
+`publish-item` 是 assistant_zh 内容目录的一键入口：自动读取 `publish_copy.md` 的唯一 ✅ 标题、`## 正文`、`视频号精简（5 个）`，并默认使用同目录 `成片.mp4` 和 `cover.png`。
 
 手动 Cookie 导入：
 

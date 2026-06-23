@@ -161,6 +161,46 @@ yt-dlp --cookies-from-browser chrome \
 
 ---
 
+## 方式四：视频字幕金句卡（拼图）
+
+把访谈/播客里的一段金句，做成「一张代表性视频帧 + 下方双语字幕条若干」的可分享图——复刻烧录双语字幕的观感（深底、英文白字加粗、中文浅灰、细分隔线），手机竖屏可读。适合小红书/朋友圈引用嘉宾原话。
+
+工具：`engines/screenshot/subtitle_card.js`（playwright 渲染 HTML 卡片→整图截图）。取帧仍复用方式三的 `video_frame.py`；挑哪几句、中文怎么译，由 AI/人定。
+
+**四步：**
+
+**第一步：抠顶图帧** —— 用方式三的 grab 截**整帧画面**（不裁子区域，要的是讲者画面本身），挑一张表情/构图好的：
+```bash
+python3 engines/screenshot/video_frame.py grab "<youtube_url>" \
+  --at 00:38:54=a,00:40:16=b \
+  --outdir /tmp/cardframes
+# 不传 --crop = 整帧；Read 选一张顶图
+```
+
+**第二步：定金句 + 译文** —— 从字幕/逐字稿（方式三的「字幕获取」）摘 2-4 句连贯金句，逐句配中文译，写成 JSON（一句英文一句中文，按上到下顺序）：
+```json
+[
+  {"en": "Two years ago, the model was actually just a set of weights.",
+   "zh": "两年前，所谓「模型」就是字面意义上的一组权重。"},
+  {"en": "Now it's not just the weights.", "zh": "但今天，它早就不只是那组权重了。"}
+]
+```
+
+**第三步：一键合成** ——
+```bash
+node engines/screenshot/subtitle_card.js \
+  --frame /tmp/cardframes/ppt_a.jpg \
+  --lines /tmp/quotes.json \
+  --out "<输出目录>/card_a.jpg" [--width 1280]
+```
+`--lines` 也可内联 JSON 串；`--out` 后缀 `.png` 出 PNG，否则 JPG。Retina 2x。
+
+**第四步：视觉验证** —— Read 成品确认换行不溢出、译文准确、断句自然；一张卡只放一个完整论点（英文别拆到半句）。
+
+参数：`--width`（默认 1280）·`--bg`（底色，默认 `#161a23`）。一段视频多个金句就多跑几次第二三步。
+
+---
+
 ## 登录状态（方式一专用）
 
 需要登录的平台通过 `storage_state.json` 注入 cookies，从运行中的 Chrome（port 9222）导出。

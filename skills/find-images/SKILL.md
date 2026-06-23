@@ -199,6 +199,8 @@ node engines/screenshot/subtitle_card.js \
 
 参数：`--width`（默认 1280）·`--bg`（底色，默认 `#161a23`）。一段视频多个金句就多跑几次第二三步。
 
+⚠️ **取帧依赖视频轨缓存**：第一步从 `/Volumes/ExtSSD2601/media/` 复用视频轨，命中则秒出；换一条新视频第一次会走 yt-dlp 下载（需 Chrome cookies + 网络 + 该视频可下载，绕 bot 墙见方式三）。第三步纯本地渲染（playwright），不联网。`subtitle_card.js` 输入是任意现成图，没视频时可直接喂截图跳过第一步。
+
 ---
 
 ## 登录状态（方式一专用）

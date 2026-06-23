@@ -136,7 +136,8 @@ def main():
 
     pg = sub.add_parser("grab", help="按时间点+crop 批量裁 PPT")
     pg.add_argument("url")
-    pg.add_argument("--crop", required=True, help="W:H:X:Y（ffmpeg crop 语法）")
+    pg.add_argument("--crop", default=None,
+                    help="W:H:X:Y（ffmpeg crop 语法）；不传则截整帧（方式四金句卡用）")
     pg.add_argument("--at", required=True,
                     help="逗号分隔 时间=名字，如 00:09:42=results,00:11:22=pareto")
     pg.add_argument("--outdir", required=True)

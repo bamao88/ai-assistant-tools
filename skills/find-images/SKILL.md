@@ -18,7 +18,8 @@
   │          ├─ Chrome 有该站 cookies → export_cookies.py → screenshot.js
   │          └─ 无/失效 → 网络搜索教程提取 ……………………… 方式二
   └─ 视频（YouTube 演讲/访谈/产品演示的画面或 PPT）
-       → 抠帧 + 裁区域（video_frame.py）……………………… 方式三
+       ├─ 要画面/PPT 本身做配图 → 抠帧 + 裁区域（video_frame.py）…… 方式三
+       └─ 要做「双语字幕金句卡」分享图 → 抠帧 + 拼字幕条（subtitle_card.js）… 方式四
 ```
 
 **不管用哪种方式，拿到候选图片后都必须视觉验证再使用。**

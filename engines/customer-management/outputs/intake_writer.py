@@ -39,11 +39,13 @@ def names(v):
     elif isinstance(v,str) and v: out=[v]
     return out
 def fetch():
+    # 用 POST /records/search（GET 列表接口改字段后常返 1254607 "Data not ready"，search 稳）。
     out=[];tok=""
     while True:
-        p={"page_size":500}
-        if tok:p["page_token"]=tok
-        d=lark(["api","GET",f"/open-apis/bitable/v1/apps/{APP}/tables/{TBL}/records","--params",json.dumps(p,ensure_ascii=False)]).get("data",{})
+        params={"page_size":500}
+        if tok:params["page_token"]=tok
+        d=lark(["api","POST",f"/open-apis/bitable/v1/apps/{APP}/tables/{TBL}/records/search",
+                "--params",json.dumps(params,ensure_ascii=False),"--data","{}"]).get("data",{})
         out+=d.get("items") or []
         if not d.get("has_more"):break
         tok=d.get("page_token") or ""

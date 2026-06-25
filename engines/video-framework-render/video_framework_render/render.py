@@ -119,8 +119,8 @@ html,body { width:720px; height:1280px; background:#F4F2EC; }
   font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#1F2329; }
 .titlewrap { position:absolute; top:84px; left:56px; width:608px; text-align:left; }
 .titleband { display:block; font-size:46px; font-weight:800; line-height:1.24; letter-spacing:.5px; color:#1F2329; }
-.titlestrip { position:absolute; top:auto; left:56px; margin-top:0; width:608px; height:6px; border-radius:3px;
-  transform:none; background:linear-gradient(90deg,#FF6B5C 0 34%, #DCD7CB 34% 100%); }
+.titlestrip { margin-top:16px; width:608px; height:6px; border-radius:3px;
+  background:linear-gradient(90deg,#FF6B5C 0 34%, #DCD7CB 34% 100%); }
 .ppt { position:absolute; top:300px; left:56px; width:608px; text-align:left;
   display:flex; flex-direction:column; align-items:stretch; }
 .l-hero { background:#ffffff; border-left:8px solid #FF6B5C; border-radius:14px;

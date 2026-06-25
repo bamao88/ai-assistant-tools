@@ -26,6 +26,11 @@ from .cli import load_env_file, _discover_env_file
 
 VALID_BLOCKS = {"hero", "arrow", "mid", "key", "sub", "gap"}
 
+# 翻页硬地板：每页原速最小停留秒数。成片后 compose 还会按语速整体最高 2x 加速，
+# 14s 原速 ≈ 7-8s 最终停留——对应「大幅放慢·页少content厚」档（见 pages_system_prompt.txt
+# 核心原则：内容块驱动翻页）。两页 start 间隔不够，就把后页内容并进前页，而不是硬翻。
+MIN_DWELL_SEC = 14
+
 _ENGINE_ROOT = Path(__file__).resolve().parent.parent  # engines/video-slicer
 
 

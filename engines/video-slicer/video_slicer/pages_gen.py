@@ -118,10 +118,17 @@ def _sanitize(pages: list, duration: float, min_dwell: float = MIN_DWELL_SEC) ->
         raise ValueError("pages_gen: 模型没产出可用的 pages。")
     out.sort(key=lambda p: p["start"])
     out[0]["start"] = 0
-    for i in range(1, len(out)):  # 保证严格递增，避免翻页时间打架
-        if out[i]["start"] <= out[i - 1]["start"]:
-            out[i]["start"] = out[i - 1]["start"] + 1
-    return out
+    # 论点驱动翻页：相邻两页 start 间隔 < min_dwell 就把后页并进前页（不硬翻）。
+    merged: list = [out[0]]
+    for p in out[1:]:
+        if p["start"] - merged[-1]["start"] < min_dwell:
+            _merge_pages(merged[-1], p)
+        else:
+            merged.append(p)
+    # 末页停留（到片尾）也得够久，否则并回上一页。
+    while len(merged) > 1 and float(duration) - merged[-1]["start"] < min_dwell:
+        _merge_pages(merged[-2], merged.pop())
+    return merged
 
 
 def generate_pages(srt_path: str | Path, duration: float | None = None,

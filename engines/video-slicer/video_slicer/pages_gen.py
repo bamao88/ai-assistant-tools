@@ -133,7 +133,7 @@ def _sanitize(pages: list, duration: float, min_dwell: float = MIN_DWELL_SEC) ->
 
 def generate_pages(srt_path: str | Path, duration: float | None = None,
                    hint: str | None = None, providers=("kimi", "minimax"),
-                   profile: str = "zh_main") -> list:
+                   profile: str = "zh_main", min_dwell: float = MIN_DWELL_SEC) -> list:
     load_env_file(_discover_env_file())  # 复用引擎的 .env 加载（同一份共享 .env）
     cues, last = cues_from_srt(srt_path)
     dur = duration or last

@@ -1,0 +1,14 @@
+{
+  "_schema": "video-framework-layout/v1",
+  "name": "vertical_ppt",
+  "desc": "竖版 720×1280 PPT 幻灯片版式（张和）。几何/PIP 沿用 vertical（人像圆窗、白环、字幕位置不变），只把翻页画面换成规整 PPT 版式(page_html_vertical_ppt)。内容/视觉解耦：同一份 pages 既出手写框架(vertical)又出 PPT(vertical_ppt)。",
+  "template": "vertical_ppt",
+  "canvas": {"w": 720, "h": 1280},
+  "geom": {
+    "circle_d": 250, "circle_x": 435, "circle_y": 850,
+    "ring_d": 262, "ring_cx": 560, "ring_cy": 975,
+    "transition": 0.5,
+    "pip_face_ratio": 0.42, "pip_face_vpos": 0.42
+  },
+  "sub": {"FS": 36, "CY": 1150, "PAD": 22, "H": 60, "R": 22}
+}

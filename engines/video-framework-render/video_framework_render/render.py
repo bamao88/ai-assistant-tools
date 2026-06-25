@@ -36,28 +36,20 @@ PAGE_CSS = """
 html,body { width:720px; height:1280px; background:#ffffff; }
 .stage { position:relative; width:720px; height:1280px; background:#ffffff; overflow:hidden;
   font-family:"Hannotate SC","HanziPen SC","PingFang SC",cursive; color:#1a1a1a; }
-/* H1 一级标题：顶部米色带，居中（全页唯一的大标题） */
-.titlewrap { position:absolute; top:96px; left:0; width:720px; text-align:center; }
-.titleband { display:inline-block; padding:10px 34px; background:#f0ece3; border-radius:14px;
-  font-size:40px; font-weight:700; letter-spacing:1px; color:#1a1a1a; }
-.titlestrip { position:absolute; top:200px; left:50%; transform:translateX(-50%);
-  width:440px; height:13px; border-radius:7px; background:#FF6B5C; }
-/* 内容区：左对齐，Markdown 式分级（H2 / 列表 / 注解 样式各不同） */
-.ppt { position:absolute; top:262px; left:64px; width:600px; text-align:left;
-  display:flex; flex-direction:column; align-items:stretch; }
-/* H2 二级标题：手写大字 + coral 左竖条（颜色填充感），不重复顶部大标题 */
-.l-hero { font-size:42px; font-weight:700; letter-spacing:.5px; line-height:1.3;
-  padding-left:22px; border-left:10px solid #FF6B5C; margin-top:8px; color:#1a1a1a; position:relative; }
-.underline { display:none; }   /* H2 改用 coral 竖条分级，不再画手写下划线 */
-.arrow { margin:8px 0 2px 4px; }
-.l-mid { font-family:"PingFang SC",sans-serif; font-size:30px; font-weight:600; line-height:1.42;
-  color:#444; margin-top:12px; }
-/* 列表项：清晰体、半粗、深灰，比 H2 小、比 H2 浅；数字在文字里(prompt 出 "1.") */
-.l-key { font-family:"PingFang SC",sans-serif; font-size:34px; font-weight:600; line-height:1.36;
-  color:#3a3f45; margin-top:18px; }
-/* 列表注解：更小更浅 */
-.l-sub { font-family:"PingFang SC",sans-serif; font-size:26px; font-weight:400; color:#8a8a8a;
-  line-height:1.46; margin-top:6px; }
+/* 标题：顶部手写黑字，居中（极简白板风，无色块） */
+.titlewrap { position:absolute; top:104px; left:40px; width:640px; text-align:center; }
+.titleband { display:inline-block; font-size:44px; font-weight:700; letter-spacing:1px;
+  line-height:1.3; color:#1a1a1a; }
+.titlestrip { display:none; }   /* 极简：去掉 coral 进度条 */
+/* 内容：全手写体、纯黑、左对齐、大间距留白（样式不喧宾夺主） */
+.ppt { position:absolute; top:300px; left:88px; width:560px; text-align:left;
+  display:flex; flex-direction:column; align-items:flex-start; }
+.l-hero { font-size:42px; font-weight:700; line-height:1.36; margin-top:4px; }
+.underline { display:none; }
+.arrow { margin:20px 0 16px 4px; }
+.l-mid { font-size:34px; font-weight:700; line-height:1.44; margin-top:16px; }
+.l-key { font-size:40px; font-weight:700; line-height:1.4; margin-top:34px; }
+.l-sub { font-size:28px; color:#666; line-height:1.44; margin-top:10px; }
 .gap-l { height:30px; } .gap-m { height:18px; }
 """
 ARROW = ('<svg class="arrow" width="46" height="50" viewBox="0 0 46 50">'

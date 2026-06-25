@@ -138,12 +138,11 @@ html,body { width:720px; height:1280px; background:#F4F2EC; }
 
 def page_html_vertical_ppt(spec):
     body="".join(_block(b) for b in spec["blocks"])
-    # 标题条紧跟标题下方：标题栏 top:84 + 高度约后，进度条放 top:168
-    return (f'<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><style>{PAGE_CSS_PPT}'
-            f'.titlestrip{{top:172px;}}</style></head>'
+    # 进度条放在 titlewrap 内、紧跟标题流后——标题 1 行/2 行都不会被横穿。
+    return (f'<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><style>{PAGE_CSS_PPT}</style></head>'
             f'<body><div class="stage">'
-            f'<div class="titlewrap"><span class="titleband">{_html.escape(spec["title"])}</span></div>'
-            f'<div class="titlestrip"></div><div class="ppt">{body}</div></div></body></html>')
+            f'<div class="titlewrap"><span class="titleband">{_html.escape(spec["title"])}</span>'
+            f'<div class="titlestrip"></div></div><div class="ppt">{body}</div></div></body></html>')
 
 # 模板注册表：按 layout["template"] 选页面 HTML 构造器。
 TEMPLATES = {"vertical": page_html_vertical, "landscape": page_html_landscape,

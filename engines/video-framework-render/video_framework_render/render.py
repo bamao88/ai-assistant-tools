@@ -109,8 +109,45 @@ def page_html_landscape(spec):
             f'<div class="titlewrap"><span class="titleband">{_html.escape(spec["title"])}</span></div>'
             f'<div class="titlestrip"></div><div class="ppt">{body}</div></div></body></html>')
 
+# ---- 竖版「PPT 幻灯片」模板 720×1280：复用同一套 block(hero/arrow/mid/key/sub/gap)，
+# 仅换 CSS——左对齐黑体、coral 进度条标题栏、hero 白卡 coral 描边、key 方块 bullet。
+# 手绘下划线/箭头用 CSS 隐藏(PPT 不要手写感)。内容区占上 2/3，下部留给人像圆形 PIP。----
+PAGE_CSS_PPT = """
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:720px; height:1280px; background:#F4F2EC; }
+.stage { position:relative; width:720px; height:1280px; background:#F4F2EC; overflow:hidden;
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#1F2329; }
+.titlewrap { position:absolute; top:84px; left:56px; width:608px; text-align:left; }
+.titleband { display:block; font-size:46px; font-weight:800; line-height:1.24; letter-spacing:.5px; color:#1F2329; }
+.titlestrip { position:absolute; top:auto; left:56px; margin-top:0; width:608px; height:6px; border-radius:3px;
+  transform:none; background:linear-gradient(90deg,#FF6B5C 0 34%, #DCD7CB 34% 100%); }
+.ppt { position:absolute; top:300px; left:56px; width:608px; text-align:left;
+  display:flex; flex-direction:column; align-items:stretch; }
+.l-hero { background:#ffffff; border-left:8px solid #FF6B5C; border-radius:14px;
+  padding:20px 24px; font-size:40px; font-weight:800; line-height:1.3; position:relative;
+  box-shadow:0 6px 18px rgba(31,35,41,.06); }
+.underline { display:none; }
+.arrow { display:none; }
+.l-mid { font-size:32px; font-weight:600; line-height:1.45; color:#3A3F45; margin-top:8px; }
+.l-key { position:relative; padding-left:36px; font-size:37px; font-weight:800; line-height:1.32; margin-top:6px; }
+.l-key::before { content:""; position:absolute; left:0; top:12px; width:18px; height:18px;
+  border-radius:5px; background:#FF6B5C; }
+.l-sub { padding-left:36px; font-size:26px; color:#6B7280; line-height:1.46; margin-top:6px; }
+.gap-l { height:28px; } .gap-m { height:16px; }
+"""
+
+def page_html_vertical_ppt(spec):
+    body="".join(_block(b) for b in spec["blocks"])
+    # 标题条紧跟标题下方：标题栏 top:84 + 高度约后，进度条放 top:168
+    return (f'<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><style>{PAGE_CSS_PPT}'
+            f'.titlestrip{{top:172px;}}</style></head>'
+            f'<body><div class="stage">'
+            f'<div class="titlewrap"><span class="titleband">{_html.escape(spec["title"])}</span></div>'
+            f'<div class="titlestrip"></div><div class="ppt">{body}</div></div></body></html>')
+
 # 模板注册表：按 layout["template"] 选页面 HTML 构造器。
-TEMPLATES = {"vertical": page_html_vertical, "landscape": page_html_landscape}
+TEMPLATES = {"vertical": page_html_vertical, "landscape": page_html_landscape,
+             "vertical_ppt": page_html_vertical_ppt}
 
 # ======================================================================
 def locate_face_cx(video) -> tuple[float, float, float]:

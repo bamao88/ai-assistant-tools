@@ -734,6 +734,18 @@ async def wait_for_login_completed(page: Page, timeout_ms: int = 15000) -> bool:
     return await is_login_completed(page)
 
 
+async def verify_login_session(page: Page, timeout_ms: int = 15000) -> bool:
+    """Validate QR login on a page that requires an authenticated session."""
+    try:
+        await page.goto(MANAGE_URL, wait_until="domcontentloaded", timeout=60000)
+    except Exception as exc:
+        if "Timeout" not in str(exc):
+            raise
+        await page.wait_for_timeout(3000)
+    await page.wait_for_timeout(1000)
+    return await wait_for_login_completed(page, timeout_ms=timeout_ms)
+
+
 async def is_qrcode_expired(page: Page) -> bool:
     for selector in (
         'div.mask.show p.refresh-tip:has-text("二维码已过期，点击刷新")',
@@ -904,7 +916,7 @@ async def login(storage_state: Path, qrcode_dir: Path, timeout: int = 180, headl
                     raise
                 await page.wait_for_timeout(3000)
             await page.wait_for_timeout(1500)
-            if await is_login_completed(page):
+            if await is_login_completed(page) and await verify_login_session(page):
                 save_result = await save_storage_state(context, storage_state)
                 return {
                     "success": True,
@@ -931,6 +943,23 @@ async def login(storage_state: Path, qrcode_dir: Path, timeout: int = 180, headl
             while asyncio.get_event_loop().time() < deadline:
                 if await is_login_completed(page):
                     await asyncio.sleep(2)
+                    if not await verify_login_session(page):
+                        return {
+                            "success": False,
+                            "logged_in": False,
+                            "status": "login_verification_failed",
+                            "message": "QR login appeared complete, but authenticated page verification failed",
+                            "storage_state": str(storage_state),
+                            "profile_dir": str(profile_dir),
+                            "profile_ignored": True,
+                            "credential_source": "storage_state",
+                            "headless_requested": headless,
+                            "headless_used": login_headless,
+                            "storage_state_saved": False,
+                            "storage_state_backup": "",
+                            "qrcode_path": str(qrcode_path) if qrcode_path else "",
+                            "current_url": page.url,
+                        }
                     save_result = await save_storage_state(context, storage_state)
                     return {
                         "success": True,

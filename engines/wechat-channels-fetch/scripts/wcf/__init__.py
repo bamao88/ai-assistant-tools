@@ -1,0 +1,2 @@
+"""Wechat Channels fetcher package."""
+

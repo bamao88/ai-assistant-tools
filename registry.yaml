@@ -22,8 +22,8 @@ skills:
     layer: L1
     source: skills/platform-fetch
     install_kind: dir
-    purpose: 封闭平台内容抓取统一入口（小红书 / 公众号 / 腾讯会议官方 MCP / 视频字幕封面关键帧）
-    uses_engines: [xiaohongshu, gzh-scraper, tencent-meeting, video-research]
+    purpose: 封闭平台内容抓取统一入口（小红书 / 公众号 / 视频号博主作品列表 / 腾讯会议官方 MCP / 视频字幕封面关键帧）
+    uses_engines: [xiaohongshu, gzh-scraper, wechat-channels-fetch, tencent-meeting, video-research]
   - name: platform-publish
     layer: L1
     source: skills/platform-publish
@@ -38,7 +38,7 @@ skills:
     source: skills/blogger-research
     install_kind: dir
     purpose: 博主调研：批量抓取博主公开内容 + 结构化分析报告
-    uses_engines: [xiaohongshu, gzh-scraper]
+    uses_engines: [xiaohongshu, gzh-scraper, wechat-channels-fetch]
   - name: xhs-ops
     layer: L2
     source: skills/xhs-ops
@@ -255,6 +255,10 @@ engines:
     path: engines/tencent-video-publish
     runtime: "python (.venv) — scripts/cli.py"
     purpose: 微信视频号扫码登录、视频上传、保存草稿、正式/定时发表
+  - id: wechat-channels-fetch
+    path: engines/wechat-channels-fetch
+    runtime: "python (复用 tencent-video-publish .venv) — scripts/cli.py"
+    purpose: 微信视频号公开账号搜索、博主作品列表分页抓取、作品详情与评论列表；复用视频号发布账号 storage_state，也可调用 wx_channel 兼容本地 HTTP API
   - id: gzh-scraper
     path: engines/gzh-scraper
     runtime: "python — scripts/cli.py + wechat-article-exporter 服务"

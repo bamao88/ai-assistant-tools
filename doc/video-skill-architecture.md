@@ -144,7 +144,7 @@ python engines/video-compose/run.py --run zh_clip_cut \
 | **改视觉几何**（画幅 / 圆形人像窗 / 药丸字幕位置） | 改 `video-framework-render/layouts/<vertical|landscape>.json`（CANVAS/GEOM/SUB 已外置，代码不再硬编码）。**改完必跑 G4 回归。** |
 | **改圆窗 PIP 构图**（人物在圆里多大 / 眼睛多高） | 改 `vertical.json` 的 `geom.pip_face_ratio`（脸高占圆比例，越大人越大）/ `pip_face_vpos`（脸心在圆内纵向位置，越小人越靠上）。当前 0.42/0.42(脸占42%·眼略上移)。竖版用此构图锁定；横版(landscape)及未配该键的版式仍走旧逻辑(2.2×脸高·脸居中)逐字节不变。**改完必按新构图重冻 G4 基线。** |
 | **保证每条切片圆窗大小/位置一致**（免逐条手调） | 圆窗飘动的根因是「每条片各自做角落小脸检测」噪声大。`run_pipeline.py` 已对整段录屏 `video_speaker` **标定一次**(调 `render.py <video> --calibrate` 取 cx/cy/fh)，把 `pip_calib` 注入每条 job → 所有切片共用同一裁框、零飘动。竖版自动启用；标定失败自动退回每条各自定位(不断流)。 |
-| **改版式排布**（框架页 / 方框 CSS 结构） | 改 `render.py` 的 `PAGE_CSS`（竖版框架页）/ `PAGE_CSS_LANDSCAPE`（横版方框），或 `TEMPLATES` 注册新模板。 |
+| **改版式排布**（框架页 / 方框 CSS 结构） | 改 `render.py` 的 `PAGE_CSS`（竖版框架页·手写白板）/ `PAGE_CSS_LANDSCAPE`（横版方框），或 `TEMPLATES` 注册新模板。⚠️ 竖版 `PAGE_CSS` 是 **PPT 定稿载体**，无用户明确指示不要改（见上「PPT 风格·定稿与锁定」）。 |
 | **改 PPT 翻页节奏 / 嫌翻页太快** | 框架页是「**内容块驱动翻页**」：一页 = 一个**完整论点**（讲透了才翻），不是按秒数机械切。少出页、每页做厚、停留够久（思路学自 videocut-zh 的「章节驱动」，见 doc 比较）。两道闸：① 软闸在分页 prompt `video-slicer/profiles/<acct>/pages_system_prompt.txt`（要 2-3 页、start 贴句边界、原速≥14s）；② 硬闸在 `pages_gen.py` 的 `MIN_DWELL_SEC=14`（两页间隔不够久就把后页内容**并进前页**而非硬翻，次论点 hero 自动降级为 key）。想更慢/更快：调 `MIN_DWELL_SEC` 或命令行 `--min-dwell`。注：成片 compose 还会按语速整体最高 2× 加速，14s 原速 ≈ 7-8s 最终停留。 |
 | **出横屏成片** | `run.py --run landscape_business --selection <sel>.json`（或渲染 `--layout landscape`）。横版=1280×720 方框版式，视觉 DNA 同竖版（配色/手写字/药丸/圆窗）。同一份 pages 既出竖版又出横版。 |
 | **给成片加顶部标题**（贴纸式白底黑字 / 旧黑底白字整条） | `engines/video-clip/atoms/title_bar.py IN OUT --text 标题`。两种样式：`--style bar`（默认·顶部黑底白字整条）；`--style label`（顶部黑色信箱块里**白底黑字圆角贴纸**·单行·块高自动探测顶部黑边）。字色/底色 `--bar-color`/`--text-color` 可覆盖。 |

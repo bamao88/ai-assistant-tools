@@ -145,7 +145,7 @@ def generate_pages(srt_path: str | Path, duration: float | None = None,
          {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
         temperature=0.0,
     )
-    return _sanitize(data.get("pages") or [], dur)
+    return _sanitize(data.get("pages") or [], dur, min_dwell)
 
 
 def main():

@@ -5,8 +5,8 @@
   "template": "vertical",
   "canvas": {"w": 720, "h": 1280},
   "geom": {
-    "circle_d": 250, "circle_x": 435, "circle_y": 850,
-    "ring_d": 262, "ring_cx": 560, "ring_cy": 975,
+    "circle_d": 250, "circle_x": 435, "circle_y": 980,
+    "ring_d": 262, "ring_cx": 560, "ring_cy": 1105,
     "transition": 0.5,
     "pip_face_ratio": 0.42, "pip_face_vpos": 0.42
   },

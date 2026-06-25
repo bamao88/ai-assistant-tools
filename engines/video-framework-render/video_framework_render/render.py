@@ -116,28 +116,42 @@ PAGE_CSS_PPT = """
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { width:720px; height:1280px; background:#F4F2EC; }
 .stage { position:relative; width:720px; height:1280px; background:#F4F2EC; overflow:hidden;
-  font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#1F2329; }
-.titlewrap { position:absolute; top:84px; left:56px; width:608px; text-align:left; }
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#1F2329; counter-reset:keyc; }
+.titlewrap { position:absolute; top:72px; left:56px; width:608px; text-align:left; }
 .titleband { display:block; font-size:46px; font-weight:800; line-height:1.24; letter-spacing:.5px; color:#1F2329; }
 .titlestrip { margin-top:16px; width:608px; height:6px; border-radius:3px;
   background:linear-gradient(90deg,#FF6B5C 0 34%, #DCD7CB 34% 100%); }
-.ppt { position:absolute; top:300px; left:56px; width:608px; text-align:left;
+/* 内容区铺到下部：top 提前、可用到 ~1090（左侧）。圆窗只挡右下(x435-685,y850-1100)，左下空间照用。 */
+.ppt { position:absolute; top:236px; left:56px; width:608px; text-align:left;
   display:flex; flex-direction:column; align-items:stretch; }
-.l-hero { background:#ffffff; border-left:8px solid #FF6B5C; border-radius:14px;
-  padding:20px 24px; font-size:40px; font-weight:800; line-height:1.3; position:relative;
+.l-hero { background:#ffffff; border-left:9px solid #FF6B5C; border-radius:14px;
+  padding:22px 26px; font-size:44px; font-weight:800; line-height:1.26; position:relative;
   box-shadow:0 6px 18px rgba(31,35,41,.06); }
 .underline { display:none; }
-.arrow { display:none; }
-.l-mid { font-size:32px; font-weight:600; line-height:1.45; color:#3A3F45; margin-top:8px; }
-.l-key { position:relative; padding-left:36px; font-size:37px; font-weight:800; line-height:1.32; margin-top:6px; }
-.l-key::before { content:""; position:absolute; left:0; top:12px; width:18px; height:18px;
-  border-radius:5px; background:#FF6B5C; }
-.l-sub { padding-left:36px; font-size:26px; color:#6B7280; line-height:1.46; margin-top:6px; }
-.gap-l { height:28px; } .gap-m { height:16px; }
+/* 箭头：PPT 简洁向下指引，放在序号列位置(左侧) */
+.arrow { width:54px; height:46px; margin:6px 0 6px 10px; }
+.l-mid { font-size:33px; font-weight:600; line-height:1.4; color:#3A3F45; margin-top:10px; }
+/* key：coral 方块自动序号 + 粗体关键词 */
+.l-key { position:relative; padding-left:66px; min-height:50px; font-size:40px; font-weight:800;
+  line-height:1.28; margin-top:14px; display:flex; align-items:center; }
+.l-key::before { counter-increment:keyc; content:counter(keyc); position:absolute; left:0; top:0;
+  width:50px; height:50px; border-radius:13px; background:#FF6B5C; color:#fff;
+  font-size:30px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.l-sub { padding-left:66px; font-size:27px; color:#6B7280; line-height:1.44; margin-top:6px; }
+.gap-l { height:26px; } .gap-m { height:14px; }
 """
 
+# PPT 版向下箭头(简洁双线，非手绘)：放在序号列、coral 灰
+ARROW_PPT = ('<svg class="arrow" viewBox="0 0 54 46">'
+  '<path d="M25,4 L25,34 M14,25 L25,37 L36,25" stroke="#C2BCB0" stroke-width="5" '
+  'fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+
 def page_html_vertical_ppt(spec):
-    body="".join(_block(b) for b in spec["blocks"])
+    # PPT 版 arrow 用专属简洁箭头(覆盖 _block 的手绘箭头)
+    parts=[]
+    for b in spec["blocks"]:
+        parts.append(ARROW_PPT if b["type"]=="arrow" else _block(b))
+    body="".join(parts)
     # 进度条放在 titlewrap 内、紧跟标题流后——标题 1 行/2 行都不会被横穿。
     return (f'<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><style>{PAGE_CSS_PPT}</style></head>'
             f'<body><div class="stage">'

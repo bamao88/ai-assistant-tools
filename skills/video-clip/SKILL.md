@@ -4,7 +4,7 @@ description: |
   视频剪辑/合成技能。把已有的视频片段加工成成片：直接拼接、底部章节进度条、片尾钩子卡、变速、字幕烧录/AI加工字幕、遮名等原子能力，按编辑「类型」组合。
   当用户说"剪辑/合成/拼接这几段视频"、"把几个片段合成一条"、"加个底部进度条"、"末尾加片尾/钩子/试听课卡"、"做成长片/混剪"、"给视频加字幕/变速/遮名"时触发。
   本 skill 管【画面的剪辑与合成】，不管：视频转逐字稿/字幕提取/关键帧(→ video-content)、发布分发(→ platform-publish)、AI选哪几段成片的规划(→ engines/video-slicer)、选题/文案(业务项目内容流程)。
-  复杂的「框架页竖版口播切片」(张和专属圆形人像PIP+手写翻页)不在本 skill 渲染，识别为该类型后路由回业务项目 workflow/video_framework_slicer。
+  「框架页竖版口播切片 / PPT 风格成片」(张和专属：手写白板 PPT + 圆形人像PIP + 翻页)就在本 skill 体系内渲染（引擎 video-framework-render，配方 zh_business）。用户说"生成 PPT/框架页""出 PPT 风格成片"时，默认走 zh_business + layout:vertical，不要自己换风格、不要改 prompt/CSS/几何（见下「PPT 风格·定稿」）。
 ---
 
 # video-clip — 视频剪辑/合成

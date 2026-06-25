@@ -10,5 +10,5 @@
     "transition": 0.5,
     "pip_face_ratio": 0.42, "pip_face_vpos": 0.42
   },
-  "sub": {"FS": 36, "CY": 1150, "PAD": 22, "H": 60, "R": 22}
+  "sub": {"FS": 36, "CY": 1075, "PAD": 22, "H": 60, "R": 22}
 }

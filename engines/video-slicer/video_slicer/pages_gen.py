@@ -71,8 +71,22 @@ def _mmss(sec: float) -> str:
     return f"{m:02d}:{s:02d}"
 
 
-def _sanitize(pages: list, duration: float) -> list:
-    """收口 LLM 输出：丢非法 block、保证 start 单调且落区间内、首页归零。"""
+def _merge_pages(prev: dict, cur: dict) -> None:
+    """把 cur 页内容并进 prev 页（论点驱动翻页的兜底：停留不够久就不另开页）。
+    次论点的 hero 降级为 key（每页只留 1 个 hero）、丢掉重复的向下箭头，前面垫个大间距。"""
+    prev["blocks"].append({"type": "gap", "size": "l"})
+    for b in cur["blocks"]:
+        if b["type"] == "arrow":
+            continue
+        if b["type"] == "hero":
+            prev["blocks"].append({"type": "key", "text": b.get("text", "")})
+        else:
+            prev["blocks"].append(b)
+
+
+def _sanitize(pages: list, duration: float, min_dwell: float = MIN_DWELL_SEC) -> list:
+    """收口 LLM 输出：丢非法 block、保证 start 单调且落区间内、首页归零，
+    并按 min_dwell 合并停留过短的页（翻页太快的硬地板，见 MIN_DWELL_SEC）。"""
     out = []
     for p in pages:
         if not isinstance(p, dict):

@@ -154,9 +154,11 @@ def main():
     ap.add_argument("--duration", type=float, default=None)
     ap.add_argument("--hint", default=None)
     ap.add_argument("--profile", default="zh_main")
+    ap.add_argument("--min-dwell", type=float, default=MIN_DWELL_SEC,
+                    help=f"每页原速最小停留秒数（默认 {MIN_DWELL_SEC}，越大翻页越慢/页越少）")
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
-    pages = generate_pages(a.srt, a.duration, a.hint, profile=a.profile)
+    pages = generate_pages(a.srt, a.duration, a.hint, profile=a.profile, min_dwell=a.min_dwell)
     blob = json.dumps({"pages": pages}, ensure_ascii=False, indent=2)
     if a.out:
         Path(a.out).write_text(blob + "\n", encoding="utf-8")

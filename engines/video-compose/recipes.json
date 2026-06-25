@@ -8,6 +8,8 @@
       "steps": ["cut_sentence", "srt_fix(=subtitle_ai_fix)", "pages_gen", "framework_reframe(含 subtitle_burn + speed_adapt)"],
       "post_optional": ["title_bar(--style label --text ✅标题)", "prepend_hook(开篇钩子+翻页转场)", "name_mask", "endcard"],
       "profile": "zh_main",
+      "layout": "vertical",
+      "style_lock": "🔒 PPT 风格定稿=layout:vertical（手写白板极简）。生成 PPT/框架页默认就用这条，无需任何特殊参数。非经用户明确指示，不得改 pages_system_prompt.txt / PAGE_CSS / vertical.json 几何，也不得改用 vertical_ppt(已废弃)。改任一项=改定稿，须用户拍板 + 重冻 G4。",
       "delegate": "assistant_zh/workflow/video_framework_slicer/run_pipeline.py (已薄化：--profile + --out-root)",
       "finishing": "出片后收尾(0618 起线上做法)：① title_bar --style label 把 item publish_copy.md 里「标题候选」✅ 标题烧进顶部信箱块(白底黑字宋体超粗) ② prepend_hook 前置开篇钩子打字卡+翻页转场(翻页时正文定格)。参考 var/zh_main/0618test/doc/钩子+标题-成片收尾流程.md。",
       "note": "§3.4：当前业务流 = 这条 recipe。渲染核心已拆原子入 video-framework-render（framework_reframe）；端到端 atom 级编排待 G4 逐帧回归（BLOCKED_NEEDS_LOCAL_VALIDATION）就绪后由 run.py 接管，过渡期委派已装配好的 run_pipeline。"

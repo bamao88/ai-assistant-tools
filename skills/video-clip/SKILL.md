@@ -43,15 +43,38 @@ $PY $ENG/atoms/name_mask.py       IN.mp4 OUT.mp4 --region 250x250+435+850 --trim
 $PY $ENG/atoms/cover_frame.py     IN.mp4 cover.png --at 2 [--overlay title.png]
 ```
 
-## 路由：framework_slice（复杂型，不在此渲染）
+## 框架页竖版口播切片 / PPT 风格成片（zh_business）
 
-需要张和框架页竖版切片时，本 skill 不复制其渲染核心，直接调用业务项目现成流程：
+「生成 PPT」「出 PPT 风格成片」「框架页竖版切片」= 同一条线，配方 `zh_business`，**默认 layout=vertical（手写白板 PPT 风格，定稿）**。渲染核心在 tools 引擎，不再路由回 assistant_zh。
 
+两段产物，分工固定：
+- **PPT 内容（几页 / 每页讲什么 / 翻页节奏）** ← 引擎 `video-slicer` 的 `pages_gen`，提示词 `engines/video-slicer/profiles/zh_main/pages_system_prompt.txt`。
+- **PPT 外观（手写白板长什么样）** ← 引擎 `video-framework-render` 的 `render.py`：竖版手写样式 `PAGE_CSS`，几何（人像圆窗/字幕位置）`layouts/vertical.json`。
+
+最小调用（一条切片 → 成片）：
 ```bash
-cd /Volumes/ExtSSD2601/AI_Assistant/assistant_zh/workflow/video_framework_slicer
-python3 run_pipeline.py selections/<x>.json     # 出 accel.mp4
-# 之后可选用本引擎原子做遮名/片尾，或用项目 make_publish.py
+SL=/Volumes/ExtSSD2601/AI_Assistant/tools/engines/video-slicer
+FW=/Volumes/ExtSSD2601/AI_Assistant/tools/engines/video-framework-render
+# ① 逐字稿(clip.srt) → pages.json（PPT 内容+翻页节奏，默认 profile zh_main）
+$SL/.venv/bin/python -m video_slicer.pages_gen clip.fixed.srt --out pages.json
+# ② job.json(含 video/srt/pages, "layout":"vertical") → 成片 accel.mp4
+$FW/.venv/bin/python -m video_framework_render.render job.json --out OUTDIR --profile zh_main
 ```
+端到端业务流（选片→去口水→pages→渲染→变速）：`python engines/video-compose/run.py --run zh_business --selection <sel>.json --profile zh_main`。
+
+### 🔒 PPT 风格·定稿（未经用户明确指示，不得改）
+
+PPT 风格已经用户拍板定稿 = **手写白板极简**（全程手写体 Hannotate SC、纯黑、左对齐、大留白、标题=问题/结论、列表用纯数字 `1. 2. 3.`、人像圆窗右下靠底）。以下文件是定稿载体，**默认调用就用它们、不带任何特殊参数**：
+
+| 改这个文件 | = 改 PPT 的 | 红线 |
+|---|---|---|
+| `video-slicer/profiles/zh_main/pages_system_prompt.txt` | 内容 / 翻页节奏 / 文案逻辑 | 🔒 |
+| `video-framework-render/render.py` 的 `PAGE_CSS`（竖版手写段） | 外观 / 字体 / 排版分层 | 🔒 |
+| `video-framework-render/layouts/vertical.json` | 人像圆窗 / 字幕几何 | 🔒 |
+
+- **没有用户明确指示，不要改上面任何一个、也不要新建/改用别的版式（`vertical_ppt` 卡片版已废弃，不要当默认）。** 想"优化"也不行——风格是用户的决定，不是工具的自由。
+- 用户明确要改时：先改、出样片给用户看、用户拍板，再视为新定稿；并提示 **G4 逐帧基线需按新样式重冻**（页面像素/人像位置一变，旧基线必报红，属预期）。
+- 之后可选用本引擎原子做遮名/片尾/标题条（见 `## invoke`）。
 
 ## 产物落点约定（默认 + 可传参）
 

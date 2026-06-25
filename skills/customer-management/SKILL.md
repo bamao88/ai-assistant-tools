@@ -100,6 +100,21 @@ python3 -m customer-management read-chat --wxid <wxid> --layer all
 
 细节与两个示例 query 的端到端见 `references/ad-hoc-chat-read.md`。
 
+## 人员匹配（找人 / 比对总表，先读这节再判"查无"）
+
+把"问卷登记 / 私戳线索 / 聊天提到的人"对上总表行或群成员时，**别只用「真名 + 手机」**——
+会大面积漏掉真实老学员（2026-06-25 复训核对：判"总表查无"7 人里 6 人其实都在表）。
+
+- 匹配真源用**群成员文件** `knowledge_base/client/raw/chat/members_<roomid>_chatroom.json`
+  （字段最全，比 `dashboard.json` 富）：`wxid / 微信号 / 备注名 / 昵称 / 群昵称 / 显示名称`。
+- 宽口径逐层 union：**手机(纯数字相等) → 微信号/wxid 全等 → 真名/别名子串命中任一名字字段**；
+  拿到 `wxid` 后**回查总表 `wxid` 列**确认是否已在表。
+- `微信号`（`donglu_1029` 这种 alias）是问卷"微信账号"最有效的桥；总表行普遍缺它，所以反向搜真名/手机搜不到。
+- `备注名` 常编码期次/学员状态/staff（`小璐-三期`、`张和老师弟弟`），可定几期、识别家属。
+- 刷新群成员（拿最新富字段）：`cd /Volumes/ExtSSD2601/mac/wechat && ELECTRON_RUN_AS_NODE=1 /Applications/WeFlow.app/Contents/MacOS/WeFlow sync_groups.js --members-only --skip-old`（必须走 WeFlow Electron，裸 node 报 `WCDB DLL 不存在`）。
+
+完整字段表、匹配顺序、期次/staff 旁证见 `references/person-matching.md`。
+
 ## 🚨 红线（操作前必读）
 
 1. **gather / health-check 默认只读**：飞书读本地镜像（`customer_management_mirror.json`），

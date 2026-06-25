@@ -23,7 +23,7 @@ description: |
 1. 用户要的是哪种**编辑类型**？
    - 直接把几段拼一条 → `simple_concat`
    - 多幕片段做成带章节进度条的成长片/系列片 → `chaptered_growth`
-   - 张和框架页竖版口播切片 → `zh_business`（旧名 framework_slice，**不在此渲染**，见下「路由」）
+   - 张和框架页竖版口播切片 / PPT 风格成片 → `zh_business`（在本体系内渲染，见下「PPT 风格·定稿」）
 2. 该类型需要哪些**原子**（见 `video-compose/recipes.json` 的 chain），按序跑。
 3. 产物一律写 `tools/var/video-clip/<任务名>/`，不写业务真源、不写原片目录。
 

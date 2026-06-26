@@ -25,7 +25,7 @@ description: |
    - 多幕片段做成带章节进度条的成长片/系列片 → `chaptered_growth`
    - 张和框架页竖版口播切片 / PPT 风格成片 → `zh_business`（在本体系内渲染，见下「PPT 风格·定稿」）
 2. 该类型需要哪些**原子**（见 `video-compose/recipes.json` 的 chain），按序跑。
-3. 产物一律写 `tools/var/video-clip/<任务名>/`，不写业务真源、不写原片目录。
+3. **产物落哪，先过「输出落点决策」门定出 OUT 目录**（见下节），再把它显式传给每个原子——别默认丢 var、也别写原片目录。
 
 ## invoke（9 个原子全部 ready；真源 capabilities.json）
 

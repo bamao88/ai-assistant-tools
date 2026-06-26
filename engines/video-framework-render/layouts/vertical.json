@@ -1,7 +1,7 @@
 {
   "_schema": "video-framework-layout/v1",
   "name": "vertical",
-  "desc": "竖版 720×1280（张和框架页）。2026-06 起 PIP 改构图锁定(pip_face_ratio/vpos)→人物大小位置每条一致、免手调；此改动有意改变 PIP 帧，G4 基线需按新构图重新冻结。",
+  "desc": "竖版 720×1280（张和框架页）。2026-06 起 PIP 改构图锁定(pip_face_ratio/vpos)→人物大小位置每条一致、免手调；此改动有意改变 PIP 帧，G4 基线需按新构图重新冻结。2026-06-26 起字幕安全带：sub.CY 下移到 1150 + render.py .ppt 底边抬到 y≤1044(bottom:236+overflow:hidden)，反出底部字幕水平区不被正文侵入；evc13 真实 case 验证密页(10 blocks)自动落 1037<1044 不裁，已重冻 G4。",
   "template": "vertical",
   "canvas": {"w": 720, "h": 1280},
   "geom": {

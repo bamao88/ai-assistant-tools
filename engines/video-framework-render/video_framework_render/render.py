@@ -43,6 +43,7 @@ html,body { width:720px; height:1280px; background:#ffffff; }
 .titlestrip { display:none; }   /* 极简：去掉 coral 进度条 */
 /* 内容：全手写体、纯黑、左对齐、大间距留白（样式不喧宾夺主） */
 .ppt { position:absolute; top:300px; left:88px; width:560px; text-align:left;
+  bottom:236px; overflow:hidden;   /* 底部 y≥1044 留作字幕安全带：正文不进字幕水平区 */
   display:flex; flex-direction:column; align-items:flex-start; }
 .l-hero { font-size:42px; font-weight:700; line-height:1.36; margin-top:4px; }
 .underline { display:none; }

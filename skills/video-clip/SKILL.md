@@ -44,7 +44,7 @@ engines/video-slicer  engines/video-select      engines/video-framework-render +
 - **裁切放大 / 盖 UI**（录屏源适配）：`reframe_crop`（裁切放大铺满）+ `name_mask`（盖多余按钮/UI）。**录屏要放大铺满、盖掉多余 UI 时才加**；干净口播不加。原剪线把它做成「录屏源」才挂的源适配，默认不挂。
 - **前钩子**：`prepend_hook`（开篇钩子 + 翻页转场，翻页时正文定格）。
 - **片尾 / 后钩子卡**：`endcard`（片尾卡 / 试听课卡，卡片内容由调用方提供）。
-- **顶部标题**：`title_bar`（`--style label` 白底黑字圆角贴纸 / `--style bar` 黑底白字整条）。
+- **顶部标题**：`title_bar`（`--style label` 白底黑字圆角贴纸 / `--style bar` 黑底白字整条）。**本 skill 只负责把「给定的标题」烧进画面，不自己写标题文案**——文案来源：优先取该条 item 的 `publish_copy.md`「标题候选」✅；没有现成的，就让 AI 先调专门的起标题 skill（如 `dbs-xhs-title`）产出文案，再用 `title_bar` 烧上去。
 - **遮名**：`name_mask`（多块黑挡，遮学员名等）。
 - 更轻的拼接型（不是口播成片时）：`simple_concat`（纯拼接）/ `chaptered_growth`（章节进度条成长片）/ `raw_quickcut`（极简词级快剪+烧字幕）。
 

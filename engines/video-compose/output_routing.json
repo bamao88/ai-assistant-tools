@@ -1,0 +1,42 @@
+{
+  "_schema": "output_routing.v1",
+  "_doc": "视频产物落点路由（真源）。剪辑/合成 AI 在跑任何原子前，按此决定产物的输出目录 OUT。接新号、改某个项目的落点，只改这份；不把项目路径焊进引擎代码、不改 SKILL.md。被 skills/video-clip/SKILL.md「输出落点决策」门引用，其他视频 skill 可共用。",
+  "_how_ai_uses_this": [
+    "1) 用户明确给了目标路径 → 一切以用户给的为准，忽略本配置。",
+    "2) 否则判断这次是在为哪个项目干活（看源视频/任务路径、用户提到的 content_id 或项目名）。命中某个 project → 用它的 target 模板拼出落点目录。",
+    "3) 没命中任何 project（在 tools 自身做工具实验/样片）→ 用 default。",
+    "4) 把定好的目录显式作为每个原子的 OUT / --output 传进去；不要让原子落进它自己的默认 scratch 后再忘了归位。"
+  ],
+  "default": {
+    "name": "tools_scratch",
+    "when": "在 tools 仓自身做工具实验、调参、出样片；或无法识别项目语境",
+    "target": "/Volumes/ExtSSD2601/AI_Assistant/tools/var/video-clip/{task}/",
+    "vars": {
+      "task": "给这次任务起的短名（kebab-case），如 concat-demo、progress-test"
+    }
+  },
+  "projects": [
+    {
+      "name": "assistant_zh",
+      "detect": [
+        "源视频或任务路径在 /Volumes/ExtSSD2601/AI_Assistant/assistant_zh/ 下",
+        "用户提到 content_id（形如 ZHC20260613_evc11_001）、某条 item、某条要发布/已立项的内容",
+        "用户提到 persona：zh_main 或 zh_assistant",
+        "任务是把某条切片/口播做成成片并归位到内容条目"
+      ],
+      "target": "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/content/{persona}/items/{content_id}/",
+      "all_artifacts_here": true,
+      "final_name": "成片.mp4",
+      "vars": {
+        "persona": "zh_main | zh_assistant（多数张和正片是 zh_main）",
+        "content_id": "内容条目 ID，形如 ZHC20260613_evc11_001"
+      },
+      "resolve_content_id": "未知 content_id / persona 时：查 /Volumes/ExtSSD2601/AI_Assistant/assistant_zh/content/content_index.yaml（按 title/topic/source 匹配），或直接问用户。绝不要因为查不到就默认丢进 tools/var。",
+      "notes": [
+        "全部产物（中间切段/字幕/缓存 mp4 + 最终成片）都落在这个 item 目录，保持一条内容自洽。",
+        "最终成片固定命名 成片.mp4，与该 item 的 publish_copy.md 同目录。",
+        "item 目录已存在则直接写入；不存在则按 content_index.yaml 里的 persona+content_id 创建。"
+      ]
+    }
+  ]
+}

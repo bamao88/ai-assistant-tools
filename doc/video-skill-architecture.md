@@ -141,7 +141,7 @@ python engines/video-compose/run.py --run zh_clip_cut \
 | **加一条新配方**（新的能力组合预设） | 在 `engines/video-compose/recipes.json` 加一条，`chain` 列出有序原子；`run.py --plan <name>` 审链路。 |
 | **改账号定制**（选题口径 / 术语表 / 版式几何，不碰代码） | 改对应 `engines/<engine>/profiles/<account>/`：选题/分页/纠错 prompt 在 `video-slicer/profiles/`、persona 在 `video-slicer/personas/`、ASR 术语在 `video-framework-render/profiles/<acct>/fixes.json`。 |
 | **接一个新账号 / 第二个号** | 新建 `engines/<engine>/profiles/<新account>/`（拷 zh_main 改），调用时 `--profile <新account>`。引擎代码不动。 |
-| **改产物落点 / 接新项目的落点**（剪辑成片该落哪个目录） | 只改 `engines/video-compose/output_routing.json`：`default` 是 tools 样片落点；每个 `projects` 条目 = 一个项目的 `detect`（怎么认出在为它干活）+ `target`（落点模板）+ 命名/解析规则。当前已配 assistant_zh→`content/<persona>/items/<content_id>/`。**SKILL.md 的落点决策门和引擎代码都不用动。** |
+| **改产物落点 / 接新项目的落点**（剪辑成片该落哪个目录） | 只改 `skills/video-clip/output_routing.json`：`default` 是 tools 样片落点；每个 `projects` 条目 = 一个项目的 `detect`（怎么认出在为它干活）+ `target`（落点模板）+ 命名/解析规则。当前已配 assistant_zh→`content/<persona>/items/<content_id>/`。**SKILL.md 的落点决策门和引擎代码都不用动。** |
 | **改视觉几何**（画幅 / 圆形人像窗 / 药丸字幕位置） | 改 `video-framework-render/layouts/<vertical|landscape>.json`（CANVAS/GEOM/SUB 已外置，代码不再硬编码）。**改完必跑 G4 回归。** |
 | **改圆窗 PIP 构图**（人物在圆里多大 / 眼睛多高） | 改 `vertical.json` 的 `geom.pip_face_ratio`（脸高占圆比例，越大人越大）/ `pip_face_vpos`（脸心在圆内纵向位置，越小人越靠上）。当前 0.42/0.42(脸占42%·眼略上移)。圆窗在画面上的位置由 `geom.circle_x/circle_y`（当前 435/980，定稿时下移到右下角靠底，给上方内容腾地）+ 字幕 `sub.CY`（当前 1075，在圆窗上方）。竖版用此构图锁定；横版(landscape)及未配该键的版式仍走旧逻辑(2.2×脸高·脸居中)逐字节不变。**改完必按新构图重冻 G4 基线。** |
 | **保证每条切片圆窗大小/位置一致**（免逐条手调） | 圆窗飘动的根因是「每条片各自做角落小脸检测」噪声大。`run_pipeline.py` 已对整段录屏 `video_speaker` **标定一次**(调 `render.py <video> --calibrate` 取 cx/cy/fh)，把 `pip_calib` 注入每条 job → 所有切片共用同一裁框、零飘动。竖版自动启用；标定失败自动退回每条各自定位(不断流)。 |

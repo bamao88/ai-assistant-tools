@@ -78,7 +78,7 @@ PPT 风格已经用户拍板定稿 = **手写白板极简**（全程手写体 Ha
 
 ## 输出落点决策（跑任何原子前先定 OUT）
 
-剪辑产物落哪，**先按项目语境路由，再跑原子**——映射真源在 `engines/video-compose/output_routing.json`（接新号 / 改某项目落点只改那份，不动本文件、不焊进引擎代码）。三步走：
+剪辑产物落哪，**先按项目语境路由，再跑原子**——映射真源是本 skill 目录下的 `output_routing.json`（`skills/video-clip/output_routing.json`；接新号 / 改某项目落点只改那份，不动本文件、不焊进引擎代码）。三步走：
 
 1. **用户明确给了目标路径** → 一切以用户给的为准，直接用。
 2. **否则判断「这次在为哪个项目干活」**（看源视频/任务路径、用户提到的 content_id 或项目名），对照 `output_routing.json` 的 `projects`：

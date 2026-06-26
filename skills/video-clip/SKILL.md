@@ -76,15 +76,17 @@ PPT 风格已经用户拍板定稿 = **手写白板极简**（全程手写体 Ha
 - 用户明确要改时：先改、出样片给用户看、用户拍板，再视为新定稿；并提示 **G4 逐帧基线需按新样式重冻**（页面像素/人像位置一变，旧基线必报红，属预期）。
 - 之后可选用本引擎原子做遮名/片尾/标题条（见 `## invoke`）。
 
-## 产物落点约定（默认 + 可传参）
+## 输出落点决策（跑任何原子前先定 OUT）
 
-剪辑能力**默认落通用位置，调用方可传参直写目标位置**：
+剪辑产物落哪，**先按项目语境路由，再跑原子**——映射真源在 `engines/video-compose/output_routing.json`（接新号 / 改某项目落点只改那份，不动本文件、不焊进引擎代码）。三步走：
 
-- **不传目标路径** → 产物落默认 scratch `tools/var/video-clip/<任务名>/`（git-ignored，本 skill 的通用默认）。
-- **调用方传目标路径** → 原子直接写到该位置（9 个原子都接受显式输出路径 `OUT.mp4`/`--output`，无需改代码）。
-- **框架页切片**走项目流程时，用 `run_pipeline.py --out-root <目标根>` 覆盖默认 `out/`（项目调用即传 media/ 与 content item 目标位置；不传走默认，向后兼容）。
+1. **用户明确给了目标路径** → 一切以用户给的为准，直接用。
+2. **否则判断「这次在为哪个项目干活」**（看源视频/任务路径、用户提到的 content_id 或项目名），对照 `output_routing.json` 的 `projects`：
+   - 命中 **assistant_zh**（源在 `assistant_zh/` 下、提到 content_id 形如 `ZHC20260613_evc11_001`、某条 item、persona=zh_main/zh_assistant、或「把这条切片归位成成片」）→ 落 `assistant_zh/content/<persona>/items/<content_id>/`，**全部产物（中间切段/字幕/缓存 + 最终成片）都进这个 item 目录**，最终成片固定命名 `成片.mp4`（和该条的 `publish_copy.md` 同目录）。**不知道 content_id / persona 就先查 `assistant_zh/content/content_index.yaml`（按 title/topic/source 匹配）或问用户——绝不因为查不到就默认丢 var。**
+   - 没命中任何项目（在 tools 仓自身做工具实验、调参、出样片）→ 落默认 `/Volumes/ExtSSD2601/AI_Assistant/tools/var/video-clip/<任务名>/`（git-ignored）。
+3. 把定好的目录**显式**作为每个原子的 `OUT.mp4` / `--output` 传进去（9 个原子都接受显式输出路径，无需改代码）；框架页走项目流程时用 `run_pipeline.py --out-root <目标根>` 覆盖默认 `out/`。
 
-谁负责把产物归位到业务真源：**调用方/项目侧**，不是本通用 skill。assistant_zh 的归位规则（成片→`media/tencent/<场次>/clips/...`，配文→`content/personas/<persona>/items/<content_id>/`，状态→`content_index`）见该项目 `claude_md_design/slice_content_pipeline_refactor.md`。本 skill 只保证「能落到你传的位置」，不内置任何具体项目路径。
+> 为什么单列这一门：旧版这里写「产物一律丢 tools/var」——对 assistant_zh 是错的，它的成片该和文案一起住进对应 item 目录。**落点是「为谁干活」的路由决策，不是固定常量。** 加新项目就往 `output_routing.json` 加一条 `projects` 条目，这一门和引擎都不用动。
 
 ## 硬边界
 

@@ -116,7 +116,7 @@ tools/engines/
 **铁律**：
 - **依赖单向** `video-compose → 各引擎`；三个积木厂**互不调用**，只各自声明能力。
 - **多租户定制集中**：账号特定的 prompt / 术语 / 几何全在 `engines/<engine>/profiles/<account>/`，**不散回业务项目**。
-- **产物落点（按 `output_routing.json` 路由，不是固定常量）**：剪辑/合成 AI 跑原子前先过「输出落点决策」门——映射真源 `engines/video-compose/output_routing.json`。tools 自身样片→默认 `var/video-clip/<任务名>/`；**assistant_zh 语境→该条内容的 item 目录 `content/<persona>/items/<content_id>/`，全部产物（中间+成片）都进去，成片命名 `成片.mp4`**。`--out` / `--out-root` 仍可显式覆盖。接新号 / 改某项目落点只改 `output_routing.json`，不动 SKILL.md、不焊进引擎。（入口门写在 `skills/video-clip/SKILL.md`「输出落点决策」。）
+- **产物落点（按 `output_routing.json` 路由，不是固定常量）**：剪辑/合成 AI 跑原子前先过「输出落点决策」门——映射真源 `skills/video-clip/output_routing.json`（随 skill 走）。tools 自身样片→默认 `var/video-clip/<任务名>/`；**assistant_zh 语境→该条内容的 item 目录 `content/<persona>/items/<content_id>/`，全部产物（中间+成片）都进去，成片命名 `成片.mp4`**。`--out` / `--out-root` 仍可显式覆盖。接新号 / 改某项目落点只改 `output_routing.json`，不动 SKILL.md、不焊进引擎。（入口门写在 `skills/video-clip/SKILL.md`「输出落点决策」。）
 - **业务侧只剩薄胶水**：`assistant_zh/workflow/video_framework_slicer/` = `run_pipeline.py`(选 profile + 落点) + ③项目加工；渲染 / 选段 / 叠加全在 tools。
 - **片段画音整体**：上游产出的片段是不可分割的画音(+字幕)对象、共享一条时间线。后续动作**可以**单独改某条轨的内容(叠标题/遮挡/裁画幅/换音色，不动时间)，但**绝不能**单独改任何一条轨在时间线上的位置(平移/拉伸/裁时长)——凡动时间轴必须三条轨同一映射一起动。承重墙(③同一把剪刀)延伸到⑥组装。红线：`align_check` 门S(画音流时长 `v≈a`)，谁拆开片段就报红。反例沉淀：钩子素材画长音短(5.800/5.208s)曾让 `prepend_hook` 把正片声音错前 0.59s，已在 `_norm` 把音频补齐到视频时长治本。
 

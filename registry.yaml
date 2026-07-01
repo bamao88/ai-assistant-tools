@@ -102,6 +102,13 @@ skills:
     scope: assistant_zh   # 业务专属：不进全局 ~/.claude/skills；仅 assistant_zh 项目本地双 host 软链
     purpose: 客户/学员资产管理（4 能力 + 任务卡 + 配方）：学员入表 / 就业回访 / 客户资产体检订正 / 好友刷新建行 / 付款 / 客户表同步飞书 / ad-hoc 读聊天检索
     uses_engines: [customer-management]
+  - name: zh-video-cover
+    layer: L2
+    source: skills/zh-video-cover
+    install_kind: dir
+    scope: assistant_zh   # 业务专属：不进全局 ~/.claude/skills；仅 assistant_zh 项目本地双 host 软链（install-symlinks.sh）
+    purpose: 张和口播视频封面生成（evc 宋体渐变，3:4）：kit 驱动单张/批量，底图轮换+相邻不撞。共享底图池/渐变素材在 platform-publish/assets/video-cover/zhanghe（黑块黄字 9:16 那套仍在 platform-publish）
+    uses_engines: []
   - name: humanizer
     layer: util
     source: vendor/humanizer/SKILL.md

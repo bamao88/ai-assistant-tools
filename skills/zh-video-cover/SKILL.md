@@ -24,9 +24,9 @@ allowed-tools:
 `assets/cover-kit-evc.json` 单一真源，脚本零硬编码，一条命令跑完。
 
 - **代码 + 配置真源**：`assets/generate_evc_cover.py`（kit 驱动）+ `assets/cover-kit-evc.json`（风格参数）。
-- **共享品牌资产**（与黑块黄字 kit 共用，留在 platform-publish 原地，kit 按路径引用）：
-  底图池 `.../video-cover/zhanghe/covers/`（frame-01..05，**排除 frame-06**）、
-  渐变素材 `.../zhanghe/gradient-3x4-bottom-black.png`。
+- **共享品牌资产**（与黑块黄字 kit 共用，留在 platform-publish 原地，kit 按路径引用；改底图池/换渐变去这里）：
+  底图池 `/Volumes/ExtSSD2601/AI_Assistant/tools/skills/platform-publish/assets/video-cover/zhanghe/covers/`（frame-01..05，**排除 frame-06**）、
+  同目录 `gradient-3x4-bottom-black.png`。日常用只需传 `--base frame-0X` 池内名，路径由 kit 内部解析，无需知道绝对路径。
 - 参数全表、批量 manifest 格式、硬边界、与候选标题/dbs 的衔接见 `references/evc-style.md`。
 
 ## 硬边界（decision_gate，调用前核）

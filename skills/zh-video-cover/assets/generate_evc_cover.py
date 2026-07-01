@@ -95,15 +95,21 @@ def pick_base(kit: Dict[str, Any], base_image: Optional[str] = None,
 
 # ---------- render pipeline (kit-driven; mirrors approved prototype) ----------
 
-def open_cover_frame(kit: Dict[str, Any], path: Path) -> Image.Image:
-    """3:4 裁切 + 人物上移 lift(占裁切高比例；可 per-frame 覆盖)。"""
-    W, H = kit["canvas"]["width"], kit["canvas"]["height"]
+def resolve_lift(kit: Dict[str, Any], frame_name: str, lift: Optional[float]) -> float:
+    """显式 lift(自检后微调) > kit per-frame override > kit 默认。"""
+    if lift is not None:
+        return lift
     bc = kit["base_crop"]
+    return bc.get("lift_overrides", {}).get(frame_name, bc["lift_default"])
+
+
+def open_cover_frame(kit: Dict[str, Any], path: Path, lift: Optional[float] = None) -> Image.Image:
+    """3:4 裁切 + 人物上移 lift(占裁切高比例)。lift 缺省用 kit；自检后可显式传更大值把脸提高。"""
+    W, H = kit["canvas"]["width"], kit["canvas"]["height"]
     im = Image.open(path).convert("RGB")
     sw, sh = im.size
     ch = min(int(round(sw * H / W)), sh)
-    lift = bc.get("lift_overrides", {}).get(path.name, bc["lift_default"])
-    max_lift = int(round(ch * lift))
+    max_lift = int(round(ch * resolve_lift(kit, path.name, lift)))
     crop_top = max(0, min(max_lift, sh - ch))
     im = im.crop((0, crop_top, sw, crop_top + ch))
     return im.resize((W, H), Image.LANCZOS)

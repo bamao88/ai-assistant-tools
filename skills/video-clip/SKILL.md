@@ -52,7 +52,7 @@ engines/video-slicer  engines/video-select      engines/video-framework-render +
 
 ```bash
 cd /Volumes/ExtSSD2601/AI_Assistant/tools
-# A·PPT 竖版（默认）：选段清单 → 成片（自带字幕LLM+语速自适应变速）
+# A·PPT 竖版（默认）：选段清单 → 成片（自带字幕LLM+整档定速1.25x变速）
 python engines/video-compose/run.py --run zh_business      --selection <sel>.json --profile zh_main
 # A·PPT 横版：同一份 pages 出横屏
 python engines/video-compose/run.py --run landscape_business --selection <sel>.json

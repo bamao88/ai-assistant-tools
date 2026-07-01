@@ -25,7 +25,7 @@ export PUPPETEER_PATH=/path/to/node_modules/puppeteer   # 或：cd video_framewo
 job.json schema（= pages_gen 输出 + 切片信息）：
 ```jsonc
 { "name":"...", "video":"/abs/clip.mp4", "srt":"/abs/clip.fixed.srt",
-  "subtitle_strip_px":0, "params":{"target_cps":8.0,"max_speed":2.0,"transition":0.5},
+  "subtitle_strip_px":0, "params":{"speed":1.25,"transition":0.5},   // 默认定速1.25x；旧自适应档: "accel_mode":"adaptive","target_cps":8.0,"max_speed":2.0
   "pages":[{"start":0,"title":"...","blocks":[{"type":"hero","text":"...","uw":330}, ...]}] }
 ```
 

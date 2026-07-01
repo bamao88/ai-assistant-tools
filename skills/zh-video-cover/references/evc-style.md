@@ -3,6 +3,8 @@
 evc = 张和唯一认可的口播切片封面样式，标杆已发布 `ZHC20260613_evc*`。全部参数在
 `assets/cover-kit-evc.json`，改样式改 kit、不改脚本。
 
+> 生成后的**质量自检、人脸 lift 调整、底图轮换纪律、底图不够怎么抽帧补** → 见 `quality-and-base-management.md`（必做）。
+
 ## 已固化参数（kit 字段 → 值）
 
 | kit 字段 | 值 | 说明 |

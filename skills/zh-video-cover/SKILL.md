@@ -28,6 +28,7 @@ allowed-tools:
   底图池 `/Volumes/ExtSSD2601/AI_Assistant/tools/skills/platform-publish/assets/video-cover/zhanghe/covers/`（frame-01..05，**排除 frame-06**）、
   同目录 `gradient-3x4-bottom-black.png`。日常用只需传 `--base frame-0X` 池内名，路径由 kit 内部解析，无需知道绝对路径。
 - 参数全表、批量 manifest 格式、硬边界、与候选标题/dbs 的衔接见 `references/evc-style.md`。
+- **好封面标准 + 生成后自检调整 + 底图轮换纪律 + 底图不够怎么抽帧补 见 `references/quality-and-base-management.md`（生成后必读必做）。**
 
 ## 硬边界（decision_gate，调用前核）
 

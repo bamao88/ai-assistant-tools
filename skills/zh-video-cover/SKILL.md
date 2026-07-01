@@ -43,11 +43,19 @@ PY=/Volumes/ExtSSD2601/AI_Assistant/tools/engines/video-clip/.venv/bin/python   
 
 # 单张：2 行标题用 | 分行；省略 --base 走 round-robin
 "$PY" "$GEN" --title "别再喊AI元年了|2026是重启之年" --output /abs/path/cover.png
-"$PY" "$GEN" --title "A|B" --base frame-03 --output ...   # 指定底图，不推进游标
+"$PY" "$GEN" --title "A|B" --base frame-03 --output ...            # 指定底图，不推进游标
+"$PY" "$GEN" --title "A|B" --base frame-03 --lift 0.25 --output ... # 自检后脸偏低→加大上移重出
 
 # 批量（一批切片）：manifest.json 见 references/evc-style.md
 "$PY" "$GEN" --batch manifest.json --overview /abs/overview.png
 ```
+
+## 🔴 生成后必做（不是跑完就完 —— 详见 references/quality-and-base-management.md）
+
+1. **看图自检**：`Read` 输出（批量看 `overview.png`），逐张按「好封面标准」核 —— **人脸在视觉中心、头顶留白适中、字够大（短句更大）**。
+2. **不达标就调**：脸偏低/贴底 → `--lift` 加大（如 0.25）单张重出；脸贴顶 → 减小（如 0.125）；字挤 → 换更短候选标题。调到脸在视觉中心为止。
+3. **查底图重复**：批量输出的 `base_usage` / `warnings` —— 同一底图一批里 **>2 次即过度重复**。`warnings` 非空说明底图池不够。
+4. **底图不够**：先翻 `assets/video_cover_base/`，没有就去媒体库 `/Volumes/ExtSSD2601/media/` 找最近张和口播视频抽帧（find-images 方式三 / `screenshot/video_frame.py`），筛正脸不闭眼的竖帧丢进 `covers/`；**判断不了就停下反馈用户**，别硬凑重复底图发出。
 
 ## 标题从哪来
 

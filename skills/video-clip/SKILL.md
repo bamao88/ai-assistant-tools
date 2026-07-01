@@ -36,7 +36,7 @@ engines/video-slicer  engines/video-select      engines/video-framework-render +
 
 | 默认线 | 是什么 | 版式 | 默认变速 | 配方 |
 |---|---|---|---|---|
-| **A. PPT 风格** | 口播内容重画成**手写白板 PPT** + 圆窗人像，翻页 | 竖版 `vertical`（默认）/ 横版 `landscape`（方框，视觉 DNA 同竖版） | 按语速自适应（🔒定稿锁） | `zh_business`（竖）/ `landscape_business`（横） |
+| **A. PPT 风格** | 口播内容重画成**手写白板 PPT** + 圆窗人像，翻页 | 竖版 `vertical`（默认）/ 横版 `landscape`（方框，视觉 DNA 同竖版） | **整档定速 1.25x**（默认，全程匀速不变调）；逐句语速自适应改为可选旧档 `params.accel_mode:"adaptive"` | `zh_business`（竖）/ `landscape_business`（横） |
 | **B. 原视频风格** | **保留原画面**，只收拾干净（去废 / 去长静音 / 烧药丸字幕），**默认不裁切** | 原画幅 | 默认 **1.2x** | `zh_clip_cut` |
 
 **可选叠加**（不需要就别加，一键默认即可）：

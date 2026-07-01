@@ -23,18 +23,27 @@ const puppeteer = loadPuppeteer();
   await page.goto('file://' + path.resolve(process.argv[2]), { waitUntil: 'networkidle0' });
   await page.evaluate(() => document.fonts && document.fonts.ready).catch(() => {});
   await new Promise(r => setTimeout(r, 250));
-  // 自适应缩放：厚页内容超过安全内容区(.ppt 由 top/bottom 定高、overflow:hidden)时，
-  // 整体等比缩小塞进框内——不裁字、不溢出到底部字幕/PIP 安全带。
+  // 自适应缩放：厚页内容超过安全内容区(.ppt 显式定高、overflow:visible)时，
+  // 整体等比缩小塞进框内。不再用 overflow 裁掉底部正文。
   const scaled = await page.evaluate(() => {
     const el = document.querySelector('.ppt');
     if (!el) return 1;
-    const avail = el.clientHeight, need = el.scrollHeight;
-    if (avail > 0 && need > avail + 1) {
-      const s = avail / need;
+    const availH = el.clientHeight;
+    const availW = el.clientWidth;
+    const needH = el.scrollHeight;
+    const needW = el.scrollWidth;
+    if (availH > 0 && availW > 0 && (needH > availH + 1 || needW > availW + 1)) {
+      const s = Math.min(availH / needH, availW / needW, 1);
       el.style.transformOrigin = 'top left';
       el.style.transform = 'scale(' + s + ')';
+      el.dataset.fitScale = s.toFixed(4);
+      el.dataset.fitNeedHeight = String(needH);
+      el.dataset.fitAvailableHeight = String(availH);
       return s;
     }
+    el.dataset.fitScale = '1.0000';
+    el.dataset.fitNeedHeight = String(needH);
+    el.dataset.fitAvailableHeight = String(availH);
     return 1;
   });
   if (scaled < 1) console.log('  fit-scale', path.basename(process.argv[2]), '×' + scaled.toFixed(3));

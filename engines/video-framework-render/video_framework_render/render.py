@@ -42,8 +42,8 @@ html,body { width:720px; height:1280px; background:#ffffff; }
   line-height:1.3; color:#1a1a1a; }
 .titlestrip { display:none; }   /* 极简：去掉 coral 进度条 */
 /* 内容：全手写体、纯黑、左对齐、大间距留白（样式不喧宾夺主） */
-.ppt { position:absolute; top:300px; left:88px; width:560px; text-align:left;
-  bottom:236px; overflow:hidden;   /* 底部 y≥1044 留作字幕安全带：正文不进字幕水平区 */
+.ppt { position:absolute; top:300px; left:88px; width:560px; height:640px; text-align:left;
+  overflow:visible; transform-origin:top left;   /* 渲染前等比缩小到 y≤940，不再裁掉底部正文 */
   display:flex; flex-direction:column; align-items:flex-start; }
 .l-hero { font-size:42px; font-weight:700; line-height:1.36; margin-top:4px; }
 .underline { display:none; }
@@ -57,18 +57,21 @@ ARROW = ('<svg class="arrow" width="46" height="50" viewBox="0 0 46 50">'
   '<path d="M23,3 C20,18 26,30 23,42" stroke="#1a1a1a" stroke-width="5" fill="none" stroke-linecap="round"/>'
   '<path d="M11,32 C16,40 20,44 23,46 C26,44 30,40 35,32" stroke="#1a1a1a" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>')
 
+def _inline_html(text):
+    return re.sub(r"&lt;br\s*/?&gt;", "<br>", _html.escape(str(text)), flags=re.I)
+
 def _hero(text, uw=300):
     u=(f'<svg class="underline" width="{uw}" viewBox="0 0 {uw} 10" preserveAspectRatio="none">'
        f'<path d="M4,6 C{uw*0.27:.0f},2 {uw*0.72:.0f},9 {uw-4},4" stroke="#1a1a1a" stroke-width="6" fill="none" stroke-linecap="round"/></svg>')
-    return f'<div class="l-hero">{_html.escape(text)}{u}</div>'
+    return f'<div class="l-hero">{_inline_html(text)}{u}</div>'
 
 def _block(b):
     t=b["type"]
     if t=="hero": return _hero(b["text"], b.get("uw",300))
     if t=="arrow": return ARROW
-    if t=="mid": return f'<div class="l-mid">{b["text"]}</div>'      # 允许 <br>
-    if t=="key": return f'<div class="l-key">{b["text"]}</div>'
-    if t=="sub": return f'<div class="l-sub">{b["text"]}</div>'
+    if t=="mid": return f'<div class="l-mid">{_inline_html(b["text"])}</div>'      # 允许 <br>
+    if t=="key": return f'<div class="l-key">{_inline_html(b["text"])}</div>'
+    if t=="sub": return f'<div class="l-sub">{_inline_html(b["text"])}</div>'
     if t=="gap": return f'<div class="gap-{b.get("size","l")}"></div>'
     return ""
 
@@ -124,7 +127,8 @@ html,body { width:720px; height:1280px; background:#F4F2EC; }
 .titlestrip { margin-top:16px; width:608px; height:6px; border-radius:3px;
   background:linear-gradient(90deg,#FF6B5C 0 34%, #DCD7CB 34% 100%); }
 /* 内容区铺到下部：top 提前、可用到 ~1090（左侧）。圆窗只挡右下(x435-685,y850-1100)，左下空间照用。 */
-.ppt { position:absolute; top:236px; left:56px; width:608px; text-align:left;
+.ppt { position:absolute; top:236px; left:56px; width:608px; height:580px; text-align:left;
+  overflow:visible; transform-origin:top left;
   display:flex; flex-direction:column; align-items:stretch; }
 .l-hero { background:#ffffff; border-left:9px solid #FF6B5C; border-radius:14px;
   padding:22px 26px; font-size:44px; font-weight:800; line-height:1.26; position:relative;

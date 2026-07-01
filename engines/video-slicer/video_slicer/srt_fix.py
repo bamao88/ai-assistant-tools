@@ -73,10 +73,25 @@ def _call_llm(texts: list[str], hint: str | None, providers, profile: str) -> li
     return norm
 
 
+_FILLER_ONLY_RE = re.compile(
+    r"^[\s,，。.!！?？、；;：:…~～-]*"
+    r"(?:(?:啊|呀|哦|噢|喔|呃|额|嗯|唔|诶|欸|哎|哎呀|那个|这个|就是|然后|对吧|好吧)"
+    r"[\s,，。.!！?？、；;：:…~～-]*)+$"
+)
+
+
+def _is_filler_only(text: str) -> bool:
+    """Whether the original cue can safely become an empty subtitle."""
+    return bool(_FILLER_ONLY_RE.fullmatch(text or ""))
+
+
 def correct_cues(texts: list[str], hint: str | None = None,
                  providers=("kimi", "minimax"), profile: str = "zh_main") -> list[str]:
-    """逐条订正 cue，严格等长返回。等长时单条返空仅用原文补该条（不整条回退）；
-    条数不符则重试一次；仍不符或全程异常才整条回退（绝不丢字幕）。"""
+    """逐条订正 cue，严格等长返回。
+
+    纯口水 cue 允许被 prompt 清成空字幕；内容型 cue 返空仍用原文补该条。
+    条数不符则重试一次；仍不符或全程异常才整条回退（绝不丢字幕）。
+    """
     if not texts:
         return texts
     load_env_file(_discover_env_file())
@@ -90,10 +105,10 @@ def correct_cues(texts: list[str], hint: str | None = None,
             out, empties = [], 0
             for orig, nw in zip(texts, norm):
                 nw = re.sub(r"\s{2,}", " ", nw).strip()
-                if nw:
+                if nw or _is_filler_only(orig):
                     out.append(nw)
                 else:
-                    out.append(orig); empties += 1   # 单条返空→用原文补位
+                    out.append(orig); empties += 1   # 内容型 cue 返空→用原文补位
             if empties:
                 print(f"  [srt_fix] {empties} 条返空，已用原文补位", file=sys.stderr)
             return out

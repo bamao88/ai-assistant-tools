@@ -267,6 +267,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--title", help="单张：2 行标题，用 | 或 \\n 分行")
     ap.add_argument("--base", help="从 covers/ 池按文件名选底图(不推进游标)")
     ap.add_argument("--base-image", help="外部绝对路径底图(覆盖轮换)")
+    ap.add_argument("--lift", type=float, default=None,
+                    help="人物上移比例(占裁切高)，覆盖 kit 默认 3/16。自检后按图微调：脸偏低就加大(如 0.25)、偏高就减小(如 0.125)")
     ap.add_argument("--output", help="单张输出 PNG 路径；省略写 generated/")
     ap.add_argument("--batch", help="批量模式 manifest.json")
     ap.add_argument("--overview", help="批量对比总览图输出路径")

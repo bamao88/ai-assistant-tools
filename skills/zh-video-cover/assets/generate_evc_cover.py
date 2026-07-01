@@ -290,7 +290,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             else:
                 safe = re.sub(r"[^\w一-鿿]+", "_", lines[0])[:40].strip("_")
                 output = ASSET_DIR / "generated" / f"cover-{safe}.png"
-            result = render_one(kit, base, lines, output)
+            result = render_one(kit, base, lines, output, args.lift)
     except Exception as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

@@ -166,13 +166,15 @@ def split_lines(kit: Dict[str, Any], title: str) -> List[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
-def render_one(kit: Dict[str, Any], base_path: Path, lines: List[str], output: Path) -> Dict[str, Any]:
-    im = open_cover_frame(kit, base_path)
+def render_one(kit: Dict[str, Any], base_path: Path, lines: List[str], output: Path,
+               lift: Optional[float] = None) -> Dict[str, Any]:
+    im = open_cover_frame(kit, base_path, lift)
     im = apply_gradient(kit, im)
     im = draw_title(kit, im, lines)
     output.parent.mkdir(parents=True, exist_ok=True)
     im.save(output)
     return {"base_image": base_path.name, "lines": lines,
+            "lift": resolve_lift(kit, base_path.name, lift),
             "size": [kit["canvas"]["width"], kit["canvas"]["height"]], "output": str(output)}
 
 

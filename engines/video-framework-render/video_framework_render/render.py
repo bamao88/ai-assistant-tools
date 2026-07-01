@@ -22,7 +22,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 _ENGINE_ROOT = Path(__file__).resolve().parent.parent  # engines/video-framework-render
-ACCEL = dict(target_cps=8.0, max_speed=2.0, gap_speed=2.0, min_speed=1.0)  # 语速变速(画幅无关)
+ACCEL = dict(speed=1.25, target_cps=8.0, max_speed=2.0, gap_speed=2.0, min_speed=1.0)  # 默认整档定速1.25x；adaptive 为可选旧档
 
 # ---- 版式几何外置：layouts/<name>.json（竖版 vertical / 横版 landscape）----
 # 竖版值锁定（成片定稿，G4 逐帧回归基线）。外置后竖版输出必须逐字节不变。

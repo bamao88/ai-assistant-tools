@@ -429,7 +429,7 @@ def run(job_path: str, out_root: str|None, skip_accel: bool, profile="zh_main", 
     print("  [5/6] 合成(翻页+PIP+字幕)"); compose(job, out, fcx, fcy, ffh, sh, strip_px, L)
     if skip_accel:
         print("  [6/6] 跳过变速"); print(f"完成 → {out/'paginated.mp4'}"); return
-    print("  [6/6] 自适应变速"); accelerate(job, out)
+    print("  [6/6] 变速"); accelerate(job, out)
     print(f"完成 → {out/'accel.mp4'}")
 
 if __name__=="__main__":

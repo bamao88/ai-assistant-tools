@@ -358,24 +358,32 @@ def compose(job, out: Path, face_cx: float, face_cy: float, face_fh: float, clip
     subprocess.run(cmd,check=True)
 
 def accelerate(job, out: Path):
-    """按逐字稿语速对成片整体自适应变速。输出 accel.mp4。"""
-    pr=job.get("params",{}); TGT=pr.get("target_cps",ACCEL["target_cps"]); MX=pr.get("max_speed",ACCEL["max_speed"])
-    GAP=ACCEL["gap_speed"]; MN=ACCEL["min_speed"]
+    """对成片整体变速，输出 accel.mp4。
+    默认整档定速(params.speed，默认1.25x，全程匀速、atempo 不变调)；
+    params.accel_mode=="adaptive" 时回到旧的逐句语速自适应(target_cps)。"""
+    pr=job.get("params",{})
     src=out/"paginated.mp4"; DUR=ffprobe_dur(src)
-    cues=[]
-    for b in Path(job["srt"]).read_text(encoding="utf-8").strip().split("\n\n"):
-        L=b.split("\n")
-        if len(L)<3: continue
-        t0,t1=[_secs(x.strip()) for x in L[1].split("-->")]
-        txt=" ".join(L[2:]); nn=len(re.sub(r"[^一-鿿A-Za-z0-9]","",txt))
-        cues.append([t0,min(t1,DUR),nn])
-    cues.sort()
-    segs=[]; cur=0.0
-    for t0,t1,nn in cues:
-        if t0>cur+0.05: segs.append((cur,t0,GAP))
-        d=t1-t0; cps=nn/d if d>0 else TGT
-        segs.append((t0,t1,min(max(TGT/cps if cps>0 else MN,MN),MX))); cur=t1
-    if cur<DUR-0.05: segs.append((cur,DUR,GAP))
+    mode=pr.get("accel_mode","fixed")
+    if mode=="adaptive":                       # 旧档：逐句 cps 自适应(字幕字数驱动，谨慎用)
+        TGT=pr.get("target_cps",ACCEL["target_cps"]); MX=pr.get("max_speed",ACCEL["max_speed"])
+        GAP=ACCEL["gap_speed"]; MN=ACCEL["min_speed"]
+        cues=[]
+        for b in Path(job["srt"]).read_text(encoding="utf-8").strip().split("\n\n"):
+            L=b.split("\n")
+            if len(L)<3: continue
+            t0,t1=[_secs(x.strip()) for x in L[1].split("-->")]
+            txt=" ".join(L[2:]); nn=len(re.sub(r"[^一-鿿A-Za-z0-9]","",txt))
+            cues.append([t0,min(t1,DUR),nn])
+        cues.sort()
+        segs=[]; cur=0.0
+        for t0,t1,nn in cues:
+            if t0>cur+0.05: segs.append((cur,t0,GAP))
+            d=t1-t0; cps=nn/d if d>0 else TGT
+            segs.append((t0,t1,min(max(TGT/cps if cps>0 else MN,MN),MX))); cur=t1
+        if cur<DUR-0.05: segs.append((cur,DUR,GAP))
+    else:                                      # 默认档：整段定速一刀切
+        SP=float(pr.get("speed",ACCEL["speed"]))
+        segs=[(0.0,DUR,SP)]
     F=[]; vc=[]; ac=[]
     for i,(s,e,sp) in enumerate(segs):
         F.append(f"[0:v]trim={s:.3f}:{e:.3f},setpts=(PTS-STARTPTS)/{sp:.4f}[v{i}];")

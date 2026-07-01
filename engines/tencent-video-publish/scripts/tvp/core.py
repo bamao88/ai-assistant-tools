@@ -295,7 +295,7 @@ def restore_backup_if_needed(storage_state: Path) -> Path | None:
         if not storage_state_json_is_valid(backup):
             continue
         storage_state.parent.mkdir(parents=True, exist_ok=True)
-        storage_state.write_text(backup.read_text(encoding="utf-8"), encoding="utf-8")
+        accounts.write_private_text(storage_state, backup.read_text(encoding="utf-8"))
         return backup
     return None
 
@@ -314,11 +314,12 @@ async def save_storage_state(context, storage_state: Path) -> dict:
 
     backup = accounts.backup_storage_state(storage_state)
     tmp_path = storage_state.with_name(f"{storage_state.name}.tmp")
-    tmp_path.write_text(encoded, encoding="utf-8")
+    accounts.write_private_text(tmp_path, encoded)
     if not storage_state_json_is_valid(tmp_path):
         tmp_path.unlink(missing_ok=True)
         raise RuntimeError(f"refusing to write invalid storage state: {storage_state}")
     tmp_path.replace(storage_state)
+    accounts.secure_credential_file(storage_state)
     return {"saved": True, "backup": str(backup) if backup else "", "reason": "updated"}
 
 
@@ -474,11 +475,12 @@ def promote_storage_state_candidate(candidate: Path, storage_state: Path) -> dic
     storage_state.parent.mkdir(parents=True, exist_ok=True)
     backup = accounts.backup_storage_state(storage_state)
     tmp_path = storage_state.with_name(f"{storage_state.name}.promote_tmp")
-    tmp_path.write_text(candidate.read_text(encoding="utf-8"), encoding="utf-8")
+    accounts.write_private_text(tmp_path, candidate.read_text(encoding="utf-8"))
     if not storage_state_json_is_valid(tmp_path):
         tmp_path.unlink(missing_ok=True)
         raise RuntimeError(f"refusing to write invalid storage state: {storage_state}")
     tmp_path.replace(storage_state)
+    accounts.secure_credential_file(storage_state)
     candidate.unlink(missing_ok=True)
     return {
         "promoted": True,
@@ -956,7 +958,7 @@ async def check_login(storage_state: Path, headless: bool = True, *, save_on_suc
                 continue
             if backup_logged_in:
                 backup_result = accounts.backup_storage_state(storage_state)
-                storage_state.write_text(backup.read_text(encoding="utf-8"), encoding="utf-8")
+                accounts.write_private_text(storage_state, backup.read_text(encoding="utf-8"))
                 seed_result = {}
                 if save_on_success:
                     seed_result = await seed_profile_from_storage_state(

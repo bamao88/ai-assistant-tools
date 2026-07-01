@@ -34,7 +34,7 @@ uv sync --python 3.11
 .venv/bin/python scripts/cli.py add-account --slot wxp --description "WXP 视频号"
 .venv/bin/python scripts/cli.py set-account-roles --slot aipm --test
 .venv/bin/python scripts/cli.py --account wxp login --timeout 180
-.venv/bin/python scripts/cli.py --account wxp check-login
+.venv/bin/python scripts/cli.py --account wxp --headed check-login
 .venv/bin/python scripts/cli.py --account wxp import-cookies --cookie-file /tmp/wxp.cookies
 .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "标题" --desc "简介" --tags AI 工具
 .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "测试" --fill-only --hold-open -1 --upload-timeout 90 --cover-timeout 10
@@ -56,6 +56,8 @@ rm -f /tmp/wxp.cookies
 不要把 Cookie 值写进文档、日志或提交。导入输出只会显示 cookie 名称、数量和登录验证结果，不回显 cookie 值。
 
 `--no-verify` 只保存候选凭证文件，不会替换正式 `storage_state.json`，也不会写入 `chrome-profile/`；只有验证通过的候选凭证才会被提升并迁移到 profile。
+
+视频号登录态以账号独立 `chrome-profile/` 为准。日常发布前的登录检查优先使用 `--headed check-login`，避免 headless 预检把仍可用的 profile 误判为失效；只有在确认当前环境支持后台校验时，才省略 `--headed`。
 
 封面说明：
 

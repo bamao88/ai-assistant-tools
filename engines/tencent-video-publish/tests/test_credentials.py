@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import stat
 import sys
 from pathlib import Path
 
@@ -84,3 +86,28 @@ def test_auth_metadata_marks_chrome_profile_as_primary(tmp_path: Path) -> None:
     assert summary["profile_ignored"] is False
     assert summary["auth_primary"] == "chrome_profile"
     assert summary["storage_state_role"] == "backup"
+
+
+def test_latest_storage_state_backup_uses_mtime_not_name(tmp_path: Path) -> None:
+    official = tmp_path / "storage_state.json"
+    old_manual = tmp_path / "storage_state.json.bak_before_restore_20260622_154003"
+    newer_timestamped = tmp_path / "storage_state.json.bak_20260701_121014_119410"
+    write_state(official, "official")
+    write_state(old_manual, "old")
+    write_state(newer_timestamped, "new")
+    os.utime(old_manual, (100, 100))
+    os.utime(newer_timestamped, (200, 200))
+
+    assert accounts.storage_state_backups(official) == [old_manual, newer_timestamped]
+    assert accounts.latest_storage_state_backup(official) == newer_timestamped
+
+
+def test_backup_storage_state_uses_private_permissions(tmp_path: Path) -> None:
+    official = tmp_path / "storage_state.json"
+    write_state(official, "official")
+    official.chmod(0o644)
+
+    backup = accounts.backup_storage_state(official)
+
+    assert backup is not None
+    assert stat.S_IMODE(backup.stat().st_mode) == 0o600

@@ -46,7 +46,25 @@ def account_state_path(slot: str | None = None) -> Path:
 
 
 def storage_state_backups(storage_state: Path) -> list[Path]:
-    return sorted(storage_state.parent.glob(f"{storage_state.name}.bak_*"), key=lambda path: path.name)
+    def backup_sort_key(path: Path) -> tuple[float, str]:
+        try:
+            return (path.stat().st_mtime, path.name)
+        except OSError:
+            return (0.0, path.name)
+
+    return sorted(storage_state.parent.glob(f"{storage_state.name}.bak_*"), key=backup_sort_key)
+
+
+def secure_credential_file(path: Path) -> None:
+    try:
+        path.chmod(0o600)
+    except OSError:
+        pass
+
+
+def write_private_text(path: Path, text: str) -> None:
+    path.write_text(text, encoding="utf-8")
+    secure_credential_file(path)
 
 
 def latest_storage_state_backup(storage_state: Path) -> Path | None:
@@ -60,6 +78,7 @@ def restore_latest_storage_state_backup(storage_state: Path) -> Path | None:
         return None
     storage_state.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(backup, storage_state)
+    secure_credential_file(storage_state)
     return backup
 
 
@@ -70,6 +89,7 @@ def backup_storage_state(storage_state: Path, keep: int = 5) -> Path | None:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     backup = storage_state.with_name(f"{storage_state.name}.bak_{timestamp}")
     shutil.copy2(storage_state, backup)
+    secure_credential_file(backup)
 
     backups = storage_state_backups(storage_state)
     for stale in backups[:-keep]:

@@ -80,8 +80,11 @@ uv sync --python 3.11
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
   /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/scripts/cli.py \
   [--account <slot>] \
+  --headed \
   check-login
 ```
+
+视频号登录态以账号独立 `chrome-profile/` 为准。日常发布前的登录检查默认使用 `--headed check-login`，避免 headless 预检把仍可用的 profile 误判为失效后触发扫码；只有明确要做后台校验、且已验证当前环境 headless 可稳定复用 profile 时，才省略 `--headed`。
 
 如果返回 `logged_in: false`，执行扫码登录：
 
@@ -321,7 +324,7 @@ rm -f /tmp/shipinhao.cookies
 | `.venv/bin/python` 不存在 | 运行 `uv sync --python 3.11` |
 | `No module named patchright` | 在 engine 目录运行 `uv sync --python 3.11` |
 | Chrome 不可用 | 提示用户安装 Google Chrome，或用 `--headed` 观察 |
-| `logged_in: false` | 先确认是否错误使用了 `--account <slot>`；默认账号已登录时不要加 `--account`。确认账号无误后执行 `login` 并展示二维码 |
+| `logged_in: false` | 先确认是否错误使用了 `--account <slot>`；如果刚才是 headless 检查，先重跑 `--headed check-login`。确认账号无误且 headed 检查仍失败后，才执行 `login` 并展示二维码 |
 | `storage state does not exist` | 直接运行 `check-login`，engine 会自动尝试恢复最新有效备份；仍失败再登录 |
 | `not logged in or cookie invalid` | 重新登录 |
 | 上传超时或页面选择器失效 | 用 `--headed` 重试；仍失败则按工具反馈机制写入 `tools/feedback/` |

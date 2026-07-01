@@ -86,7 +86,8 @@
     "strategy": "round-robin",
     "state_file": ".rotation_state_evc.json",
     "exclude": ["frame-06.png"],
-    "_doc": "state_file 是 gitignored 运行时游标(单张模式用)，与黑块黄字的 .rotation_state.json 互不干扰。exclude=贴脸自拍帧一提就切发，本风格排除。批量模式按列表顺序取模、不碰游标。"
+    "max_reuse_warn": 2,
+    "_doc": "state_file 是 gitignored 运行时游标(单张模式用)，与黑块黄字的 .rotation_state.json 互不干扰。exclude=贴脸自拍帧一提就切发，本风格排除。批量模式按列表顺序取模、不碰游标。max_reuse_warn=同一底图在一批里最多用几次，超过则批量输出告警提示补图。"
   },
 
   "title": {

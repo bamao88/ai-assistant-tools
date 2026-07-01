@@ -19,7 +19,7 @@ export PUPPETEER_PATH=/path/to/node_modules/puppeteer   # 或：cd video_framewo
 
 ```bash
 .venv/bin/python -m video_framework_render.render <job.json> [--out DIR] [--skip-accel] [--profile zh_main]
-# 产物 OUT/<name>/：page_*.png  zh.ass  paginated.mp4(原速带翻页)  accel.mp4(自适应变速·最终交付)
+# 产物 OUT/<name>/：page_*.png  zh.ass  paginated.mp4(原速带翻页)  accel.mp4(整档定速1.25x·最终交付)
 ```
 
 job.json schema（= pages_gen 输出 + 切片信息）：

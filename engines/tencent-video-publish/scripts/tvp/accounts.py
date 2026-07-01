@@ -88,7 +88,9 @@ def storage_state_summary(storage_state: Path) -> dict:
         "logged_state_file_exists": storage_state.exists(),
         "profile_dir": str(profile_dir),
         "profile_dir_exists": profile_dir.exists(),
-        "profile_ignored": True,
+        "profile_ignored": False,
+        "auth_primary": "chrome_profile",
+        "storage_state_role": "backup",
         "latest_backup": str(latest_backup) if latest_backup else "",
     }
 

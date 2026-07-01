@@ -54,35 +54,6 @@ node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
 
 ---
 
-## 网络分流前置步骤（默认）
-
-> 真因：整机走 Tailscale 海外出口时，上传入口和分片 CDN（`ros-upload.xiaohongshu.com` / `ros-upload-d*.xhscdn.com`）只要有一部分掉到 exit node，就会上传 0%、卡死或极慢。`route-bypass apply` 把小红书 IP 和已观测上传 CDN 网段钉到本地网关出口；遇到 Tailscale DNS 返回坏边缘时，还会写入带 BEGIN/END 标记的受控 `/etc/hosts` 块，把关键域名切到本地网关 DNS 返回且可连通的边缘。**漏跑这步 = 视频/图片传不上去。** 详见 `references/xiaohongshu-faq.md` #1。
-
-为避免 Tailscale exit node 导致小红书发布走海外出口，默认发布网络模式是 `local-egress`：账号选定后、任何会访问小红书网页的 CLI 前，先刷新本地分流路由：
-
-```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply
-```
-
-如果在无 TTY 环境中遇到 `sudo: a password is required`，允许改用 macOS 管理员授权窗口执行同一脚本：
-
-```bash
-osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply" with administrator privileges'
-```
-
-适用范围：
-- 长文流程：`check-login`、`wait-login`、`long-article`、`next-step`、正式模式 `click-publish` 前默认完成。
-- 图文流程：`fill-publish` 和 `save-draft` 前默认完成。
-- 视频流程：`fill-publish-video` 和 `save-draft` 前默认完成。
-
-小红书 CLI 的正式发布入口还会自动做二次校验：先 `status` 探测路由和关键 HTTPS 主机，发现当前 IP 没走本地网关或上传域名不可连时自动刷新 `apply`，再校验；仍失败就停止。IP 变化时不要自行猜 IP，重复运行本步骤即可重新解析当前 IP 并刷新受控 hosts。
-
-**如果直接执行和管理员授权 fallback 都失败，立即停止发布流程并报告错误；不得继续打开发布页、填写表单或点击发布。不要手工散改 `/etc/hosts` 或手工 `route add/delete`；只能使用 `publish-network-preflight` / `route-bypass apply/remove` 管理。**
-
-如果总入口已锁定 `current-egress`（用户明确要求“不走本地流量 / 跳过本地分流 / 直接走当前网络”），跳过本节，不运行 `publish-network-preflight`。执行会自动校验小红书本地分流的视频 CLI 时，在命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`；也可以同时传 `--skip-route-bypass`。两者都会让 engine 跳过内置路由校验，直接走系统当前网络出口，并在结果里说明本次未做本地分流。
-
----
-
 ## 内容类型判断
 
 按优先级路由：
@@ -126,8 +97,6 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/extra
 
 ### Step 0：检查登录状态
 
-执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
-
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
   /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py \
@@ -137,8 +106,6 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/extra
 
 - 返回 `"logged_in": true` → 继续。
 - 返回 `"logged_in": false` → 展示二维码（`qrcode_image_url`），立即自动执行：
-
-执行 `wait-login` 前，也必须按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
@@ -176,8 +143,6 @@ node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
 
 ### Step 3：长文编辑器填写
 
-执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
-
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
   /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py \
@@ -190,8 +155,6 @@ node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
 **验收条件**：返回 `"success": true`，页面出现"长文已填写，请选择模板"等成功信号。若报错或 `success: false` → 失败。
 
 ### Step 4：进入发布页
-
-执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
@@ -213,8 +176,6 @@ node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
 
 - **测试模式**（消息含"模式：测试"）：到此停止，**绝不调用 `click-publish`**。告知用户"已走到发布页，测试通过"。
 - **正式模式**：
-
-执行正式发布前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
@@ -272,8 +233,6 @@ rm -rf "$OUTDIR"
 
 ### 执行发布
 
-执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
-
 ```bash
 # 步骤 1: 填写图文表单
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
@@ -291,8 +250,6 @@ rm -rf "$OUTDIR"
 
 ```bash
 # 步骤 2（仅保存草稿时）:
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply
-
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
   /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py \
   save-draft
@@ -301,9 +258,7 @@ rm -rf "$OUTDIR"
 填写完成后告知用户：
 > "内容已全部填写完毕，请：
 > 1. 在浏览器中检查标题、正文、图片是否正确
-> 2. 如果本次使用默认 `local-egress`，本地分流已应用；页面停留超过 30 分钟时，点击发布前重新运行 `/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply`。如果本次按用户要求使用 `current-egress`，不要补跑 preflight，继续走当前网络。
-> 3. 手动点击页面上的发布按钮
-> 发布完成后无需关闭或恢复 Tailscale exit node。"
+> 2. 手动点击页面上的发布按钮。"
 
 > ⚠️ **`click-publish` 和 `publish` 禁止在自动化流程中调用。** 发布必须由用户手动点击。
 
@@ -317,7 +272,7 @@ rm -rf "$OUTDIR"
 
 ### 稳定性门槛与发布顺序
 
-- 小红书视频链路不稳定时，只能使用 `测试号` 做复现和修复；在 `测试号` 连续跑通「本地网络分流与 host 探测通过 → 视频上传进度推进并完成 → 标签联想全部插入 → 封面上传通过 → 发布按钮可点击」前，禁止对真实账号执行 `publish-video` 或自动点击最终发布按钮。
+- 小红书视频链路不稳定时，只能使用 `测试号` 做复现和修复；在 `测试号` 连续跑通「视频上传进度推进并完成 → 标签联想全部插入 → 封面上传通过 → 发布按钮可点击」前，禁止对真实账号执行 `publish-video` 或自动点击最终发布按钮。
 - 多条待发布笔记必须逐条处理：一次只执行一条 `fill-publish-video` 或 `publish-video`，该条成功后写入对应内容目录的 `published.md` / 状态记录，再进入下一条。禁止写后台循环一次性提交所有真实账号笔记，禁止同时打开多条发布页并行上传，禁止“先把所有笔记都开始上传再回来检查”。
 - 批量计划只是队列，不是并发发布许可。即使用户说"这个账号其他笔记都发掉"，也要按队列一条一条跑，并在每条失败时停止后续真实发布，先诊断失败原因。
 
@@ -329,8 +284,6 @@ rm -rf "$OUTDIR"
 - 所有路径必须绝对路径。
 
 ### 执行发布
-
-执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 # 步骤 1: 填写视频表单
@@ -347,7 +300,6 @@ rm -rf "$OUTDIR"
 ```
 
 说明：
-- `fill-publish-video` 默认会自动校验小红书本地网络分流；校验失败时会自动刷新路由和托管 hosts。若总入口已锁定 `current-egress`，命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`，也可同时加 `--skip-route-bypass`。
 - `--video` 会自动解析软链到真实文件路径。
 - `--cover` 必填；会在同一发布页完成「修改封面 → 上传图片 → 确定」，并等待最终发布按钮可点击后才返回成功；不再调用临时外挂脚本。
 - 视频默认声明原创；如果素材不是原创，显式加 `--no-original`。
@@ -355,9 +307,7 @@ rm -rf "$OUTDIR"
 填写完成后告知用户：
 > "内容已全部填写完毕，请：
 > 1. 在浏览器中检查标题、正文、视频是否正确（视频处理最长需 10 分钟）
-> 2. 如果本次使用默认 `local-egress`，本地分流已应用；页面停留超过 30 分钟时，点击发布前重新运行 `/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply`。如果本次按用户要求使用 `current-egress`，不要补跑 preflight，继续走当前网络。
-> 3. 手动点击页面上的发布按钮
-> 发布完成后无需关闭或恢复 Tailscale exit node。"
+> 2. 手动点击页面上的发布按钮。"
 
 > ⚠️ **填表预览流程禁止调用 `click-publish`。** 只有用户明确确认“正式发布/定时发布”时，才允许改走下面的一键正式入口。
 
@@ -365,7 +315,7 @@ rm -rf "$OUTDIR"
 
 ### 一键正式视频发布入口（用户确认后才用）
 
-当用户已经明确确认要正式发布/定时发布，并且测试号稳定性门槛已经满足，才允许对选定账号逐条使用 `publish-video`；它会在一个流程内完成「本地网络分流刷新与 host 探测 → 软链解析 → 上传视频 → 填标题/正文/标签 → 默认原创声明 → 定时/可见范围 → 必填封面 → 等待按钮可点 → 点击发布」。
+当用户已经明确确认要正式发布/定时发布，并且测试号稳定性门槛已经满足，才允许对选定账号逐条使用 `publish-video`；它会在一个流程内完成「软链解析 → 上传视频 → 填标题/正文/标签 → 默认原创声明 → 定时/可见范围 → 必填封面 → 等待按钮可点 → 点击发布」。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
@@ -383,23 +333,17 @@ rm -rf "$OUTDIR"
 
 禁止再使用 `/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/tmp/...` 下的临时封面脚本或临时 `_publish.py` 作为正式入口；相关能力已固化进引擎。
 
-### ⚠️ 故障复盘：为什么会把发布/路由搞坏（2026-06-21）——当前 skill 设计漏洞
-
-**现象**：视频上传反复不通 → 我去手工排查网络 → 越改越坏，最后路由表被搞乱（`creator` 的 IP 报 `Errno 49 Can't assign address`、域名互相打架），且"发布完成"是**假成功**（两个号定时列表里根本没有笔记）。
+### ⚠️ 故障复盘：为什么会把发布结果搞坏（2026-06-21）——当前 skill 设计漏洞
 
 **根因 = skill 这几处设计漏洞**：
 
-1. **「网络分流前置」只写了"跑 `route-bypass apply`"，没写"它看起来没生效时怎么办 + 明令禁止手工乱钉"。** 当 route-bypass 像是没生效时（实因 DNS 经海外出口把 xhs 解析到海外/失效边缘 IP，或 IP 轮换过期），我就跑偏去**手工往 `/etc/hosts` 钉静态 IP + 手工 `route add/delete`**，把 route-bypass 的 managed 路由状态搞乱、IP 互相打架。**这是本次最大教训。**
-2. **route-bypass 是"apply 时刻把当前 IP 钉死"的，IP 会轮换/过期**；skill 没强调"不通时只重跑、永远别手工钉 IP"。
-3. **`click-publish` 只 `sleep` 后打日志"发布完成"，从不核实笔记是否真生成** → 假阳性。我据此误报 evc01 已发，实际没发。
-4. **没规定"验证 = 去账号『定时发布/草稿』列表确认笔记真在"**，只看引擎日志就当成功。
+1. **`click-publish` 只 `sleep` 后打日志"发布完成"，从不核实笔记是否真生成** → 假阳性。我据此误报 evc01 已发，实际没发。
+2. **没规定"验证 = 去账号『定时发布/草稿』列表确认笔记真在"**，只看引擎日志就当成功。
 
 **正确做法（已验证有效，应固化进 skill）**：
 
-- **分流不通/出错时，唯一修法 = `route-bypass remove` 然后 `route-bypass apply`（干净重置）。绝不手工散改 `/etc/hosts`、绝不手工 `route add/delete`** —— 当前允许的 hosts 只限 `route-bypass` 写入的 `# BEGIN xhs-route-bypass managed hosts` 托管块，`remove` 会清理。
 - **判定"发布成功"必须去账号定时/草稿列表核实笔记真在**，不能信"发布完成"日志（`click-publish` 当前不可信）。
 - **标签联想等待要够长**（已从 3s 调到 10s + settle），否则标签选不上、丢标签。
-- 在默认 `local-egress` 模式下，IP **必须走本地网关**（账号风控要求）；`route-bypass status` 里 `route decisions for route target IPv4` 不得出现 `interface=utun*` 或 `destination=default`，CLI 还会探测 `www.xiaohongshu.com/explore` 和 `ros-upload.xiaohongshu.com/` 是否能实际连通。正常态下 `route-bypass apply` 一跑即生效，不需要任何手工 hosts/route 操作。
 
 ---
 
@@ -445,7 +389,7 @@ rm -rf "$OUTDIR"
 
 | 情况 | 处理 |
 |------|------|
-| 视频/图片传不上去、上传卡死超时 | 默认 `local-egress` 时先查网络分流：跑 `route-bypass apply` 后看 `route-bypass status`，所有上传目标不得走 `utun*` 或 `destination=default`，并确认 CLI host probe 通过；九成是 DNS/分流（faq #1）。若本次按用户要求走 `current-egress`，先把当前网络出口列为可能原因 |
+| 视频/图片传不上去、上传卡死超时 | 先确认素材路径、文件大小、浏览器登录态和页面错误提示；必要时保留当前页面，查看浏览器上传状态或重新填表测试，不要直接宣称已发布 |
 | 上传报文件错误/传空 | 路径若是软链先 `realpath` 解析成真实文件再传（faq #2） |
 | 登录失败 | 提示用户重新扫码登录并重试 |
 | 图片下载失败 | 提示更换图片 URL 或改用本地图片 |

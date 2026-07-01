@@ -153,7 +153,7 @@ metadata:
    - 正文（段落清晰，口语化）
    - 话题标签
 5. 通过 `AskUserQuestion` 让用户确认最终内容。
-6. 执行发布时必须委托 `platform-publish` 流程，不得在 `xhs-ops` 中直接调用 `publish` / `fill-publish` / `click-publish`。`platform-publish` 会在访问发布页前刷新 `xhs-route-bypass` 本地分流路由，确保小红书发布流量走本地网络。
+6. 执行发布时必须委托 `platform-publish` 流程，不得在 `xhs-ops` 中直接调用 `publish` / `fill-publish` / `click-publish`。
 
 ### 互动管理
 

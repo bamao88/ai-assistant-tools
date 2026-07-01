@@ -1,43 +1,19 @@
 # route-bypass
 
-Route selected publishing hosts through the local Wi-Fi gateway while keeping the
-rest of the Mac on the current Tailscale exit node. It is the required network
-preflight for `platform-publish`: before a platform publish command touches a
-browser, API, upload page, or draft endpoint, refresh that platform's routes here
-so publishing traffic does not leave via the exit-node/proxy path.
+Route selected hosts through the local Wi-Fi gateway while keeping the rest of
+the Mac on the current Tailscale exit node. This helper is retained for
+transcription and historical diagnostics. `platform-publish` no longer uses it
+as a publishing preflight.
 
 This is a host-route helper with a small managed DNS fallback. It resolves
 configured domains to current IPv4 addresses, then adds `/32` host routes
-through the local gateway. For Xiaohongshu publish-critical hosts, it can also
-write a marked `/etc/hosts` block using local-gateway DNS answers when the
-system resolver is pinned to the Tailscale DNS path. Run it again when DNS
-answers change.
+through the local gateway. For configured hosts, it can also write a marked
+`/etc/hosts` block using local-gateway DNS answers when the system resolver is
+pinned to the Tailscale DNS path. Run it again when DNS answers change.
 
 ## Usage
 
-Use the platform wrapper from skills and runbooks:
-
-```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh shipinhao apply
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh bilibili apply
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin apply
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh gongzhonghao apply
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh article-drafts apply
-```
-
-To explicitly keep the current network egress and skip local route changes for a
-single run, set:
-
-```bash
-PLATFORM_PUBLISH_NETWORK_MODE=current-egress \
-  /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh shipinhao apply
-```
-
-With this mode, `apply` and `status` print a skipped message and exit 0. `resolve`
-and `remove` still run normally.
-
-Non-publish consumer: the `video-slicer` transcription line uses the same preflight
+The `video-slicer` transcription line uses the platform wrapper
 with platform `transcribe` to pin the **whole** transcription path to the local
 gateway before each transcription — domestic ASR API hosts (Volcengine / Aliyun) AND
 the public upload stations (`uguu.se` / `0x0.st`), so "upload the audio to a public
@@ -53,9 +29,8 @@ channel is disabled — credentials expired 2026-06.) Its CLI
 `apply` is intentionally safe to rerun. It resolves the current platform IPs
 again, adds any newly returned IPs to the local gateway route set, applies
 platform static network routes when configured, and refreshes managed hosts when
-a platform needs that fallback. If a platform changes edge IPs between
-publishes, run the same `apply` again; do not hand-edit `/etc/hosts` or add ad
-hoc routes.
+a platform needs that fallback. If edge IPs change, run the same `apply` again;
+do not hand-edit `/etc/hosts` or add ad hoc routes.
 
 When there is no interactive TTY, the helper falls back to macOS
 `osascript ... with administrator privileges` so Codex/Claude sessions can still
@@ -65,13 +40,13 @@ show the normal administrator authorization window instead of failing with
 Inspect current routes without changing anything:
 
 ```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu status
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh transcribe status
 ```
 
 Resolve only:
 
 ```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu resolve
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh transcribe resolve
 ```
 
 The lower-level helper remains available for debugging:

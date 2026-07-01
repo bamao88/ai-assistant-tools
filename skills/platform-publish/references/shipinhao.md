@@ -27,32 +27,6 @@ uv sync --python 3.11
 
 如果 patchright 找不到本机 Chrome，提示用户安装 Google Chrome；本 engine 默认使用本机 Chrome channel，不自动下载浏览器。
 
-## 网络分流前置步骤（默认）
-
-为避免 Tailscale exit node 或系统代理导致视频号发布走海外/代理出口，默认发布网络模式是 `local-egress`：账号选定后、任何会访问视频号网页的 CLI 前，先刷新本地分流路由：
-
-```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh shipinhao apply
-```
-
-如果在无 TTY 环境中遇到 `sudo: a password is required`，允许改用 macOS 管理员授权窗口执行同一脚本：
-
-```bash
-osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh shipinhao apply" with administrator privileges'
-```
-
-适用范围：
-
-- `check-login` 前默认完成。
-- `login` 前默认完成。
-- `upload-video` 前默认完成，包括 `--fill-only`、保存草稿、正式发表、定时发表。
-
-`apply` 每次都会重新解析视频号相关域名的当前 IPv4，并把新 IP 钉到本地网关。平台边缘 IP 变化时，重复运行本步骤；不要手工改 hosts 或 route。
-
-**如果直接执行和管理员授权 fallback 都失败，立即停止视频号发布流程并报告错误；不得继续打开发布页、上传视频、保存草稿或发表。**
-
-如果总入口已锁定 `current-egress`（用户明确要求“不走本地流量 / 跳过本地分流 / 直接走当前网络”），跳过本节，不运行 `publish-network-preflight`；执行 `upload-video` 或 `publish-item` 时在命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`。也可以同时传 `--skip-route-bypass`。两者都会让 engine 不再自动刷新或校验本地路由。
-
 ## 账号选择
 
 每次触发后，先运行：
@@ -86,9 +60,9 @@ osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/ro
 /Volumes/ExtSSD2601/AI_Assistant/tools/var/state/tencent-video-publish/accounts/default/chrome-profile/
 ```
 
-发布、登录检查、扫码登录和手动 Cookie 导入都以 `storage_state.json` 为唯一正式凭证。`chrome-profile/` 只用于历史诊断和列表展示；即使 `profile_dir_exists: true`，也不能把它当成可用登录态。`list-accounts` 的 `default_account.logged_state_file_exists` / `profile_dir_exists` 只表示文件或目录是否存在；是否真正有效仍以 `check-login` 为准。
+发布、登录检查和扫码登录优先使用同账号目录下的 `chrome-profile/`；`storage_state.json` 只作为备份、手动 Cookie 导入候选和旧凭证迁移回退。`list-accounts` 的 `logged_state_file_exists` / `profile_dir_exists` 只表示文件或目录是否存在；是否真正有效仍以 `check-login` 为准。
 
-**禁止为了“强制重新扫码”移动、删除或重命名 `storage_state.json` 或 `chrome-profile/`。** 如果 `check-login` 返回 `cookie_invalid`，直接执行 `login --timeout 180`；CLI 会在扫码成功后更新 `storage_state.json`，不需要先清理旧文件。当前 engine 会在写入前保留 `storage_state.json.bak_*`，并在 `storage_state.json` 缺失或 JSON 损坏时自动尝试恢复最新有效备份。
+**禁止为了“强制重新扫码”移动、删除或重命名 `storage_state.json` 或 `chrome-profile/`。** 如果 `check-login` 返回 `cookie_invalid`，直接执行 `login --timeout 180`；CLI 会在扫码成功后更新 `chrome-profile/` 并导出 `storage_state.json` 备份，不需要先清理旧文件。当前 engine 会在写入前保留 `storage_state.json.bak_*`，并在 `storage_state.json` 缺失或 JSON 损坏时自动尝试恢复最新有效备份。
 
 添加命名账号：
 
@@ -102,8 +76,6 @@ osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/ro
 
 先检查登录：
 
-执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
-
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
   /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/scripts/cli.py \
@@ -112,8 +84,6 @@ osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/ro
 ```
 
 如果返回 `logged_in: false`，执行扫码登录：
-
-执行 `login` 前，也必须按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
@@ -130,11 +100,11 @@ QRCODE_PATH=/absolute/path/to/tencent_video_login_YYYYMMDD_HHMMSS.png
 
 Agent 必须把这张二维码图片展示给用户扫码，不能只转述路径。用户扫码并在手机微信确认后，命令会保存 storage state。
 
-登录命令使用独立的可见浏览器上下文打开视频号登录页；不要改成 headless，视频号 QR 登录回调在 headless 下不稳定。页面确认已登录后会直接保存 `storage_state.json`，不会依赖或更新 `chrome-profile/`。登录后可再运行 `check-login` 验证；如果返回 `status: cookie_invalid`，不要手动删除 cookie 或 profile，重新运行 `login --timeout 180` 即可。
+登录命令使用同一账号的可见 `chrome-profile/` 打开视频号登录页；不要改成 headless，视频号 QR 登录回调在 headless 下不稳定。页面确认已登录后会保存 profile，并导出 `storage_state.json` 备份。登录后可再运行 `check-login` 验证；如果返回 `status: cookie_invalid`，不要手动删除 cookie 或 profile，重新运行 `login --timeout 180` 即可。
 
 如二维码超时，命令会刷新并再次打印新的 `QRCODE_PATH`。
 
-如果用户手动提供视频号 Cookie header，不要把 Cookie 值写进日志或文档。写入临时文件后导入指定账号 slot；导入会先写候选 storage state，并默认打开发布页验证。只有验证已登录时，候选凭证才会替换正式 `storage_state.json`；验证失败时正式凭证保持不变：
+如果用户手动提供视频号 Cookie header，不要把 Cookie 值写进日志或文档。写入临时文件后导入指定账号 slot；导入会先写候选 storage state，并默认打开发布页验证。只有验证已登录时，候选凭证才会替换正式 `storage_state.json`，并尝试迁移到账号 `chrome-profile/`；验证失败时正式凭证和 profile 保持不变：
 
 ```bash
 umask 077
@@ -146,7 +116,7 @@ printf '%s' "$COOKIE_HEADER" > /tmp/shipinhao.cookies
 rm -f /tmp/shipinhao.cookies
 ```
 
-导入命令只输出 cookie 名称、数量和登录验证结果，不回显 cookie 值。若返回 `logged_in: false` 或非零退出，说明这组 cookie 不足以恢复登录态，不能继续上传；正式 `storage_state.json` 没有被替换，改走扫码登录或让用户重新导出完整 Cookie。`--no-verify` 只保存候选凭证文件，不会提升为正式凭证。
+导入命令只输出 cookie 名称、数量和登录验证结果，不回显 cookie 值。若返回 `logged_in: false` 或非零退出，说明这组 cookie 不足以恢复登录态，不能继续上传；正式 `storage_state.json` 和 `chrome-profile/` 没有被替换，改走扫码登录或让用户重新导出完整 Cookie。`--no-verify` 只保存候选凭证文件，不会提升为正式凭证，也不会写入 profile。
 
 ## 保存草稿（默认推荐）
 
@@ -211,8 +181,6 @@ rm -f /tmp/shipinhao.cookies
 
 命令：
 
-执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
-
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
   /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/scripts/cli.py \
@@ -238,8 +206,6 @@ rm -f /tmp/shipinhao.cookies
 ## 只填表，不提交（测试流程）
 
 用于测试自动化发布链路，或按用户要求“上传完成后停在页面，不保存草稿/不发表”：
-
-执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
@@ -270,10 +236,7 @@ rm -f /tmp/shipinhao.cookies
 2026-05-28 已知修复：
 
 - 视频号官方封面抽帧依赖 blob worker + `rhino_video.wasm`，engine 的浏览器 context 已启用 `bypass_csp=True`，避免官方 worker 被 CSP 拦截。
-- `aladin.wxqcloud.qq.com` 已加入 route-bypass，用于官方封面/视频处理相关 wasm 资源走本地网络。
-- 视频上传阶段会走独立上传/CDN 域名，不等同于页面域名。2026-06-22 实测默认本地分流必须覆盖：
-  `finderassistancea/b/c/d/e.video.qq.com`、`mmec.wxqcloud.qq.com.cn`、`res.wxqcloud.qq.com.cn`。
-  默认 `local-egress` 发布前，`publish-network-preflight.zsh shipinhao apply/status` 必须同时校验这些上传域名，否则视频可能卡在 0% 或明显变慢。
+- 视频上传阶段会走独立上传/CDN 域名，不等同于页面域名；若上传卡在 0% 或明显变慢，优先查看 CLI 输出的上传状态和浏览器网络诊断。
 - 上传完成和封面可编辑不是同一状态；engine 会继续等待“取消上传 / 文件上传中，请等待完成后再编辑 / 视频处理中，请等待完成后再编辑”消失，再点击封面编辑入口。
 
 ## 原创声明
@@ -288,8 +251,6 @@ rm -f /tmp/shipinhao.cookies
 ## 正式发表
 
 正式发表是外部公开动作，必须先让用户确认标题、简介、标签、视频、封面。确认后才运行：
-
-执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
@@ -307,8 +268,6 @@ rm -f /tmp/shipinhao.cookies
 ## 定时发表
 
 定时发表必须同时传 `--publish` 和 `--schedule-at`：
-
-执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \

@@ -14,7 +14,7 @@ think 块剥离、重试），套路同 planner.py。
   引擎代码不再内嵌账号 prompt（多租户，见迁移计划 §3.2）。
 
 用法：
-  python -m video_slicer.pages_gen <clip.srt> [--duration SEC] [--hint "核心"] [--profile zh_main] [--out pages.json]
+  python -m video_slicer.pages_gen <clip.srt> [--duration SEC] [--hint "核心"] [--profile zh_main] [--max-pages 3] [--out pages.json]
   # 不带 --out 时把 pages JSON 打到 stdout
 """
 from __future__ import annotations
@@ -30,6 +30,10 @@ VALID_BLOCKS = {"hero", "arrow", "mid", "key", "sub", "gap"}
 # 14s 原速 ≈ 7-8s 最终停留——对应「大幅放慢·页少content厚」档（见 pages_system_prompt.txt
 # 核心原则：内容块驱动翻页）。两页 start 间隔不够，就把后页内容并进前页，而不是硬翻。
 MIN_DWELL_SEC = 14
+
+# PPT 风格默认严格少页：一条切片最多 3 页。prompt 负责让模型少产页，
+# 这里是硬兜底，防止提示词回归后又生成过多页。
+MAX_PAGES = 3
 
 _ENGINE_ROOT = Path(__file__).resolve().parent.parent  # engines/video-slicer
 
@@ -84,9 +88,24 @@ def _merge_pages(prev: dict, cur: dict) -> None:
             prev["blocks"].append(b)
 
 
-def _sanitize(pages: list, duration: float, min_dwell: float = MIN_DWELL_SEC) -> list:
+def _cap_pages(pages: list, max_pages: int | None = MAX_PAGES) -> list:
+    """按相邻时间块继续合并，确保默认 PPT 页数不超过上限。"""
+    if max_pages is None or max_pages <= 0:
+        return pages
+    capped = list(pages)
+    while len(capped) > max_pages:
+        merge_at = min(
+            range(1, len(capped)),
+            key=lambda i: capped[i]["start"] - capped[i - 1]["start"],
+        )
+        _merge_pages(capped[merge_at - 1], capped.pop(merge_at))
+    return capped
+
+
+def _sanitize(pages: list, duration: float, min_dwell: float = MIN_DWELL_SEC,
+              max_pages: int | None = MAX_PAGES) -> list:
     """收口 LLM 输出：丢非法 block、保证 start 单调且落区间内、首页归零，
-    并按 min_dwell 合并停留过短的页（翻页太快的硬地板，见 MIN_DWELL_SEC）。"""
+    按 min_dwell 合并停留过短的页，再按 max_pages 做默认页数封顶。"""
     out = []
     for p in pages:
         if not isinstance(p, dict):
@@ -128,12 +147,13 @@ def _sanitize(pages: list, duration: float, min_dwell: float = MIN_DWELL_SEC) ->
     # 末页停留（到片尾）也得够久，否则并回上一页。
     while len(merged) > 1 and float(duration) - merged[-1]["start"] < min_dwell:
         _merge_pages(merged[-2], merged.pop())
-    return merged
+    return _cap_pages(merged, max_pages)
 
 
 def generate_pages(srt_path: str | Path, duration: float | None = None,
                    hint: str | None = None, providers=("kimi", "minimax"),
-                   profile: str = "zh_main", min_dwell: float = MIN_DWELL_SEC) -> list:
+                   profile: str = "zh_main", min_dwell: float = MIN_DWELL_SEC,
+                   max_pages: int | None = MAX_PAGES) -> list:
     load_env_file(_discover_env_file())  # 复用引擎的 .env 加载（同一份共享 .env）
     cues, last = cues_from_srt(srt_path)
     dur = duration or last
@@ -145,7 +165,7 @@ def generate_pages(srt_path: str | Path, duration: float | None = None,
          {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
         temperature=0.0,
     )
-    return _sanitize(data.get("pages") or [], dur, min_dwell)
+    return _sanitize(data.get("pages") or [], dur, min_dwell, max_pages)
 
 
 def main():
@@ -156,9 +176,12 @@ def main():
     ap.add_argument("--profile", default="zh_main")
     ap.add_argument("--min-dwell", type=float, default=MIN_DWELL_SEC,
                     help=f"每页原速最小停留秒数（默认 {MIN_DWELL_SEC}，越大翻页越慢/页越少）")
+    ap.add_argument("--max-pages", type=int, default=MAX_PAGES,
+                    help=f"PPT 默认最大页数（默认 {MAX_PAGES}；传 0 可关闭封顶）")
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
-    pages = generate_pages(a.srt, a.duration, a.hint, profile=a.profile, min_dwell=a.min_dwell)
+    pages = generate_pages(a.srt, a.duration, a.hint, profile=a.profile,
+                           min_dwell=a.min_dwell, max_pages=a.max_pages)
     blob = json.dumps({"pages": pages}, ensure_ascii=False, indent=2)
     if a.out:
         Path(a.out).write_text(blob + "\n", encoding="utf-8")

@@ -11,15 +11,9 @@
   /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py <子命令>
 ```
 
-## 前置：账号选择 + 网络分流
+## 前置：账号选择
 
-1. 先 `list-accounts`，按返回 `count` 选账号（0=默认不加 `--account`；1=告知并加 `--account`；多个=问用户后固定）。
-2. 任何访问小红书网页的命令前，先刷新本地分流路由（避免 Tailscale 走海外出口）：
-
-```bash
-tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/xhs-route-bypass.zsh apply
-```
+先 `list-accounts`，按返回 `count` 选账号（0=默认不加 `--account`；1=告知并加 `--account`；多个=问用户后固定）。
 
 ## 抓取流程
 

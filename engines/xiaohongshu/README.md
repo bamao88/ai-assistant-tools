@@ -115,7 +115,7 @@ python scripts/cli.py fill-publish-video \
   --video "/abs/path/video.mp4" \
   --cover "/abs/path/cover.png"
 
-视频命令要求同时提供 `--video` 和 `--cover`，会自动刷新小红书本地网络分流、解析软链真实路径，并默认声明原创；
+视频命令要求同时提供 `--video` 和 `--cover`，会自动解析软链真实路径，并默认声明原创；
 非原创素材请加 `--no-original`。
 
 # 长文发布

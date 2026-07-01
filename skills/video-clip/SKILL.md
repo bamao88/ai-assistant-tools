@@ -69,19 +69,19 @@ python engines/video-compose/run.py --plan zh_clip_cut
 「生成 PPT」「出 PPT 风格成片」「框架页竖版切片」= 同一条线，配方 `zh_business`，**默认 layout=vertical（手写白板 PPT 风格，定稿）**。渲染核心在 tools 引擎，不再路由回 assistant_zh。
 
 两段产物，分工固定：
-- **PPT 内容（几页 / 每页讲什么 / 翻页节奏）** ← 引擎 `video-slicer` 的 `pages_gen`，提示词 `engines/video-slicer/profiles/zh_main/pages_system_prompt.txt`。
+- **PPT 内容（几页 / 每页讲什么 / 翻页节奏）** ← 引擎 `video-slicer` 的 `pages_gen`，提示词 `engines/video-slicer/profiles/zh_main/pages_system_prompt.txt`；默认严格 2-3 页，代码硬上限 3 页。
 - **PPT 外观（手写白板长什么样）** ← 引擎 `video-framework-render` 的 `render.py`：竖版手写样式 `PAGE_CSS`，几何（人像圆窗/字幕位置）`layouts/vertical.json`。
 
 最小调用（一条切片 → 成片）：
 ```bash
 SL=/Volumes/ExtSSD2601/AI_Assistant/tools/engines/video-slicer
 FW=/Volumes/ExtSSD2601/AI_Assistant/tools/engines/video-framework-render
-# ① 逐字稿(clip.srt) → pages.json（PPT 内容+翻页节奏，默认 profile zh_main）
+# ① 逐字稿(clip.srt) → pages.json（PPT 内容+翻页节奏，默认 profile zh_main，最多 3 页）
 $SL/.venv/bin/python -m video_slicer.pages_gen clip.fixed.srt --out pages.json
 # ② job.json(含 video/srt/pages, "layout":"vertical") → 成片 accel.mp4
 $FW/.venv/bin/python -m video_framework_render.render job.json --out OUTDIR --profile zh_main
 ```
-端到端业务流（选片→去口水→pages→渲染→变速）：`python engines/video-compose/run.py --run zh_business --selection <sel>.json --profile zh_main`。
+端到端业务流（选片→去口水→pages→渲染→变速）：`python engines/video-compose/run.py --run zh_business --selection <sel>.json --profile zh_main`。默认最多 3 页；确有特殊长片需要放宽时，在 selection 的 `params.max_pages` 或单条 clip 的 `max_pages` 显式设置。
 
 ### 🔒 PPT 风格·定稿（未经用户明确指示，不得改）
 

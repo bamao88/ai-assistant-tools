@@ -21,7 +21,23 @@ const puppeteer = loadPuppeteer();
   const H = parseInt(process.argv[5], 10) || 1280;
   await page.setViewport({ width: W, height: H, deviceScaleFactor: 2 });
   await page.goto('file://' + path.resolve(process.argv[2]), { waitUntil: 'networkidle0' });
+  await page.evaluate(() => document.fonts && document.fonts.ready).catch(() => {});
   await new Promise(r => setTimeout(r, 250));
+  // 自适应缩放：厚页内容超过安全内容区(.ppt 由 top/bottom 定高、overflow:hidden)时，
+  // 整体等比缩小塞进框内——不裁字、不溢出到底部字幕/PIP 安全带。
+  const scaled = await page.evaluate(() => {
+    const el = document.querySelector('.ppt');
+    if (!el) return 1;
+    const avail = el.clientHeight, need = el.scrollHeight;
+    if (avail > 0 && need > avail + 1) {
+      const s = avail / need;
+      el.style.transformOrigin = 'top left';
+      el.style.transform = 'scale(' + s + ')';
+      return s;
+    }
+    return 1;
+  });
+  if (scaled < 1) console.log('  fit-scale', path.basename(process.argv[2]), '×' + scaled.toFixed(3));
   await page.screenshot({ path: path.resolve(process.argv[3]), type: 'png',
     clip: { x: 0, y: 0, width: W, height: H } });
   await browser.close();

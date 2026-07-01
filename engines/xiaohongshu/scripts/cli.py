@@ -12,9 +12,6 @@ import contextlib
 import json
 import logging
 import os
-import platform
-import shlex
-import subprocess
 import sys
 import tempfile
 import time
@@ -78,28 +75,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("xhs-cli")
 
-XHS_ROUTE_VERIFY_DOMAINS = [
-    "xiaohongshu.com",
-    "www.xiaohongshu.com",
-    "creator.xiaohongshu.com",
-    "edith.xiaohongshu.com",
-    "ros-upload.xiaohongshu.com",
-    "ros-upload.xhscdn.com",
-    "ros-upload-d1.xhscdn.com",
-    "ros-upload-d2.xhscdn.com",
-    "ros-upload-d3.xhscdn.com",
-    "ros-upload-d4.xhscdn.com",
-    "ros-upload-d5.xhscdn.com",
-    "ros-upload-d6.xhscdn.com",
-    "ros-upload-d7.xhscdn.com",
-    "ros-upload-d8.xhscdn.com",
-]
-XHS_ROUTE_PROBE_URLS = [
-    "https://www.xiaohongshu.com/explore",
-    "https://ros-upload.xiaohongshu.com/",
-]
-
-
 def _output(data: dict, exit_code: int = 0) -> None:
     """输出 JSON 并退出。"""
     print(json.dumps(data, ensure_ascii=False, indent=2))
@@ -134,259 +109,6 @@ def _resolve_existing_file(path: str, label: str) -> str:
     if not os.path.exists(resolved):
         _output({"success": False, "error": f"{label}不存在: {resolved}"}, exit_code=2)
     return resolved
-
-
-def _route_bypass_script() -> str:
-    return os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "..",
-            "route-bypass",
-            "scripts",
-            "xhs-route-bypass.zsh",
-        )
-    )
-
-
-def _tail_text(text: str, max_chars: int = 2000) -> str:
-    text = text.strip()
-    return text[-max_chars:] if len(text) > max_chars else text
-
-
-def _run_route_bypass_apply(timeout: int = 180) -> subprocess.CompletedProcess[str]:
-    script = _route_bypass_script()
-    if not os.path.exists(script):
-        raise FileNotFoundError(f"route-bypass 脚本不存在: {script}")
-
-    with contextlib.suppress(FileNotFoundError, subprocess.TimeoutExpired):
-        subprocess.run(
-            ["tailscale", "set", "--exit-node-allow-lan-access=true"],
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=15,
-            check=False,
-        )
-
-    return subprocess.run(
-        [script, "apply"],
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
-
-
-def _run_route_bypass_apply_with_admin(timeout: int = 240) -> subprocess.CompletedProcess[str]:
-    script = _route_bypass_script()
-    log_path = os.path.join(tempfile.gettempdir(), "xhs-route-bypass-apply.log")
-    command = (
-        "tailscale set --exit-node-allow-lan-access=true 2>/dev/null || true; "
-        f"{shlex.quote(script)} apply > {shlex.quote(log_path)} 2>&1; "
-        "status=$?; "
-        f"tail -200 {shlex.quote(log_path)}; "
-        "exit $status"
-    )
-    return subprocess.run(
-        [
-            "osascript",
-            "-e",
-            f'do shell script {json.dumps(command)} with administrator privileges',
-        ],
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
-
-
-def _run_route_bypass_status(timeout: int = 120) -> subprocess.CompletedProcess[str]:
-    script = _route_bypass_script()
-    return subprocess.run(
-        [script, "status", *XHS_ROUTE_VERIFY_DOMAINS],
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
-
-
-def _find_nonlocal_route_decisions(status_output: str) -> list[str]:
-    local_interface = ""
-    bad: list[str] = []
-    for line in status_output.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("service="):
-            for token in stripped.split():
-                if token.startswith("interface="):
-                    local_interface = token.split("=", 1)[1]
-            continue
-        if not local_interface or " interface=" not in stripped or "destination=" not in stripped:
-            continue
-        interface = ""
-        destination = ""
-        for token in stripped.split():
-            if token.startswith("interface="):
-                interface = token.split("=", 1)[1]
-            elif token.startswith("destination="):
-                destination = token.split("=", 1)[1]
-        if interface != local_interface or destination == "default":
-            bad.append(stripped)
-    return bad
-
-
-def _probe_xhs_https_hosts(timeout: int = 8) -> list[str]:
-    """Probe critical hosts after routing.
-
-    A route can point at the local gateway while macOS/Chrome still resolves the
-    host through Tailscale DNS to a dead edge IP. The route table alone would look
-    correct, but uploads sit at 0%. Curl exits 0 for HTTP 401/403, which is fine:
-    we only need to prove TCP/TLS reached the selected host.
-    """
-    bad: list[str] = []
-    for url in XHS_ROUTE_PROBE_URLS:
-        result = subprocess.run(
-            [
-                "curl",
-                "--connect-timeout",
-                "3",
-                "--max-time",
-                str(timeout),
-                "-sS",
-                "-o",
-                "/dev/null",
-                "-w",
-                "remote_ip=%{remote_ip} http_code=%{http_code} time_connect=%{time_connect} time_total=%{time_total}",
-                url,
-            ],
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=timeout + 2,
-            check=False,
-        )
-        if result.returncode != 0:
-            bad.append(
-                f"{url} probe failed rc={result.returncode} "
-                f"stdout={result.stdout.strip()} stderr={_tail_text(result.stderr, 300)}"
-            )
-    return bad
-
-
-def _verify_xhs_route_bypass() -> dict:
-    result = _run_route_bypass_status()
-    if result.returncode != 0:
-        return {
-            "ok": False,
-            "error": "route-bypass status failed",
-            "stdout": _tail_text(result.stdout),
-            "stderr": _tail_text(result.stderr),
-        }
-    bad = _find_nonlocal_route_decisions(result.stdout)
-    probe_failures = _probe_xhs_https_hosts()
-    return {
-        "ok": not bad and not probe_failures,
-        "bad_routes": bad[:20],
-        "probe_failures": probe_failures[:10],
-        "checked_domains": XHS_ROUTE_VERIFY_DOMAINS,
-        "probed_urls": XHS_ROUTE_PROBE_URLS,
-    }
-
-
-def _route_bypass_skip_reason(args: argparse.Namespace) -> str:
-    if getattr(args, "skip_route_bypass", False):
-        return "cli --skip-route-bypass"
-
-    network_mode = os.environ.get("PLATFORM_PUBLISH_NETWORK_MODE") or os.environ.get("PUBLISH_NETWORK_MODE") or ""
-    if network_mode.strip().lower() == "current-egress":
-        return "env PLATFORM_PUBLISH_NETWORK_MODE=current-egress"
-
-    for name in ("PLATFORM_PUBLISH_SKIP_ROUTE_BYPASS", "PUBLISH_SKIP_ROUTE_BYPASS", "XHS_SKIP_ROUTE_BYPASS"):
-        if os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}:
-            return f"env {name}"
-
-    return ""
-
-
-def _apply_xhs_route_bypass_once() -> dict:
-    result = _run_route_bypass_apply()
-    if result.returncode == 0:
-        return {"applied": True}
-
-    needs_admin = "sudo:" in result.stderr or "password is required" in result.stderr
-    if platform.system() == "Darwin" and needs_admin:
-        admin_result = _run_route_bypass_apply_with_admin()
-        if admin_result.returncode == 0:
-            return {"applied": True, "admin": True}
-        result = admin_result
-
-    return {
-        "applied": False,
-        "stdout": _tail_text(result.stdout),
-        "stderr": _tail_text(result.stderr),
-    }
-
-
-def _ensure_xhs_route_bypass(args: argparse.Namespace) -> dict:
-    """Ensure Xiaohongshu publishing hosts are routed through the local gateway."""
-    skip_reason = _route_bypass_skip_reason(args)
-    if skip_reason:
-        return {"skipped": True, "mode": "current-egress", "reason": skip_reason}
-
-    verify = _verify_xhs_route_bypass()
-    if verify.get("ok"):
-        logger.info("小红书本地网络分流已存在并通过校验")
-        return {"verified": True, "already_applied": True}
-
-    try:
-        apply_result = _apply_xhs_route_bypass_once()
-    except Exception as e:  # noqa: BLE001
-        _output({"success": False, "error": f"网络分流执行失败: {e}"}, exit_code=2)
-
-    if not apply_result.get("applied"):
-        _output(
-            {
-                "success": False,
-                "error": "网络分流未生效，已停止发布。请先修复 route-bypass 后重试。",
-                "stdout": apply_result.get("stdout", ""),
-                "stderr": apply_result.get("stderr", ""),
-            },
-            exit_code=2,
-        )
-
-    verify = _verify_xhs_route_bypass()
-    if not verify.get("ok"):
-        logger.warning("小红书本地网络分流校验未通过，重试刷新: %s", verify)
-        try:
-            retry_result = _apply_xhs_route_bypass_once()
-        except Exception as e:  # noqa: BLE001
-            _output(
-                {
-                    "success": False,
-                    "error": f"网络分流重试失败: {e}",
-                    "route_verify": verify,
-                },
-                exit_code=2,
-            )
-        verify = _verify_xhs_route_bypass()
-        apply_result = {**apply_result, "retry": retry_result}
-
-    if verify.get("ok"):
-        logger.info("小红书本地网络分流已刷新并通过校验")
-        return {**apply_result, "verified": True}
-
-    _output(
-        {
-            "success": False,
-            "error": "网络分流校验未通过，已停止上传。仍有小红书上传域名未走本地网关。",
-            "route_verify": verify,
-        },
-        exit_code=2,
-    )
 
 
 def _update_account_nickname(args: argparse.Namespace, page) -> None:
@@ -1122,7 +844,6 @@ def cmd_fill_publish_video(args: argparse.Namespace) -> None:
 
     video_path = _resolve_existing_file(args.video, "视频文件")
     cover_path = _resolve_existing_file(args.cover, "封面文件")
-    route_bypass = _ensure_xhs_route_bypass(args)
 
     with open(args.title_file, encoding="utf-8") as f:
         title = f.read().strip()
@@ -1150,7 +871,6 @@ def cmd_fill_publish_video(args: argparse.Namespace) -> None:
                 "title": title,
                 "video": video_path,
                 "cover": cover_path,
-                "route_bypass": route_bypass,
                 "original": getattr(args, "original", True),
                 "status": "视频表单已填写，等待确认发布",
             }
@@ -1278,7 +998,6 @@ def cmd_publish_video(args: argparse.Namespace) -> None:
 
     video_path = _resolve_existing_file(args.video, "视频文件")
     cover_path = _resolve_existing_file(args.cover, "封面文件")
-    route_bypass = _ensure_xhs_route_bypass(args)
 
     with open(args.title_file, encoding="utf-8") as f:
         title = f.read().strip()
@@ -1314,7 +1033,6 @@ def cmd_publish_video(args: argparse.Namespace) -> None:
                 "title": title,
                 "video": video_path,
                 "cover": cover_path,
-                "route_bypass": route_bypass,
                 "original": getattr(args, "original", True),
                 "status": "发布完成",
             }
@@ -1548,11 +1266,6 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("--visibility", help="可见范围")
     sub.add_argument("--original", action="store_true", default=True, help="声明原创（默认开启）")
     sub.add_argument("--no-original", dest="original", action="store_false", help="不声明原创")
-    sub.add_argument(
-        "--skip-route-bypass",
-        action="store_true",
-        help="跳过小红书本地网络分流刷新（仅用于本地调试）",
-    )
     sub.add_argument("--headless", action="store_true", help="无头模式（未登录自动降级）")
     sub.set_defaults(func=cmd_publish_video)
 
@@ -1578,11 +1291,6 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_argument("--visibility", help="可见范围")
     sub.add_argument("--original", action="store_true", default=True, help="声明原创（默认开启）")
     sub.add_argument("--no-original", dest="original", action="store_false", help="不声明原创")
-    sub.add_argument(
-        "--skip-route-bypass",
-        action="store_true",
-        help="跳过小红书本地网络分流刷新（仅用于本地调试）",
-    )
     sub.set_defaults(func=cmd_fill_publish_video)
 
     # click-publish（点击发布按钮）

@@ -63,7 +63,7 @@ tools/
 | `video-compose` | Python — `selector.py`/`run.py`；组合层·唯一对外入口（catalog+recipes，指挥各引擎） |
 | `tencent-meeting` | Python — 官方 MCP 桥接 `scripts/mcp_cli.py`（legacy 下载脚本保留） |
 | `screenshot` | Node — `screenshot.js` |
-| `route-bypass` | Zsh — 发布前本地网络分流（小红书 / 公众号 / 视频号 / B站 / 抖音 / 文章草稿平台） |
+| `route-bypass` | Zsh — 本地网络分流工具（转录链路与历史诊断使用） |
 | `calendar-task` | Shell — Apple 日历提醒 |
 
 ### 外部 clone（`vendor/`，各自带 upstream git）

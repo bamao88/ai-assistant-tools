@@ -157,7 +157,6 @@ def cmd_upload_video(args: argparse.Namespace) -> None:
         hold_open_seconds=args.hold_open,
         upload_timeout=args.upload_timeout,
         cover_timeout=args.cover_timeout,
-        skip_route_bypass=args.skip_route_bypass,
         headless=not args.headed,
     )
     result = asyncio.run(upload_video(request))
@@ -206,7 +205,6 @@ def cmd_publish_item(args: argparse.Namespace) -> None:
         hold_open_seconds=args.hold_open,
         upload_timeout=args.upload_timeout,
         cover_timeout=args.cover_timeout,
-        skip_route_bypass=args.skip_route_bypass,
         headless=not args.headed,
     )
     result = asyncio.run(upload_video(request))
@@ -281,7 +279,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub.add_argument("--upload-timeout", type=int, default=300, help="seconds to wait for video upload completion")
     sub.add_argument("--cover-timeout", type=int, default=60, help="seconds to wait for official cover generation before custom cover upload")
-    sub.add_argument("--skip-route-bypass", action="store_true", help="skip local route-bypass preflight and use current network egress")
     sub.set_defaults(func=cmd_upload_video)
 
     sub = subparsers.add_parser(
@@ -304,7 +301,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub.add_argument("--upload-timeout", type=int, default=300, help="seconds to wait for video upload completion")
     sub.add_argument("--cover-timeout", type=int, default=60, help="seconds to wait for official cover generation before custom cover upload")
-    sub.add_argument("--skip-route-bypass", action="store_true", help="skip local route-bypass preflight and use current network egress")
     sub.add_argument("--dry-run", action="store_true", help="parse item dir and print upload payload without opening browser")
     sub.set_defaults(func=cmd_publish_item)
 

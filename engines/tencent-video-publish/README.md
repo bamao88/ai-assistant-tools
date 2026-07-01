@@ -11,12 +11,13 @@
 登录态：
 
 - 账号按 slot 隔离，凭证保存在 `var/state/tencent-video-publish/accounts/<slot>/`。
-- 正式登录态只认 Playwright/patchright `storage_state.json`；历史遗留的 `chrome-profile/` 只用于列表展示和诊断，不参与登录检查、扫码登录或发布。
-- 写入凭证时先写临时文件并校验 JSON，再替换正式文件。
+- 正式运行优先复用账号独立 `chrome-profile/`；`storage_state.json` 是备份、Cookie 导入候选和旧凭证迁移回退。
+- `check-login` 会先检查 `chrome-profile/`。如果 profile 未登录，再尝试 `storage_state.json` 和最近备份；JSON 有效时会尝试把登录态写回 profile。
+- 写入 `storage_state.json` 时先写临时文件并校验 JSON，再替换正式文件。
 - 替换前保留最近的 `storage_state.json.bak_*` 备份。
-- `check-login` 会在凭证缺失或 JSON 损坏时自动尝试恢复最新有效备份。
-- 扫码登录强制使用可见 Chromium；headless QR 登录回调不稳定。扫码成功后保存新的 `storage_state.json`；需要验证时继续运行 `check-login`。
-- 手动拿到 Cookie header 时，用 `import-cookies` 先写入候选 storage state；导入命令默认打开发布页验证，只有验证已登录才会替换正式 `storage_state.json`，未登录会非零退出且正式凭证不变。
+- `check-login` 会在 JSON 凭证缺失或损坏时自动尝试恢复最新有效备份，但 profile 仍是主凭证。
+- 扫码登录强制使用可见 Chromium；headless QR 登录回调不稳定。扫码成功后写入同一账号 `chrome-profile/`，并导出新的 `storage_state.json` 备份；需要验证时继续运行 `check-login`。
+- 手动拿到 Cookie header 时，用 `import-cookies` 先写入候选 storage state；导入命令默认打开发布页验证，只有验证已登录才会替换正式 `storage_state.json`，并尝试写入 `chrome-profile/`。未登录会非零退出且正式凭证不变。
 - 当前约定：`aipm` 是默认账号，也是测试号；`zhanghe` 是张和视频号真实账号。
 
 初始化：
@@ -25,13 +26,6 @@
 cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish
 uv sync --python 3.11
 ```
-
-网络预检：
-
-- 发布前默认自动执行视频号本地网络预检。
-- 若明确要走当前网络出口，可在命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`，或在 `upload-video` / `publish-item` 上加 `--skip-route-bypass` 跳过本地分流。
-- 视频上传阶段会访问独立 CDN：`finderassistancea/b/c/d/e.video.qq.com`、`mmec.wxqcloud.qq.com.cn`、`res.wxqcloud.qq.com.cn`。
-- 这些域名必须和 `channels.weixin.qq.com` 一起走本地网络，否则上传可能卡在 0% 或明显变慢。
 
 常用命令：
 
@@ -43,7 +37,6 @@ uv sync --python 3.11
 .venv/bin/python scripts/cli.py --account wxp check-login
 .venv/bin/python scripts/cli.py --account wxp import-cookies --cookie-file /tmp/wxp.cookies
 .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "标题" --desc "简介" --tags AI 工具
-PLATFORM_PUBLISH_NETWORK_MODE=current-egress .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "标题"
 .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "测试" --fill-only --hold-open -1 --upload-timeout 90 --cover-timeout 10
 .venv/bin/python scripts/cli.py --account zhanghe --headed publish-item --item-dir /abs/item_dir --publish --schedule-at "2026-07-04 20:20" --upload-timeout 360 --cover-timeout 90
 .venv/bin/python scripts/cli.py --account zhanghe publish-item --item-dir /abs/item_dir --dry-run
@@ -62,7 +55,7 @@ rm -f /tmp/wxp.cookies
 
 不要把 Cookie 值写进文档、日志或提交。导入输出只会显示 cookie 名称、数量和登录验证结果，不回显 cookie 值。
 
-`--no-verify` 只保存候选凭证文件，不会替换正式 `storage_state.json`；只有验证通过的候选凭证才会被提升为正式凭证。
+`--no-verify` 只保存候选凭证文件，不会替换正式 `storage_state.json`，也不会写入 `chrome-profile/`；只有验证通过的候选凭证才会被提升并迁移到 profile。
 
 封面说明：
 

@@ -9,7 +9,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from tvp.core import parse_cookie_string, promote_storage_state_candidate
+from tvp import accounts
+from tvp.core import credential_metadata, parse_cookie_string, promote_storage_state_candidate
 
 
 def write_state(path: Path, cookie_name: str) -> None:
@@ -68,3 +69,18 @@ def test_invalid_candidate_does_not_replace_official(tmp_path: Path) -> None:
     assert candidate.exists()
     assert read_cookie_names(official) == ["old"]
     assert not list(tmp_path.glob("storage_state.json.bak_*"))
+
+
+def test_auth_metadata_marks_chrome_profile_as_primary(tmp_path: Path) -> None:
+    storage_state = tmp_path / "storage_state.json"
+
+    metadata = credential_metadata(storage_state, "chrome_profile")
+    summary = accounts.storage_state_summary(storage_state)
+
+    assert metadata["profile_ignored"] is False
+    assert metadata["auth_primary"] == "chrome_profile"
+    assert metadata["storage_state_role"] == "backup"
+    assert metadata["credential_source"] == "chrome_profile"
+    assert summary["profile_ignored"] is False
+    assert summary["auth_primary"] == "chrome_profile"
+    assert summary["storage_state_role"] == "backup"

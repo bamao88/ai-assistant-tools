@@ -8,13 +8,11 @@ open
 
 2026-06-22：已给 `sau douyin upload-video` / `upload-note` 增加 `--fill-only` 和 `--hold-seconds`。`--fill-only` 会强制有头浏览器，上传并填写内容后停在最终发布按钮前，不点击“发布”。已补单元测试覆盖 fill-only 分支不会调用最终发布 callback。
 
-2026-06-22：测试号 `测试号_抖音` 已通过真实 fill-only 复测：本地网络 preflight 后，视频上传进入 `post/video`，标题/简介/话题填入，横版/竖版封面上传，自主声明选择完成，最终停在发布页并输出 `Douyin video filled, ready for manual submit`，未点击发布。
+2026-06-22：测试号 `测试号_抖音` 已通过真实 fill-only 复测：视频上传进入 `post/video`，标题/简介/话题填入，横版/竖版封面上传，自主声明选择完成，最终停在发布页并输出 `Douyin video filled, ready for manual submit`，未点击发布。
 
 2026-06-22：修复新版创作者中心入口：先打开左侧“高清发布”菜单并选择“发布视频/发布图文”，再等待对应 `input[type=file]`；同时将发布页表单等待延长到 120s，并改用新版标题/简介 selector。
 
-2026-06-22：修复网络 preflight：无 TTY 时使用 macOS 管理员授权窗口，抖音新增静态 `/24` 网段兜底，避免 DNS 换边缘 IP 后又落回 Tailscale/proxy。
-
-2026-06-22：追加网络反馈：这次视频上传慢/失败不是 Skill 完全没写本地网络要求，而是抖音上传阶段出现了新动态 CDN 网段，且浏览器已建立的旧 TCP 连接不会因为后面补路由自动切换出口。后续应把 `publish-network-preflight` 下沉到 CLI/engine 的自动强制门，并在上传期审计浏览器 NetworkService 的远端 IP；发现平台相关连接仍从 Tailscale/代理出口出去时，应自动失败并提示补路由、重启上传会话。
+2026-07-01：发布链路已撤销本地网络 preflight 要求，默认直接走系统当前网络；后续上传慢/失败按页面状态、登录态、素材路径和浏览器上传诊断处理，不再把补路由作为默认修复动作。
 
 2026-06-22：测试号完成定时发布 fill-only 复测：`--schedule "2026-06-23 20:30"` 已成功切到“定时发布”，并读取页面输入值校验为 `2026-06-23 20:30`；流程停在最终发布页，未点击发布。
 

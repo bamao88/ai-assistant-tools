@@ -233,7 +233,11 @@ document.fonts.ready.then(() => {
 
 function resolveTheme(template, cfg, options = {}) {
   const def = template.defaults;
-  const fontSize = clampFontSize(options.font_size, def.fontSize);
+  const hasExplicitFontSize = options.font_size !== undefined &&
+    options.font_size !== null &&
+    String(options.font_size).trim() !== "";
+  const defaultFontSize = Math.max(def.fontSize, cfg.fontSize || def.fontSize);
+  const fontSize = clampFontSize(hasExplicitFontSize ? options.font_size : undefined, defaultFontSize);
   const paddingH = def.paddingH;
   const fontScale = fontSize / def.fontSize;
   return {

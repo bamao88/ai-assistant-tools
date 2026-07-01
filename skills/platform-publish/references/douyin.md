@@ -28,33 +28,6 @@ SAU="$ENGINE/.venv/bin/sau"
 
 真实账号使用前仍必须按总入口契约确认账号和最终提交权限。若 `张和` 等真实账号 cookie 失效，先完成 `login` + `check`，再执行上传。
 
-## 网络分流前置步骤（默认）
-
-为避免 Tailscale exit node 或系统代理导致抖音发布走海外/代理出口（异地 IP 登录/发布会触发抖音风控，上传链路也会变慢或失败），默认发布网络模式是 `local-egress`：任何 `douyin` 子命令（check / login / upload-video / upload-note）执行前，先刷新本地分流路由：
-
-```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin apply
-```
-
-无 TTY 时脚本会自动使用 macOS 管理员授权窗口。若用户取消授权或 `apply` 后 `status` 仍显示 `destination=default` / `interface=utun*`，停止发布，重新处理网络前置门。
-
-抖音 DNS 会快速轮换边缘 IP，preflight 已配置常见 `/24` 网段兜底。若上传时仍发现新的字节/CDN 域名或新网段（例如 DevTools/日志里出现未覆盖的 `douyinvod` 或 `vod` 上传域），先把解析到的域名/IP/网段补进 `route-bypass` 并重新 `apply`，再继续测试；不要把“动态 CDN 不好穷举”当作可以走海外出口的理由。
-
-⚠️ **绝不要用 `tailscale set --exit-node=` 关全局出口** —— 用户本地 Claude Code / Codex 靠该 exit node 访问 LLM API，关掉会断开发任务。确需补上传字节链路时，只走 route 方案，不动 exit node。
-
-在默认 `local-egress` 模式下，如分流 apply 或出口验证失败，**停止发布并报告**，不要带着海外出口发（登录腿按默认策略必须本地）。
-
-如果总入口已锁定 `current-egress`（用户明确要求“不走本地流量 / 跳过本地分流 / 直接走当前网络”），跳过本节；实际发布命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`，直接走系统当前网络出口，并在结果里说明本次未做本地分流。该环境变量也会让误触发的 `publish-network-preflight` no-op。
-
-快速校验：
-
-```bash
-/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh douyin status \
-  | awk '/route decisions for route target IPv4:/{flag=1;next} flag && /destination=default|interface=utun|gateway=-/{print}'
-```
-
-期望无输出；有输出表示仍有目标 IP 没走本地网络。
-
 ## 命令
 
 **登录（建议在本地真实终端跑，可加 `--headed` 看页面）：**

@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""video_framework_slicer —— 口播切片 → 「手写框架图翻页 + 人像圆形PIP + 纠错字幕 + 自适应变速」竖版成片。
+"""video_framework_slicer —— 口播切片 → 「手写框架图翻页 + 人像圆形PIP + 纠错字幕 + 整档定速变速」竖版成片。
 
 一条命令：  python slicer.py jobs/<job>.json [--out DIR] [--skip-accel]
 
 输入 = 一个 job JSON（见 jobs/clip01.json）：
-  { video, srt, pages:[{start,title,blocks:[...]}], params?:{target_cps,max_speed,transition} }
+  { video, srt, pages:[{start,title,blocks:[...]}], params?:{speed,transition} }
+  变速默认整档定速 params.speed(默认1.25x)；旧逐句自适应改为可选 params.accel_mode:"adaptive"(target_cps/max_speed)。
   pages 现阶段人工写；将来由 LLM 读逐字稿自动产出同 schema 的 JSON（渲染层不用改）。
 
 输出（OUT/<name>/）：
-  page_*.png  zh.ass  paginated.mp4(原速带翻页)  accel.mp4(自适应变速·最终交付)
+  page_*.png  zh.ass  paginated.mp4(原速带翻页)  accel.mp4(整档定速1.25x·最终交付)
 
 阶段：locate(人脸) → assets(白环/遮罩) → pages(spec→PNG) → subs(srt+纠错→ASS)
-      → compose(翻页+PIP+字幕) → accelerate(按语速变速)
+      → compose(翻页+PIP+字幕) → accelerate(整档定速，可选自适应)
 
 依赖：ffmpeg；node+puppeteer(render_page.js)；python: pillow, opencv-python-headless（建 venv）。
 几何/配色为锁定值（已多轮定稿），改版式见 GEOM / 模板常量。

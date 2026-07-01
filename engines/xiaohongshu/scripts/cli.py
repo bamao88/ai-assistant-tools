@@ -297,6 +297,21 @@ def _verify_xhs_route_bypass() -> dict:
     }
 
 
+def _route_bypass_skip_reason(args: argparse.Namespace) -> str:
+    if getattr(args, "skip_route_bypass", False):
+        return "cli --skip-route-bypass"
+
+    network_mode = os.environ.get("PLATFORM_PUBLISH_NETWORK_MODE") or os.environ.get("PUBLISH_NETWORK_MODE") or ""
+    if network_mode.strip().lower() == "current-egress":
+        return "env PLATFORM_PUBLISH_NETWORK_MODE=current-egress"
+
+    for name in ("PLATFORM_PUBLISH_SKIP_ROUTE_BYPASS", "PUBLISH_SKIP_ROUTE_BYPASS", "XHS_SKIP_ROUTE_BYPASS"):
+        if os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}:
+            return f"env {name}"
+
+    return ""
+
+
 def _apply_xhs_route_bypass_once() -> dict:
     result = _run_route_bypass_apply()
     if result.returncode == 0:
@@ -318,8 +333,9 @@ def _apply_xhs_route_bypass_once() -> dict:
 
 def _ensure_xhs_route_bypass(args: argparse.Namespace) -> dict:
     """Ensure Xiaohongshu publishing hosts are routed through the local gateway."""
-    if getattr(args, "skip_route_bypass", False):
-        return {"skipped": True}
+    skip_reason = _route_bypass_skip_reason(args)
+    if skip_reason:
+        return {"skipped": True, "mode": "current-egress", "reason": skip_reason}
 
     verify = _verify_xhs_route_bypass()
     if verify.get("ok"):

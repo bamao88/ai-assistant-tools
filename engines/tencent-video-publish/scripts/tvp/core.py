@@ -4,6 +4,7 @@ import asyncio
 import base64
 from http.cookies import CookieError, SimpleCookie
 import json
+import os
 import platform
 import shlex
 import subprocess
@@ -112,6 +113,7 @@ class UploadVideoRequest:
     hold_open_seconds: int = 0
     upload_timeout: int = 300
     cover_timeout: int = 60
+    skip_route_bypass: bool = False
     headless: bool = True
 
 
@@ -247,7 +249,26 @@ def verify_shipinhao_route_bypass() -> dict:
     }
 
 
-def ensure_shipinhao_route_bypass() -> dict:
+def route_bypass_skip_reason(cli_skip: bool = False) -> str:
+    if cli_skip:
+        return "cli --skip-route-bypass"
+
+    network_mode = os.environ.get("PLATFORM_PUBLISH_NETWORK_MODE") or os.environ.get("PUBLISH_NETWORK_MODE") or ""
+    if network_mode.strip().lower() == "current-egress":
+        return "env PLATFORM_PUBLISH_NETWORK_MODE=current-egress"
+
+    for name in ("PLATFORM_PUBLISH_SKIP_ROUTE_BYPASS", "PUBLISH_SKIP_ROUTE_BYPASS", "TVP_SKIP_ROUTE_BYPASS"):
+        if os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}:
+            return f"env {name}"
+
+    return ""
+
+
+def ensure_shipinhao_route_bypass(skip_route_bypass: bool = False) -> dict:
+    skip_reason = route_bypass_skip_reason(skip_route_bypass)
+    if skip_reason:
+        return {"skipped": True, "mode": "current-egress", "reason": skip_reason}
+
     verify = verify_shipinhao_route_bypass()
     if verify.get("ok"):
         return {"verified": True, "already_applied": True}
@@ -2089,7 +2110,7 @@ async def upload_video(request: UploadVideoRequest) -> dict:
     if not request.title.strip():
         raise ValueError("title is required")
 
-    route_status = ensure_shipinhao_route_bypass()
+    route_status = ensure_shipinhao_route_bypass(skip_route_bypass=request.skip_route_bypass)
     login_check = await check_login(request.storage_state, headless=request.headless)
     if not login_check.get("logged_in"):
         raise RuntimeError(

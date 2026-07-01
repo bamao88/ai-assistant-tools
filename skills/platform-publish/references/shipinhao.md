@@ -27,9 +27,9 @@ uv sync --python 3.11
 
 如果 patchright 找不到本机 Chrome，提示用户安装 Google Chrome；本 engine 默认使用本机 Chrome channel，不自动下载浏览器。
 
-## 网络分流前置步骤（强制）
+## 网络分流前置步骤（默认）
 
-为避免 Tailscale exit node 或系统代理导致视频号发布走海外/代理出口，账号选定后、任何会访问视频号网页的 CLI 前，必须先刷新本地分流路由：
+为避免 Tailscale exit node 或系统代理导致视频号发布走海外/代理出口，默认发布网络模式是 `local-egress`：账号选定后、任何会访问视频号网页的 CLI 前，先刷新本地分流路由：
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh shipinhao apply
@@ -43,13 +43,15 @@ osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/ro
 
 适用范围：
 
-- `check-login` 前必须完成。
-- `login` 前必须完成。
-- `upload-video` 前必须完成，包括 `--fill-only`、保存草稿、正式发表、定时发表。
+- `check-login` 前默认完成。
+- `login` 前默认完成。
+- `upload-video` 前默认完成，包括 `--fill-only`、保存草稿、正式发表、定时发表。
 
 `apply` 每次都会重新解析视频号相关域名的当前 IPv4，并把新 IP 钉到本地网关。平台边缘 IP 变化时，重复运行本步骤；不要手工改 hosts 或 route。
 
 **如果直接执行和管理员授权 fallback 都失败，立即停止视频号发布流程并报告错误；不得继续打开发布页、上传视频、保存草稿或发表。**
+
+如果总入口已锁定 `current-egress`（用户明确要求“不走本地流量 / 跳过本地分流 / 直接走当前网络”），跳过本节，不运行 `publish-network-preflight`；执行 `upload-video` 或 `publish-item` 时在命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`。也可以同时传 `--skip-route-bypass`。两者都会让 engine 不再自动刷新或校验本地路由。
 
 ## 账号选择
 
@@ -100,7 +102,7 @@ osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/ro
 
 先检查登录：
 
-执行本步骤前，必须先完成“网络分流前置步骤”。
+执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
@@ -111,7 +113,7 @@ osascript -e 'do shell script "/Volumes/ExtSSD2601/AI_Assistant/tools/engines/ro
 
 如果返回 `logged_in: false`，执行扫码登录：
 
-执行 `login` 前，也必须先完成“网络分流前置步骤”。
+执行 `login` 前，也必须按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
@@ -209,7 +211,7 @@ rm -f /tmp/shipinhao.cookies
 
 命令：
 
-执行本步骤前，必须先完成“网络分流前置步骤”。
+执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
@@ -237,7 +239,7 @@ rm -f /tmp/shipinhao.cookies
 
 用于测试自动化发布链路，或按用户要求“上传完成后停在页面，不保存草稿/不发表”：
 
-执行本步骤前，必须先完成“网络分流前置步骤”。
+执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
@@ -269,9 +271,9 @@ rm -f /tmp/shipinhao.cookies
 
 - 视频号官方封面抽帧依赖 blob worker + `rhino_video.wasm`，engine 的浏览器 context 已启用 `bypass_csp=True`，避免官方 worker 被 CSP 拦截。
 - `aladin.wxqcloud.qq.com` 已加入 route-bypass，用于官方封面/视频处理相关 wasm 资源走本地网络。
-- 视频上传阶段会走独立上传/CDN 域名，不等同于页面域名。2026-06-22 实测必须覆盖：
+- 视频上传阶段会走独立上传/CDN 域名，不等同于页面域名。2026-06-22 实测默认本地分流必须覆盖：
   `finderassistancea/b/c/d/e.video.qq.com`、`mmec.wxqcloud.qq.com.cn`、`res.wxqcloud.qq.com.cn`。
-  发布前 `publish-network-preflight.zsh shipinhao apply/status` 必须同时校验这些上传域名，否则视频可能卡在 0% 或明显变慢。
+  默认 `local-egress` 发布前，`publish-network-preflight.zsh shipinhao apply/status` 必须同时校验这些上传域名，否则视频可能卡在 0% 或明显变慢。
 - 上传完成和封面可编辑不是同一状态；engine 会继续等待“取消上传 / 文件上传中，请等待完成后再编辑 / 视频处理中，请等待完成后再编辑”消失，再点击封面编辑入口。
 
 ## 原创声明
@@ -287,7 +289,7 @@ rm -f /tmp/shipinhao.cookies
 
 正式发表是外部公开动作，必须先让用户确认标题、简介、标签、视频、封面。确认后才运行：
 
-执行本步骤前，必须先完成“网络分流前置步骤”。
+执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
@@ -306,7 +308,7 @@ rm -f /tmp/shipinhao.cookies
 
 定时发表必须同时传 `--publish` 和 `--schedule-at`：
 
-执行本步骤前，必须先完成“网络分流前置步骤”。
+执行本步骤前，按总入口发布网络模式处理“网络分流前置步骤”。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \

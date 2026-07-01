@@ -26,6 +26,17 @@ Use the platform wrapper from skills and runbooks:
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh article-drafts apply
 ```
 
+To explicitly keep the current network egress and skip local route changes for a
+single run, set:
+
+```bash
+PLATFORM_PUBLISH_NETWORK_MODE=current-egress \
+  /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh shipinhao apply
+```
+
+With this mode, `apply` and `status` print a skipped message and exit 0. `resolve`
+and `remove` still run normally.
+
 Non-publish consumer: the `video-slicer` transcription line uses the same preflight
 with platform `transcribe` to pin the **whole** transcription path to the local
 gateway before each transcription — domestic ASR API hosts (Volcengine / Aliyun) AND

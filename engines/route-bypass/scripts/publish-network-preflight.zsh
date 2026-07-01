@@ -60,6 +60,23 @@ case "$action" in
     ;;
 esac
 
+is_truthy_env() {
+  local value="${1:l}"
+  [[ "$value" == "1" || "$value" == "true" || "$value" == "yes" || "$value" == "on" ]]
+}
+
+network_mode="${PLATFORM_PUBLISH_NETWORK_MODE:-${PUBLISH_NETWORK_MODE:-}}"
+network_mode_lc="${network_mode:l}"
+if [[ "$action" != "remove" && "$action" != "resolve" ]] && {
+  [[ "$network_mode_lc" == "current-egress" ]] ||
+  is_truthy_env "${PLATFORM_PUBLISH_SKIP_ROUTE_BYPASS:-}" ||
+  is_truthy_env "${PUBLISH_SKIP_ROUTE_BYPASS:-}" ||
+  is_truthy_env "${TVP_SKIP_ROUTE_BYPASS:-}"
+}; then
+  print "publish-network-preflight platform=$platform action=$action skipped mode=current-egress"
+  exit 0
+fi
+
 typeset -a domains
 manage_hosts=0
 host_overrides=""

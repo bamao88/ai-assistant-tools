@@ -5,19 +5,21 @@
 
 ---
 
-## ⚠️ #1 强制前置：publish-network-preflight apply（漏了它，后面全白搭）
+## ⚠️ #1 默认前置：publish-network-preflight apply（漏了它，后面大概率卡上传）
 
 **症状**：视频/图片一直传不上去；上传卡死、转圈、超时；表面看是「网络慢」或「小红书抽风」，反复重试都不行。
 
 **真因**：这台机器整机走 **Tailscale 海外出口**。小红书上传入口和分片 CDN（`ros-upload.xiaohongshu.com` / `ros-upload-d*.xhscdn.com`）只要有一部分掉到 exit node，就会出现上传 0%、卡死或极慢。页面能打开、能填字，唯独上传那一步失败——所以最容易误判成别的问题，绕一大圈。
 
-**解法（发布前必跑，不是可选项）**：
+**解法（默认发布网络模式 `local-egress` 下发布前先跑）**：
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh xiaohongshu apply
 ```
 
 把小红书相关 IP 和已观测上传 CDN 网段钉到本地网关出口；当 Tailscale DNS 把 `www.xiaohongshu.com` / `ros-upload.xiaohongshu.com` 解析到坏边缘时，`route-bypass` 还会写一个带 BEGIN/END 标记的受控 `/etc/hosts` 块，改用本地网关 DNS 返回且可连接的边缘。**这一步通了，视频/图片秒传，后面标题/正文/标签/定时/封面才会一路顺。** 无 TTY 报 `sudo: a password is required` 时走 `osascript ... with administrator privileges` 兜底（见 `xiaohongshu.md`「网络分流前置步骤」）。小红书 IP 或上传边缘变化时，重复运行同一条 `publish-network-preflight`，它会重新解析当前 IP 并刷新受控 hosts；不要手工猜 IP。
+
+如果总入口已锁定 `current-egress`（用户明确要求“不走本地流量 / 跳过本地分流 / 直接走当前网络”），本条作为风险提示，不再强制阻断；小红书视频 CLI 命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`，也可同时加 `--skip-route-bypass`。
 
 **自检**：不要只看 `ping ros-upload.xiaohongshu.com`。上传分片可能走 Akamai/Tencent 的轮换边缘 IP，单域名 ping 正常也可能上传 0%。必须看完整路由校验：
 
@@ -67,4 +69,4 @@ realpath "<可能是软链的路径>"   # 用解析后的真实绝对路径去 -
 
 ## 一句话排查顺序
 
-传不上去 → **先看 #1（publish-network-preflight status 不能走 `utun*`，CLI host probe 必须通过）**，九成是它 → 再看 #2 路径是不是软链 → 都没问题再怀疑登录态 / 平台本身。
+传不上去 → 如果本次是默认 `local-egress`，**先看 #1（publish-network-preflight status 不能走 `utun*`，CLI host probe 必须通过）**，九成是它 → 再看 #2 路径是不是软链 → 都没问题再怀疑登录态 / 平台本身。若本次按用户要求走 `current-egress`，先汇报当前网络出口可能是上传失败原因，再决定是否切回默认本地分流复测。

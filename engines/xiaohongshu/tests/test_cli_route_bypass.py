@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 import subprocess
+import argparse
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
@@ -33,6 +34,22 @@ route decisions for route target IPv4:
 """
 
     assert cli._find_nonlocal_route_decisions(status) == []
+
+
+def test_ensure_xhs_route_bypass_can_be_skipped_by_env(monkeypatch):
+    def fail_if_called():
+        raise AssertionError("route-bypass verification should not run when skipped")
+
+    monkeypatch.setenv("PLATFORM_PUBLISH_NETWORK_MODE", "current-egress")
+    monkeypatch.setattr(cli, "_verify_xhs_route_bypass", fail_if_called)
+
+    result = cli._ensure_xhs_route_bypass(argparse.Namespace(skip_route_bypass=False))
+
+    assert result == {
+        "skipped": True,
+        "mode": "current-egress",
+        "reason": "env PLATFORM_PUBLISH_NETWORK_MODE=current-egress",
+    }
 
 
 def test_probe_xhs_https_hosts_reports_failed_upload_endpoint(monkeypatch):

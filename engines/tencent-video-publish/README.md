@@ -28,7 +28,8 @@ uv sync --python 3.11
 
 网络预检：
 
-- 发布前会自动执行视频号本地网络预检。
+- 发布前默认自动执行视频号本地网络预检。
+- 若明确要走当前网络出口，可在命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`，或在 `upload-video` / `publish-item` 上加 `--skip-route-bypass` 跳过本地分流。
 - 视频上传阶段会访问独立 CDN：`finderassistancea/b/c/d/e.video.qq.com`、`mmec.wxqcloud.qq.com.cn`、`res.wxqcloud.qq.com.cn`。
 - 这些域名必须和 `channels.weixin.qq.com` 一起走本地网络，否则上传可能卡在 0% 或明显变慢。
 
@@ -42,6 +43,7 @@ uv sync --python 3.11
 .venv/bin/python scripts/cli.py --account wxp check-login
 .venv/bin/python scripts/cli.py --account wxp import-cookies --cookie-file /tmp/wxp.cookies
 .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "标题" --desc "简介" --tags AI 工具
+PLATFORM_PUBLISH_NETWORK_MODE=current-egress .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "标题"
 .venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "测试" --fill-only --hold-open -1 --upload-timeout 90 --cover-timeout 10
 .venv/bin/python scripts/cli.py --account zhanghe --headed publish-item --item-dir /abs/item_dir --publish --schedule-at "2026-07-04 20:20" --upload-timeout 360 --cover-timeout 90
 .venv/bin/python scripts/cli.py --account zhanghe publish-item --item-dir /abs/item_dir --dry-run

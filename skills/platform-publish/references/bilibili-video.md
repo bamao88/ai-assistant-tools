@@ -16,9 +16,9 @@ SAU="$ENGINE/.venv/bin/sau"      # CLI 入口；等价于 .venv/bin/python -m sa
 - 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.bilibili`（当前：`张和`）。**只发这个账号**，发别的先与用户确认。
 - 账号标识约定：`张和` = 本项目（assistant_zh，负责张和全部自媒体）名下的 B站 号，cookie 落 `bilibili_张和.json`。其 B站 真实昵称 **和哥专业讲AI**（UID `36184382`）。注意：不要与小红书里的 `缪东旭_个人`(MiaoDX) 混淆——那是另一个人，旧白名单曾误填 `MiaoDX`，已纠正。
 
-## 网络分流前置步骤（强制）
+## 网络分流前置步骤（默认）
 
-为避免 Tailscale exit node 或系统代理导致 B站 投稿走海外/代理出口（**异地 IP 投稿会触发 B站 风控**），任何 `bilibili` 子命令（check / login / upload-video）执行前，必须先刷新本地分流路由：
+为避免 Tailscale exit node 或系统代理导致 B站 投稿走海外/代理出口（**异地 IP 投稿会触发 B站 风控**），默认发布网络模式是 `local-egress`：任何 `bilibili` 子命令（check / login / upload-video）执行前，先刷新本地分流路由：
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh bilibili apply
@@ -40,7 +40,9 @@ for h in member.bilibili.com api.bilibili.com passport.bilibili.com; do ip=$(dig
 
 ⚠️ **绝不要用 `tailscale set --exit-node=` 关全局出口** —— 用户本地 Claude Code / Codex 靠该 exit node 访问 LLM API，关掉会断开发任务。若以后确需连上传字节也本地，只能走 route 方案（biliup `--line` 钉死线路 → 把对应 upos 主机加进 `domains.txt`），不动 exit node。
 
-如分流 apply 或出口验证失败，**停止投稿并报告**，不要带着海外出口投（登录/提交腿必须本地）。
+在默认 `local-egress` 模式下，如分流 apply 或出口验证失败，**停止投稿并报告**，不要带着海外出口投（登录/提交腿按默认策略必须本地）。
+
+如果总入口已锁定 `current-egress`（用户明确要求“不走本地流量 / 跳过本地分流 / 直接走当前网络”），跳过本节；实际投稿命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`，直接走系统当前网络出口，并在结果里说明本次未做本地分流。该环境变量也会让误触发的 `publish-network-preflight` no-op。
 
 ## 命令
 

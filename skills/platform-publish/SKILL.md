@@ -30,6 +30,7 @@ description: |
 
 - **目标平台**：看用户表述定位到上表的一行。没有明确平台、多个平台混在一起或平台与内容形态冲突时，先问清楚，不要猜。
 - **发布账号**：必须明确本次用哪个平台账号/slot/profile。若用户已指定账号，后续全程固定；若平台 reference 有固定白名单或单账号默认，先向用户说明“本次将使用账号 X”；若平台存在多个可选账号或无法判断账号，先列出候选并询问。账号未确定前，不做网络 preflight，不打开发布页，不写草稿。
+- **发布网络模式**：内置开关默认是 `local-egress`，即发布前走本地网络分流。只有用户明确说“不走本地流量 / 跳过本地分流 / 直接走当前网络 / skip route-bypass / skip preflight”等含义时，才切到 `current-egress`。不要从“快点发”“先试试”之类模糊表达推断跳过。
 - **最终提交权限**：必须明确最终“点击发布 / 定时发布 / 提交审核 / 群发 / 投稿 / 保存草稿”的动作由谁完成。
 
 提交权限分两类：
@@ -42,10 +43,10 @@ description: |
 如果用户只说“发到某平台”但没有说明是否要机器点击最终发布，按 `manual-submit` 处理；若该平台没有安全草稿/预览中间态（例如 B站 `upload-video` 执行即投稿），必须反问确认是否授权 `agent-submit`，不能默认投稿。
 
 **步骤 2 — 读对应的 reference，完成账号落地。**
-一次只读一个 reference。reference 里有账号列表/白名单/固定 profile、CLI 路径、平台专属前置步骤、子命令、失败兜底。**不要凭记忆拼命令** —— 照着 reference 抄。若 reference 与本文件冲突，以本文件的“发布契约”和“本地网络前置门”为上位约束；reference 只能补充平台域名/账号/发布细节，不能跳过契约确认。
+一次只读一个 reference。reference 里有账号列表/白名单/固定 profile、CLI 路径、平台专属前置步骤、子命令、失败兜底。**不要凭记忆拼命令** —— 照着 reference 抄。若 reference 与本文件冲突，以本文件的“发布契约”和“发布网络模式”为上位约束；reference 只能补充平台域名/账号/发布细节，不能跳过契约确认。
 
-**步骤 3 — 发布前先做本地网络前置门。**
-所有平台发布都先走本地网络分流，不把登录、上传、写草稿、提交审核等发布动作交给 Tailscale exit node 或代理出口。不同平台的域名/IP 不一样，但动作统一：在任何会访问平台网页、API、上传入口、草稿接口的命令前，先运行 `publish-network-preflight` 对应平台的 `apply`。
+**步骤 3 — 按发布网络模式处理流量。**
+默认 `local-egress`：所有平台发布都先走本地网络分流，不把登录、上传、写草稿、提交审核等发布动作交给 Tailscale exit node 或代理出口。不同平台的域名/IP 不一样，但动作统一：在任何会访问平台网页、API、上传入口、草稿接口的命令前，先运行 `publish-network-preflight` 对应平台的 `apply`。
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh <platform> apply
@@ -64,8 +65,16 @@ description: |
 
 `apply` 会重新解析当前平台域名的最新 IPv4、把新 IP 钉到本地网关路由，并刷新受控 `/etc/hosts` 块（目前小红书上传关键域名需要）。如果 IP 变了，重新跑同一条 `apply`；不要手工改 `/etc/hosts` 或手工 `route add/delete`。如果 `apply` 因管理员权限或路由校验失败而失败，停止发布，先解决网络前置门，不继续打开发布页、上传素材或提交。
 
+显式 `current-egress`：不要运行 `publish-network-preflight`，也不要因为未本地分流而阻断发布；直接走系统当前网络出口。执行命令时设置统一环境变量：
+
+```bash
+PLATFORM_PUBLISH_NETWORK_MODE=current-egress <publish command>
+```
+
+这个环境变量会让 `publish-network-preflight` no-op，也会让已接入的引擎跳过内置路由校验。若所用平台 CLI 另有跳过参数，也可以同时传（当前小红书和视频号支持 `--skip-route-bypass`）。汇报时明确说明“本次按用户要求跳过本地分流，走当前网络”。
+
 **步骤 4 — 执行并结构化汇报。**
-执行时始终带着步骤 1 的契约：平台、账号、`manual-submit`/`agent-submit`。报告：发到了哪个平台/账号、是否由 Agent 点击了最终提交、是草稿/待人工点击/已发布/已定时/已投稿、草稿链接或 media_id/publish_id、需要用户手动确认的后续动作。
+执行时始终带着步骤 1 的契约：平台、账号、发布网络模式、`manual-submit`/`agent-submit`。报告：发到了哪个平台/账号、是否走本地分流、是否由 Agent 点击了最终提交、是草稿/待人工点击/已发布/已定时/已投稿、草稿链接或 media_id/publish_id、需要用户手动确认的后续动作。
 
 ## 多笔记发布顺序
 

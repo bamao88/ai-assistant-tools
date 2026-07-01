@@ -397,7 +397,9 @@ def accelerate(job, out: Path):
     else:
         F.append("".join(f"{vc[i]}{ac[i]}" for i in range(len(segs)))+f"concat=n={len(segs)}:v=1:a=1[v][a]")
     (out/"accel_filter.txt").write_text("\n".join(F))
-    print(f"  [accel] {len(segs)}段 目标{TGT}cps 均速{DUR/od:.2f} {DUR:.0f}s→{od:.0f}s 末{fo}s淡出")
+    tag=(f"adaptive 目标{pr.get('target_cps',ACCEL['target_cps'])}cps" if mode=="adaptive"
+         else f"定速{pr.get('speed',ACCEL['speed'])}x")
+    print(f"  [accel] {tag} {len(segs)}段 均速{DUR/od:.2f} {DUR:.0f}s→{od:.0f}s 末{fo}s淡出")
     subprocess.run(["ffmpeg","-y","-loglevel","error","-i",str(src),
         "-filter_complex_script",str(out/"accel_filter.txt"),"-map","[v]","-map","[a]",
         "-r","25","-c:v","libx264","-preset","veryfast","-crf","21","-pix_fmt","yuv420p",

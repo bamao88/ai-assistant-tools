@@ -210,12 +210,13 @@ def run_batch(kit: Dict[str, Any], manifest_path: Path, overview_path: Optional[
     items = {it["content_id"]: it for it in manifest["items"]}
     order = manifest.get("publish_order") or [it["content_id"] for it in manifest["items"]]
 
+    pool_size = len(list_pool(kit))
     rows: List[Dict[str, Any]] = []
     for seq, cid in enumerate(order):
         it = items[cid]
         base = pick_base(kit, seq_index=seq)
         lines = split_lines(kit, it["title"])
-        res = render_one(kit, base, lines, Path(it["output"]).expanduser())
+        res = render_one(kit, base, lines, Path(it["output"]).expanduser(), it.get("lift"))
         res["content_id"] = cid
         rows.append(res)
 
@@ -224,15 +225,38 @@ def run_batch(kit: Dict[str, Any], manifest_path: Path, overview_path: Optional[
                   for i in range(len(rows) - 1)
                   if rows[i]["base_image"] == rows[i + 1]["base_image"]]
 
+    # 底图使用次数直方图 + 过度重复 / 池子不够告警
+    usage: Dict[str, int] = {}
+    for r in rows:
+        usage[r["base_image"]] = usage.get(r["base_image"], 0) + 1
+    max_reuse = int(kit.get("rotation", {}).get("max_reuse_warn", 2))
+    overused = {f: c for f, c in usage.items() if c > max_reuse}
+    warnings: List[str] = []
+    if overused:
+        warnings.append(
+            f"底图过度重复：{overused}（阈值 {max_reuse} 次）。可用底图池仅 {pool_size} 张、本批 {len(rows)} 条。"
+            f"建议补充底图（往 covers/ 加新的张和口播竖帧，见 references/quality-and-base-management.md 的『底图不够怎么办』）"
+            f"或改用别的底图分散。")
+    if len(order) > pool_size * max_reuse:
+        need = -(-len(order) // max_reuse) - pool_size  # ceil(N/max_reuse) - pool
+        warnings.append(
+            f"底图池太小：{len(order)} 条 > {pool_size} 张 × {max_reuse} 次上限，无法做到每张 ≤{max_reuse} 次，"
+            f"至少还需 {max(need,0)} 张新底图才能满足。")
+
     if overview_path is None:
         overview_path = ASSET_DIR / "generated" / "overview.png"
     build_overview(kit, rows, overview_path)
 
     return {
         "count": len(rows),
-        "mapping": [{"content_id": r["content_id"], "base": r["base_image"], "output": r["output"]} for r in rows],
+        "pool_size": pool_size,
+        "mapping": [{"content_id": r["content_id"], "base": r["base_image"], "lift": r["lift"], "output": r["output"]} for r in rows],
+        "base_usage": usage,
         "adjacent_collisions": collisions,
+        "overused_frames": overused,
+        "warnings": warnings,
         "overview": str(overview_path),
+        "next_step": "看 overview.png：①每张脸是否在视觉中心、头顶留白适中、字够大（短句更大）；不合格用 --lift/--base 单张重出。②warnings 非空说明底图重复过多，考虑补图。",
     }
 
 

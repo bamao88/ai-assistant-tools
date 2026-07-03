@@ -8,7 +8,6 @@ SYSTEM/USER prompt 从 skill 的 prompts/body_video.md 读（config.BODY_VIDEO_P
     python3 gen_copy.py <clip_dir> [--platform 小红书|视频号] [--provider kimi|minimax] [--title 主题]
 """
 import sys
-import os
 import re
 import json
 import argparse

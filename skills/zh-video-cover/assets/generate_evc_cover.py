@@ -64,6 +64,73 @@ def list_pool(kit: Dict[str, Any]) -> List[Path]:
     return files
 
 
+# ---------- lifecycle: 使用账本 (ledger) ----------
+
+def _lc(kit: Dict[str, Any]) -> Dict[str, Any]:
+    return kit.get("lifecycle", {})
+
+
+def reuse_cap(kit: Dict[str, Any]) -> int:
+    return int(_lc(kit).get("reuse_cap", 3))
+
+
+def ledger_path(kit: Dict[str, Any]) -> Path:
+    return ASSET_DIR / _lc(kit).get("ledger_file", "pool_ledger_evc.json")
+
+
+def load_ledger(kit: Dict[str, Any]) -> Dict[str, Any]:
+    p = ledger_path(kit)
+    if not p.exists():
+        return {}
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def save_ledger(kit: Dict[str, Any], ledger: Dict[str, Any]) -> None:
+    ledger_path(kit).write_text(json.dumps(ledger, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def frame_uses(ledger: Dict[str, Any], name: str) -> int:
+    return len(ledger.get(name, {}).get("uses", []))
+
+
+def frame_last_date(ledger: Dict[str, Any], name: str) -> str:
+    ds = [u.get("publish_date", "") for u in ledger.get(name, {}).get("uses", [])]
+    return max(ds) if ds else ""   # "" = 从没用过 = 最旧 = LRU 最优先
+
+
+def plan_batch_bases(kit: Dict[str, Any], order: List[str], items: Dict[str, Any]):
+    """账本驱动 LRU 分配：未退休(uses<cap)帧里挑上次排期最旧的，相邻不撞。
+    返回 (assignment[(cid,frame|None)], exhausted, ledger)；账本缺失返回 None(→ fallback 轮换)。"""
+    ledger = load_ledger(kit)
+    pool = [p.name for p in list_pool(kit)]
+    if not ledger or not any(n in ledger for n in pool):
+        return None
+    cap = reuse_cap(kit)
+    work = {n: {"uses": frame_uses(ledger, n), "last": frame_last_date(ledger, n)} for n in pool}
+    assignment: List = []
+    exhausted = False
+    prev = None
+    for seq, cid in enumerate(order):
+        date = items[cid].get("publish_date") or ""
+        cands = [n for n in pool if work[n]["uses"] < cap and n != prev]
+        if not cands:  # 放松相邻约束再试
+            cands = [n for n in pool if work[n]["uses"] < cap]
+        if not cands:  # 全退休 → 用尽
+            exhausted = True
+            assignment.append((cid, None))
+            continue
+        pick = min(cands, key=lambda n: (work[n]["last"], work[n]["uses"], n))
+        assignment.append((cid, pick))
+        work[pick]["uses"] += 1
+        # 批内已分配的置为"最近"(有排期用排期,否则合成键排在所有日期之后)
+        work[pick]["last"] = date if date else f"~batch{seq:04d}"
+        prev = pick
+    return assignment, exhausted, ledger
+
+
 def pick_base(kit: Dict[str, Any], base_image: Optional[str] = None,
               base_name: Optional[str] = None, seq_index: Optional[int] = None) -> Path:
     if base_image:
@@ -78,9 +145,13 @@ def pick_base(kit: Dict[str, Any], base_image: Optional[str] = None,
                 return p
         raise FileNotFoundError(f"--base '{base_name}' not in pool")
     if seq_index is not None:
-        # 批量：按列表顺序取模，纯确定性，不碰游标 → 相邻条目必然不撞底图，可重跑一致
-        return pool[seq_index % len(pool)]
-    # 单张 round-robin：读写独立游标
+        return pool[seq_index % len(pool)]   # batch fallback(无账本时)
+    # 单张自动：账本驱动 LRU(未退休里挑最旧)；无账本 fallback 游标轮换
+    ledger = load_ledger(kit)
+    if ledger and any(p.name in ledger for p in pool):
+        cap = reuse_cap(kit)
+        cands = [p for p in pool if frame_uses(ledger, p.name) < cap] or pool
+        return min(cands, key=lambda p: (frame_last_date(ledger, p.name), frame_uses(ledger, p.name), p.name))
     state_file = ASSET_DIR / kit.get("rotation", {}).get("state_file", ".rotation_state_evc.json")
     idx = 0
     if state_file.exists():

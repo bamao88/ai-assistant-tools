@@ -110,7 +110,8 @@ def main():
     ap.add_argument("--form", default=None, help="article|video（小红书等两形式平台用）")
     ap.add_argument("--spine", default="")
     ap.add_argument("--title", default="")
-    ap.add_argument("--provider", choices=["kimi", "minimax"], default="kimi")
+    ap.add_argument("--provider", choices=["auto", "kimi", "minimax"], default="auto",
+                    help="auto=kimi→minimax 自动兜底")
     args = ap.parse_args()
     body = Path(args.body_file).read_text(encoding="utf-8")
     out = gen_title(body, args.spine, args.title, args.provider, args.platform, args.form)

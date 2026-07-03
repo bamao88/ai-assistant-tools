@@ -87,7 +87,34 @@
     "state_file": ".rotation_state_evc.json",
     "exclude": ["frame-06.png"],
     "max_reuse_warn": 2,
-    "_doc": "state_file 是 gitignored 运行时游标(单张模式用)，与黑块黄字的 .rotation_state.json 互不干扰。exclude=贴脸自拍帧一提就切发，本风格排除。批量模式按列表顺序取模、不碰游标。max_reuse_warn=同一底图在一批里最多用几次，超过则批量输出告警提示补图。"
+    "_doc": "state_file 是 gitignored 运行时游标(无账本时的 fallback 单张模式用)。exclude=贴脸自拍帧一提就切发，本风格排除。max_reuse_warn=旧的软告警阈值(账本模式下由 reuse_cap 硬管)。"
+  },
+
+  "lifecycle": {
+    "_doc": "底图资产生命周期：base_videos 登记源 → 抽帧(质量闸) → 池 + 账本(每张用几次/上次排期日期) → 复用封顶 reuse_cap → 用尽去新源 → 无源反馈用户。",
+    "reuse_cap": 3,
+    "ledger_file": "pool_ledger_evc.json",
+    "base_videos_file": "base_videos.yaml",
+    "pick_strategy": "账本驱动 LRU：在未退休(uses<reuse_cap)帧里挑『上次排期日期最旧/从没用过』的，批量内相邻不撞。账本缺失则 fallback 回 rotation 轮换。",
+    "use_definition": "一次使用=封面写进真实 item(--record 批量)，按该 item 真实排期 publish_date 记账；测试/tmp 不记账。",
+    "exhaustion": "批量填不满(会逼某张超 reuse_cap)→ 找 base_videos 里 exhausted:false 的源抽帧补池 → 无未榨干源则停下反馈用户。"
+  },
+
+  "extraction": {
+    "_doc": "从 base_videos 未抽时间段抽帧。数量不封顶，唯一闸=质量标准；AI 密集采样→视觉筛→去重→逐张自渲染+Read复核硬性6条，过的全进池。",
+    "tool": "tools/engines/screenshot/video_frame.py (find-images 方式三)；或本 skill assets/extract_frames.py 的 sample/promote",
+    "sample_every_sec": 2.5,
+    "count_limit": null,
+    "quality_gate": [
+      "张和本人正脸出镜(非他人/非过度侧脸背身)",
+      "睁眼(不闭眼/半眯)",
+      "清晰,无动态模糊",
+      "未叠字幕/框架/UI(原片干净帧)",
+      "口型自然(闭嘴或自然微张;剔怪嘴型/露牙龈)",
+      "构图能裁:3:4+上移~3/16 后脸在视觉中心/头顶有余量/脸不被切/脸不过小"
+    ],
+    "dedup": "同批表情/角度雷同只留一张",
+    "enforce": "逐张自渲染封面+Read复核6条,过的全进池;数量不封顶;用户不逐张审(质量已稳),仅无源可抽/自检拿不准才反馈"
   },
 
   "title": {

@@ -36,3 +36,19 @@ TMP_DIR = DATA_ROOT / "tmp" / "slice_copy_test"                  # 试跑产物
 
 # --- 外部 skill ---
 DBS_TITLE_SKILL = Path(os.path.expanduser("~/.claude/skills/dbs-xhs-title/SKILL.md"))
+
+
+def configure_providers(choice: str = "auto") -> tuple[str, str]:
+    """设 LLM 主/备提供方链，让单个配额墙不卡死流程（core.call_llm 会自动兜底）。
+
+    auto/kimi → kimi 主、minimax 备（Kimi 质量优先，MiniMax 太飘只兜底）；
+    minimax   → minimax 主、kimi 备。任一 provider 配额/限流耗尽自动落下一个。
+    """
+    primary, fallback = {
+        "auto": ("kimi", "minimax"),
+        "kimi": ("kimi", "minimax"),
+        "minimax": ("minimax", "kimi"),
+    }.get(choice, ("kimi", "minimax"))
+    os.environ["LLM_PROVIDER"] = primary
+    os.environ["LLM_FALLBACK"] = fallback
+    return primary, fallback

@@ -329,6 +329,10 @@ engines:
     path: engines/customer-management
     runtime: "python — `cd engines && python3 -m customer-management <cmd>`（或 engine 根 `python3 __main__.py <cmd>`）；数据经 config.py 锚 assistant_zh（CUSTOMER_MGMT_DATA_ROOT 可覆盖）"
     purpose: "客户管理引擎：9 命令 gather/intake/employment/friends-sync/group-order/payment/health-check/read-chat/search-chat；4 能力 acquire/recognize/analyze(任务卡 cards/)/resolve + write_policy + recipes。被 scope:assistant_zh 的 customer-management skill 调用，业务数据留 assistant_zh"
+  - id: publish-prep
+    path: engines/publish-prep
+    runtime: "python — 原子 build_keywords.py(确定性关键词,读 skill keyword_pool.yaml)/gen_copy.py(Kimi正文,读 skill prompts/body_video.md)/gen_title.py(dbs公式标题)；路径经 config.py 锚 assistant_zh(PUBLISH_PREP_DATA_ROOT 可覆盖)；legacy/ 为冻结批次脚本(batch_gen/batch_title/finalize)不运行"
+    purpose: "发布前素材准备引擎：被 scope:assistant_zh 的 publish-prep skill 调用；规格/池/模板/prompt 在 skills/publish-prep/assets，业务数据(content items/.env/LLM客户端)留 assistant_zh"
 
 vendor:
   - id: wechatsync

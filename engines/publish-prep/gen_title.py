@@ -90,9 +90,14 @@ def gen_title(body: str, spine: str = "", title: str = "", provider: str = "auto
     system = build_system(platform, lim)
     user = USER_TMPL.format(body=body, spine=spine or "（见正文）", title=title or "（见正文）")
     raw = core.call_llm(system, user, temperature=0.6, json_mode=True)
-    try:
-        out = json.loads(raw)
-    except json.JSONDecodeError:
+    out = None
+    for candidate in (raw, re.sub(r",(\s*[}\]])", r"\1", raw)):
+        try:
+            out = json.loads(candidate)
+            break
+        except json.JSONDecodeError:
+            continue
+    if out is None:
         out = {"_raw": raw}
     out["_limit"] = lim
     return out

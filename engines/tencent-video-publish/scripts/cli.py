@@ -171,6 +171,7 @@ def cmd_publish_item(args: argparse.Namespace) -> None:
         Path(args.item_dir),
         video_path=Path(args.file) if args.file else None,
         thumbnail_path=Path(args.thumbnail) if args.thumbnail else None,
+        copy_filename=args.copy_file,
     )
     payload = {
         "success": True,

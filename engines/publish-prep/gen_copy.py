@@ -46,7 +46,8 @@ def srt_to_text(srt_path: Path) -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("clip_dir")
-    ap.add_argument("--provider", choices=["kimi", "minimax"], default="kimi")
+    ap.add_argument("--provider", choices=["auto", "kimi", "minimax"], default="auto",
+                    help="auto=kimi→minimax 自动兜底（单个配额墙不卡死）")
     ap.add_argument("--platform", default="小红书")
     ap.add_argument("--title", default="（未提供，请你从逐字稿自行判断主题）")
     ap.add_argument("--temperature", type=float, default=0.7)

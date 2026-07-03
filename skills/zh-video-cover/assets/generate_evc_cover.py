@@ -368,12 +368,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--output", help="单张输出 PNG 路径；省略写 generated/")
     ap.add_argument("--batch", help="批量模式 manifest.json")
     ap.add_argument("--overview", help="批量对比总览图输出路径")
+    ap.add_argument("--record", action="store_true",
+                    help="真实发布批量：把本批使用(frame→item→publish_date)写回账本。测试/tmp 不要带。")
     args = ap.parse_args(argv)
 
     try:
         kit = load_kit()
         if args.batch:
-            result = run_batch(kit, Path(args.batch), Path(args.overview) if args.overview else None)
+            result = run_batch(kit, Path(args.batch), Path(args.overview) if args.overview else None,
+                               record=args.record)
         else:
             if not args.title:
                 raise ValueError("单张模式需要 --title（或用 --batch）")

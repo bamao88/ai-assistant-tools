@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Idempotent installer for publish-prep skill's dual-host project-local symlinks
 # (NOT global ~/.claude/skills — scope: assistant_zh).
-#   bash install-symlinks.sh
+#   bash install-symlinks.sh [PROJECT_DIR]
+# SRC 从脚本自身位置推导；PROJECT 取 $1 > $PUBLISH_PREP_PROJECT > 默认（仓库移动也不失效）。
 # Re-run after moving the tools dir or if a link is lost.
 set -euo pipefail
 
-SRC="/Volumes/ExtSSD2601/AI_Assistant/tools/skills/publish-prep"
-PROJECT="/Volumes/ExtSSD2601/AI_Assistant/assistant_zh"
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT="${1:-${PUBLISH_PREP_PROJECT:-/Volumes/ExtSSD2601/AI_Assistant/assistant_zh}}"
 
 if [ ! -f "$SRC/SKILL.md" ]; then
   echo "ERROR: source missing or no SKILL.md at $SRC" >&2

@@ -63,10 +63,7 @@ def main():
     user = user_tmpl.format(transcript=transcript, topic=args.title, platform=args.platform)
 
     raw = core.call_llm(system, user, temperature=args.temperature, json_mode=True)
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        data = {"_raw": raw}
+    data = _lenient_json(raw)
     data["_provider"] = args.provider
     data["_platform"] = args.platform
     print(json.dumps(data, ensure_ascii=False, indent=2))

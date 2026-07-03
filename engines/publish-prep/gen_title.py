@@ -83,9 +83,9 @@ USER_TMPL = """这条内容的正文：
 按公式库给这条内容起标题（采用 1 个 + 备选 2 个），严守目标平台字数。只输出 JSON。"""
 
 
-def gen_title(body: str, spine: str = "", title: str = "", provider: str = "kimi",
+def gen_title(body: str, spine: str = "", title: str = "", provider: str = "auto",
               platform: str = "xiaohongshu", form: str | None = None) -> dict:
-    os.environ["LLM_PROVIDER"] = provider
+    config.configure_providers(provider)               # 主/备链，单配额墙不卡死
     lim = title_limit(platform, form)
     system = build_system(platform, lim)
     user = USER_TMPL.format(body=body, spine=spine or "（见正文）", title=title or "（见正文）")

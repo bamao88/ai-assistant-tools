@@ -30,7 +30,7 @@ description: |
 **步骤 2 — 逐 destination 跑 6 子步**（读 `platform_rules.yaml[平台]`，both 平台按 `item.format` 取 variant）：
 
 1. **正文**：视频→engine `gen_copy.py`（Kimi 读 `body_video.md`，`--platform`）→ **Claude 守门/重写**（我方优化，非直接采纳）；长文→按 `body_article_adapt.md` 各平台改写（复用 `zh-cross-platform-adapt`）。
-2. **标题候选**：engine `gen_title.py`（dbs 75 公式）→ `workflow/writing_playbook/title.md` 三规律+红线守门 → 采用1+备选2-3（标公式号）。字数按 `platform_rules`。
+2. **标题候选**：engine `gen_title.py --platform <平台> [--form <form>]`（dbs 75 公式，**字数上限自动从 platform_rules 按平台解析**：小红书20/视频号6-16/公众号64/B站80/抖音55）→ `workflow/writing_playbook/title.md` 三规律+红线守门 → 采用1+备选2-3（标公式号）。
 3. **封面标题文案**（统一抽象·长文视频都产，非必填）：独立字段，≠正文标题；可与标题结合或独立；从候选标题挑（`feedback_cover_text_from_titles`）。
 4. **摘要**：gzh digest ≤120 / xhs abstract 20–200，Claude 写。
 5. **关键词**：engine `build_keywords.py <正文> --platform <平台>`（确定性，数量自动按平台）。gzh 无 hashtag（封面嵌词）。

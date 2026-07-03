@@ -46,23 +46,26 @@ manifest.json：
 ```json
 {
   "items": [
-    {"content_id": "d2c01", "title": "别再喊AI元年了|2026是重启之年",
+    {"content_id": "d2c01", "title": "别再喊AI元年了|2026是重启之年", "publish_date": "2026-07-01",
      "output": "/abs/.../content/zh_main/items/ZHC20260701_d2c01_001/cover.png"},
-    {"content_id": "d2c12", "title": "转型AI产品经理|就干这3件事", "output": "/abs/.../ZHC20260701_d2c12_001/cover.png"}
+    {"content_id": "d2c12", "title": "转型AI产品经理|就干这3件事", "publish_date": "2026-07-02",
+     "output": "/abs/.../ZHC20260701_d2c12_001/cover.png"}
   ],
   "publish_order": ["d2c01", "d2c12", "..."]
 }
 ```
 
 - `items[].title`：2 行，用 `|` 或 `\n` 分行。
+- `items[].publish_date`：该条真实排期日期（`YYYY-MM-DD`）。挑图按它做时间岔开、`--record` 按它记账。
 - `items[].output`：写到各 item 目录的 `cover.png`（真源）。
-- `publish_order`（可选）：显式发布顺序；底图按此顺序取模轮换，保证**相邻发布不撞底图**。省略则按 items 顺序。
+- `publish_order`（可选）：显式发布顺序；底图按此顺序 LRU 分配，相邻不撞。省略则按 items 顺序。
 
 ```bash
-"$PY" "$GEN" --batch manifest.json --overview /abs/overview.png
+"$PY" "$GEN" --batch manifest.json --overview /abs/overview.png            # 预览(不记账)
+"$PY" "$GEN" --batch manifest.json --overview /abs/overview.png --record   # 真实发布(记账)
 ```
 
-输出：各 `cover.png` + 一张对比总览图（按顺序每列一条，标 `content_id` + 底图帧）+ JSON（含 `content_id→base` 映射、`adjacent_collisions` 自检、overview 路径）。`adjacent_collisions` 非空即相邻撞图，需检查。
+挑图 = **账本驱动 LRU**（未退休帧里挑上次排期最旧的，复用封顶 3 次，相邻不撞）；详见 `quality-and-base-management.md` §三/四。输出 JSON 含 `mapping`(带 base/publish_date)、`base_usage`、`adjacent_collisions`、`exhausted`、`recorded_to_ledger`、`warnings`。`exhausted:true` 要按「用尽怎么办」补图；真实发布忘带 `--record` 则账本不更新（下次挑图不知道这批用过）。
 
 ## 标题来源约定
 

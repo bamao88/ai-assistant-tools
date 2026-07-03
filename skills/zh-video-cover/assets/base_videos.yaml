@@ -1,0 +1,13 @@
+# Base 视频登记表 — 用户维护入口。加新源=在 videos: 下追加一段 id + path(+可选 scene)；
+# mined_ranges / exhausted 由 AI 回填。仅本地媒体库路径(git 树外 /Volumes/ExtSSD2601/media/)。
+videos:
+  - id: 20260613_agent_eval
+    path: /Volumes/ExtSSD2601/media/20260613-Agent时代的评测体系：变与不变.mp4
+    scene: 口播·户外+室内·多场景 · 3h20m(12015s) · 1080x1920
+    mined_ranges: []          # [[start,end]]秒；空=没抽过。frame-01..05 属早期 ad-hoc 抽取,来源未精确登记
+    exhausted: false          # 绝大部分未抽,可长期榨
+  - id: 1781174349_koubo
+    path: /Volumes/ExtSSD2601/media/1781174349.714275.mp4
+    scene: 口播自拍·户外走路·黑T眼镜 · 289s · 1080x1920
+    mined_ranges: [[0, 289]]  # 全片已抽 → video_cover_base 的 33 帧,8 张已提升为 frame-07..14
+    exhausted: true

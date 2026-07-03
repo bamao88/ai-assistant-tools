@@ -129,7 +129,7 @@ def cmd_promote(a) -> int:
             return 1
         ext = src.suffix.lower() if src.suffix.lower() in IMAGE_EXTS else ".jpg"
         dst = cov / f"frame-{idx:02d}{ext}"
-        shutil.cop2(src, dst) if hasattr(shutil, "copy2") else shutil.copy(src, dst)
+        shutil.copy2(src, dst)
         m = re.search(r"_t(\d+)s", src.name)
         t = int(m.group(1)) if m else None
         ledger[dst.name] = {"source": a.source_id, "t": t, "uses": []}

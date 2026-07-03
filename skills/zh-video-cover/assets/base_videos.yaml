@@ -1,13 +1,28 @@
-# Base 视频登记表 — 用户维护入口。加新源=在 videos: 下追加一段 id + path(+可选 scene)；
-# mined_ranges / exhausted 由 AI 回填。仅本地媒体库路径(git 树外 /Volumes/ExtSSD2601/media/)。
+# Base 视频登记表 — 用户维护入口。加新的【干净口播原片】=在 videos: 下追加 id + path(+可选 scene)；
+# mined_ranges / exhausted / usable 由 AI 回填。仅本地媒体库路径(git 树外 /Volumes/ExtSSD2601/media/)。
+#
+# ⚠️ "可抽源"= 张和正脸全屏口播、竖版、未叠 PPT/框架/字幕/UI 的【原片】。
+#    已剪辑的框架成片(顶部banner+PPT+人像小窗+烧字)不算源——每帧都过不了质量闸。
+#
+# 现状(2026-07-03 实测)：媒体库里没有未榨干的干净口播原片。
+#   - koubo 是唯一干净口播原片，已全抽(33帧)、exhausted。
+#   - 20260613 是框架成片，usable:false，不能抽。
+#   ⇒ 眼下要扩池，直接从 video_cover_base/1781174349_koubo 剩余 25 张(已筛)里 promote，无需再抽帧。
+#   ⇒ 要真正的新底图，需要用户提供【新的干净口播原片】(像 koubo 那种自拍全屏口播)。
+
 videos:
-  - id: 20260613_agent_eval
-    path: /Volumes/ExtSSD2601/media/20260613-Agent时代的评测体系：变与不变.mp4
-    scene: 口播·户外+室内·多场景 · 3h20m(12015s) · 1080x1920
-    mined_ranges: []          # [[start,end]]秒；空=没抽过。frame-01..05 属早期 ad-hoc 抽取,来源未精确登记
-    exhausted: false          # 绝大部分未抽,可长期榨
   - id: 1781174349_koubo
     path: /Volumes/ExtSSD2601/media/1781174349.714275.mp4
     scene: 口播自拍·户外走路·黑T眼镜 · 289s · 1080x1920
-    mined_ranges: [[0, 289]]  # 全片已抽 → video_cover_base 的 33 帧,8 张已提升为 frame-07..14
+    usable: true
+    mined_ranges: [[0, 289]]   # 全片已抽 → video_cover_base 33 帧(8 张已提升 frame-07..14, 剩 25 张可直接 promote)
     exhausted: true
+
+  - id: 20260613_agent_eval
+    path: /Volumes/ExtSSD2601/media/20260613-Agent时代的评测体系：变与不变.mp4
+    scene: ⚠️框架成片(顶部banner+PPT+人像小窗+烧字), 非干净口播原片
+    usable: false               # 全时间轴都叠了框架/字幕/UI, 每帧过不了质量闸, 不可作底图源
+    mined_ranges: []
+    exhausted: true             # 视作不可抽
+
+# 待补：新的干净口播原片(用户提供)。

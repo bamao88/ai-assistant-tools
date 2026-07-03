@@ -62,7 +62,7 @@
   "base_crop": {
     "_doc": "3:4 裁切 + 人物上移。lift=占裁切高的比例；kit 底图 3/16 位置最舒服(1/8 太低、5/16 太高)。",
     "lift_default": 0.1875,
-    "lift_overrides": {},
+    "lift_overrides": {"frame-08.jpg": 0.26},
     "resample": "lanczos"
   },
 

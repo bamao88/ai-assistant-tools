@@ -109,11 +109,17 @@ def load_item_publish_copy(
     *,
     video_path: Path | None = None,
     thumbnail_path: Path | None = None,
+    copy_filename: str = "publish_copy.md",
 ) -> ItemPublishCopy:
     item_dir = item_dir.expanduser().resolve()
-    publish_copy = item_dir / "publish_copy.md"
+    publish_copy = item_dir / copy_filename
     if not publish_copy.exists():
-        raise ValueError(f"publish_copy.md not found: {publish_copy}")
+        # 兼容 publish-prep 的 publish_<account>.md 命名：copy_filename 缺失时回落 publish_copy.md
+        fallback = item_dir / "publish_copy.md"
+        if copy_filename != "publish_copy.md" and fallback.exists():
+            publish_copy = fallback
+        else:
+            raise ValueError(f"{copy_filename} not found: {publish_copy}")
 
     markdown = publish_copy.read_text(encoding="utf-8")
     return ItemPublishCopy(

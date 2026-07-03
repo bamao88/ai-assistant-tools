@@ -39,32 +39,43 @@
 
 > 经验值参考（本项目 kit 底图）：室外帧 3/16 合适；室内/人物取景偏高的帧可用 1/8。5/16 通常太高。
 
-## 三、底图轮换纪律（批量必查）
+## 三、底图轮换纪律 = 账本驱动的生命周期（批量必读）
 
-底图 = 张和固定品牌人像，靠轮换、与内容无关。**多样性的门槛是「表情有别 + 相邻不撞」，不苛求背景/服装不同**（用户口径：背景服装相近没关系，只要面部表情有差异、发布时相邻的不相似即可）。
+底图 = 张和固定品牌人像，靠轮换、与内容无关。**多样性门槛 = 表情有别 + 相邻不撞**，不苛求背景/服装不同（背景服装相近没关系，只要表情有差异、相邻不相似）。
 
-- 硬规则（已自动）：相邻发布不撞底图（`adjacent_collisions` 应为 `[]`）——这就保证了"相邻不相似"。
-- **软规则（要你把关）**：同一底图在一批里**最多用 2 次**（kit `rotation.max_reuse_warn`）。批量输出的 `base_usage` 直方图 + `warnings` 会告诉你哪张超了。
-- 超了怎么办：**优先补底图**（第四节）让池子够大；补不了就接受、但要清楚这批脸会重复。
-- 现状：池 = **13 张可用**（frame-01..05 原批 + frame-07..14 = koubo 库 8 张精选；frame-06 排除）。13 条批量已能每张 ≤1 次、零重复。更大的批量（>26 条）才会再触发告警。
+挑图不再是无状态取模，而是**账本 `pool_ledger_evc.json` 驱动的 LRU**（kit `lifecycle`）：
 
-## 四、底图不够怎么办（补充 + 抽帧经验）
+- **复用封顶 K=3**（`reuse_cap`）：每张底图最多用 3 次，满 3 次自动**退休**、不再被挑。
+- **时间岔开**：在未退休帧里，优先挑**上次排期日期最旧 / 从没用过**的（never-used 最优先）→ 自然跟上次使用岔开。
+- **相邻不撞**：批量内相邻永不同帧（`adjacent_collisions` 应 `[]`）。
+- **记账 = --record**：一次使用 = 封面写进真实要发布的 item，按其 `publish_date` 记账。**真实发布批量必须带 `--record`**（把 frame→item→publish_date 写回账本）；测试/tmp 不要带（不污染账本）。manifest 每条要带 `publish_date`。
+- **账本缺失自动降级**回无状态取模轮换（不会卡死，但失去封顶/岔开）。
 
-**底图池位置**（与黑块黄字 kit 共用，单一真源）：
-`tools/skills/platform-publish/assets/video-cover/zhanghe/covers/`
-新的张和口播竖帧丢进去、排序后自动纳入轮换（除非加进 kit `rotation.exclude`）。
+批量返回看 `exhausted` / `base_usage` / `warnings`。现状：池 13 张，其中 **frame-01/02/03 已随首批 d2c 用满 3 次退休**、frame-04/05 各 2 次、koubo 的 frame-07..14 全新。
 
-**当 `warnings` 报"池子太小"或你想要更多变化时，按这个顺序**：
+## 四、底图用尽怎么办（登记表 → 抽帧 → 反馈）
 
-1. **先翻现成人像底图库**：`assistant_zh/assets/video_cover_base/`（`INDEX.yaml` 机读，按源视频分子目录；竖版 9:16、未叠字、已人工筛）。有合适的直接 `cp` 进 `covers/`。
-2. **没有就去媒体库找最近的张和口播视频抽帧**：媒体库在 `/Volumes/ExtSSD2601/media/`（git 树外，按拍摄分目录）。挑**张和正脸口播、竖版**的原片。
-3. **抽帧走 find-images skill「方式三·视频帧截图」**，工具 `tools/engines/screenshot/video_frame.py`。抽帧后**人工/目视筛**，选帧标准：
-   - 张和正脸、**不闭眼、口型自然**（别抓到说话糊脸的中间帧）；
-   - 竖版 9:16、清晰、未叠字幕/未叠框架；
-   - 构图允许"裁 3:4 + 上移"后脸仍在中心、头顶有余量（上下别顶死）；
-   - 背景干净、光线正常。
-4. 筛好的帧 → 命名 `frame-0X`（接着现有序号）→ 丢进 `covers/`。跑一张单张确认裁切/上移后脸位好，再纳入批量。
+**批量报 `exhausted:true`**（未退休帧填不满这批）时，按 lifecycle 顺序：
 
-**如果你判断不了、或不确定该用哪条视频/哪帧 → 停下来反馈用户**（"底图只剩 N 张、这批要 M 条、需要补图，最近有 X 视频可抽帧，要不要抽？"），别硬凑重复底图발出。
+1. **先看还有没有现成已筛帧可 promote**：`assistant_zh/assets/video_cover_base/`（`INDEX.yaml`）。当前 koubo 批 33 张里**还剩 25 张已筛未用**，直接 promote 进池即可，**不用抽帧**：
+   ```
+   PY=.../video-clip/.venv/bin/python
+   "$PY" .../assets/extract_frames.py promote --source-id 1781174349_koubo \
+     --candidate-dir assistant_zh/assets/video_cover_base/1781174349_koubo \
+     --files cover_07_绿树_平和.jpg,cover_09_秋树_暖调2.jpg   # 你挑的
+   ```
+   （promote 会 cp 进 covers/frame-NN + 写账本 source/t。）
 
-> 注：`assets/video_cover_base/` 是"候选人像库"（可从中挑），`covers/` 是"skill 实际轮换池"（真正用的）。补图 = 从前者/抽帧选好 → 落进后者。本次 evc 首批的源帧残留在 `assistant_zh/tmp/video_cover_frames/final/`，也是一处可回收的候选。
+2. **要真正的新底图 → 从登记表 `base_videos.yaml` 里 `usable:true && exhausted:false` 的源抽帧**：
+   ```
+   "$PY" .../assets/extract_frames.py sample --video <path> --start S --end E --every 2.5
+   # → 出候选帧 + contact_sheet；你按质量标准6条筛(见 kit extraction.quality_gate)
+   # → 逐张自渲染封面 Read 复核 → promote --files 过关的(数量不封顶)
+   ```
+   抽完把这段时间窗并进该源的 `mined_ranges`（Edit base_videos.yaml），全轴覆盖/挑不出好帧就 `exhausted:true`。
+
+3. **⚠️ 现状（2026-07-03 实测）：登记表里没有可抽的干净口播原片**——koubo 已榨干，`20260613` 是框架成片(叠PPT/人像小窗/烧字)`usable:false`。所以**除了 promote 剩余 koubo，眼下没有新源可抽**。
+
+4. **没现成帧、也没可抽源 → 停下反馈用户**：「所有底图用满 3 次、koubo 剩余帧也用完、登记表里没有可抽的干净口播原片了，请提供新的张和口播原片（像 koubo 那种自拍全屏竖版口播）。」别硬凑重复底图发出。
+
+> `video_cover_base/`=已筛候选人像库（promote 来源）；`covers/`=实际轮换池；`base_videos.yaml`=可抽的原片登记（用户维护，贴本地路径）；`pool_ledger_evc.json`=池使用账本（AI 维护，gitignored）。质量标准6条见 §一 + kit `extraction.quality_gate`。

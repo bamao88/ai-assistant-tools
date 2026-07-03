@@ -47,8 +47,8 @@ description: |
 
 | 层 | 谁 | 管 |
 |---|---|---|
-| 脚本 | `build_keywords`(确定性) / `gen_copy`·`gen_title`(LLM) / `dbs-xhs-title` | 流程一致、字数、固定盘关键词 |
-| 守门 | Claude | 编造数字 / 句式撞车 / 逻辑写反 / 复述视频 / 破折号 / 导流钩子 / 平台字数越界 / 训练营旧口径 |
+| 脚本 | `build_keywords`(确定性) / `gen_copy`·`gen_title`(LLM,平台字数) / `dbs-xhs-title` / **`check.py`**(下游可解析+字数+CTA lint) | 流程一致、字数、固定盘关键词、契约校验 |
+| 守门 | Claude | 编造数字 / 句式撞车 / 逻辑写反 / 复述视频 / 破折号 / 导流钩子 / 训练营旧口径（check.py 兜字数/契约，软质量仍靠人+Claude） |
 | 抽检 | 人 | 软质量：火不火、调性、排版 |
 
 ## 边界

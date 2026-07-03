@@ -60,7 +60,7 @@ def main():
     transcript = srt_to_text(srt)
 
     system, user_tmpl = load_prompt()
-    os.environ["LLM_PROVIDER"] = args.provider
+    config.configure_providers(args.provider)          # 主/备链，单配额墙不卡死
     user = user_tmpl.format(transcript=transcript, topic=args.title, platform=args.platform)
 
     raw = core.call_llm(system, user, temperature=args.temperature, json_mode=True)

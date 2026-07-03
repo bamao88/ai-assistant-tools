@@ -110,7 +110,14 @@ def transcribe_volc(url: str, *, fmt: str = "mp3", poll_secs: int = 5, max_polls
     fails = 0
     for n in range(max_polls):
         time.sleep(poll_secs)
-        code, payload = _volc_post("query", reqid, {}, key)
+        try:
+            code, payload = _volc_post("query", reqid, {}, key)
+        except BackendError as e:  # 瞬时网络抖动(读超时等)：算一次软失败继续轮询，别一次就放弃整个后端
+            fails += 1
+            _log(f"[volc] query 网络异常 {e} (fails={fails})")
+            if fails > 40:
+                raise
+            continue
         if code == "20000000":
             full_text, words, sentences = _volc_extract(json.loads(payload))
             if not words:

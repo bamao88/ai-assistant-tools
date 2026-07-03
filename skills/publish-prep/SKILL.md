@@ -36,7 +36,12 @@ description: |
 5. **关键词**：engine `build_keywords.py <正文> --platform <平台>`（确定性，数量自动按平台）。gzh 无 hashtag（封面嵌词）。
 6. **配图**（仅长文）：`diagram-design`（暖色纸感·手机优先）。
 
-**步骤 3 — 落盘**：写 `content/<persona>/items/<id>/publish_<account>.md`（按 `templates/`），mark ✅ 采用标题。交回 `platform-publish` 上传。**封面图渲染是下一步**（视频→`zh-video-cover`；长文→gzh 封面卡）：读本步定好的封面标题文案。
+**步骤 3 — 落盘 + 校验**：按对应 `templates/publish_<platform-key>.md` 写 `content/<persona>/items/<id>/publish_<account>.md`，mark ✅ 采用标题。**跑 `python3 tools/engines/publish-prep/check.py <file> --platform <平台> [--form <form>]`**（校验下游可解析 + 字数/关键词数/摘要区间/无导流CTA/无 raw mermaid）；红了先修再交。
+
+**步骤 4 — 交回上传**：
+- **视频号**：`tencent-video-publish publish-item --item-dir <item> --copy-file publish_<account>.md`（引擎已支持读 publish_<account>.md，缺失回落 publish_copy.md）。
+- **小红书/其他**：交回 `platform-publish`（读 publish_<account>.md 的 frontmatter/section）。
+- **封面图渲染是下一步**（视频→`zh-video-cover`；长文→gzh 封面卡/`markdown-to-cards`）：读本阶段定好的封面标题文案。
 
 ## 稳定性分工
 

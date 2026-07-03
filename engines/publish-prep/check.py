@@ -69,8 +69,8 @@ def rules_for(platform: str, form: str | None):
 def check(path: Path, platform: str, form: str | None) -> dict:
     errors, warnings = [], []
     rule, err = rules_for(platform, form)
-    if err:
-        return {"ok": False, "platform": platform, "form": form, "errors": [err], "warnings": []}
+    if err or rule is None:
+        return {"ok": False, "platform": platform, "form": form, "errors": [err or "无规则"], "warnings": []}
 
     md = path.read_text(encoding="utf-8")
     fm, body_md = split_frontmatter(md)

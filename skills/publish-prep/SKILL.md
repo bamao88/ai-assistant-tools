@@ -43,6 +43,17 @@ description: |
 - **小红书/其他**：交回 `platform-publish`（读 publish_<account>.md 的 frontmatter/section）。
 - **封面图渲染是下一步**（视频→`zh-video-cover`；长文→gzh 封面卡/`markdown-to-cards`）：读本阶段定好的封面标题文案。
 
+## 灵活性：原子是加速器，不是闸门
+
+engine 的 `gen_copy`/`gen_title` 只是「换个干净脑子」的便利加速器，**不是必经关卡**。任一失败都别卡住流程，自己判断走下去：
+
+- **配额/限流**：`--provider auto` 已自动 kimi↔minimax 兜底；两家都满/网络断时——
+- **你（Claude）直接写**：`gen_copy` 的 SYSTEM/USER 就在 `assets/prompts/body_video.md`，标题红线在 `writing_playbook/title.md` + `dbs-xhs-title`。脚本挂了，你照同一套 prompt/规则**亲自写正文和标题**即可，产物一样进模板。
+- `build_keywords` 是纯确定性（不调模型），基本不会挂；真挂了照 `keyword_pool.yaml` 三层规则手挑。
+- 无论正文/标题来自脚本还是你亲写，**最后都跑 `check.py` 校验**（下游可解析 + 字数 + 无 CTA）。守门只认产物合不合规，不认它谁写的。
+
+一句话：有自主解决问题的能力，脚本是工具不是依赖，别让一个 403 把整条 SOP 顶死。
+
 ## 稳定性分工
 
 | 层 | 谁 | 管 |

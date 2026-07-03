@@ -46,9 +46,12 @@ PY=/Volumes/ExtSSD2601/AI_Assistant/tools/engines/video-clip/.venv/bin/python   
 "$PY" "$GEN" --title "A|B" --base frame-03 --output ...            # 指定底图，不推进游标
 "$PY" "$GEN" --title "A|B" --base frame-03 --lift 0.25 --output ... # 自检后脸偏低→加大上移重出
 
-# 批量（一批切片）：manifest.json 见 references/evc-style.md
-"$PY" "$GEN" --batch manifest.json --overview /abs/overview.png
+# 批量（一批切片）：manifest.json(每条带 publish_date) 见 references/evc-style.md
+"$PY" "$GEN" --batch manifest.json --overview /abs/overview.png            # 测试/预览
+"$PY" "$GEN" --batch manifest.json --overview /abs/overview.png --record   # 真实发布:记账(封顶3次/按排期岔开)
 ```
+
+> 底图挑选是**账本驱动生命周期**（复用封顶3次+按排期日期岔开+相邻不撞+用尽升级），细节见 `references/quality-and-base-management.md`。真实发布批量务必 `--record`；`exhausted:true` 时按其「用尽怎么办」补图。
 
 ## 🔴 生成后必做（不是跑完就完 —— 详见 references/quality-and-base-management.md）
 

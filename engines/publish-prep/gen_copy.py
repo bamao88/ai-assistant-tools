@@ -31,6 +31,16 @@ def load_prompt() -> tuple[str, str]:
     return section("SYSTEM"), section("USER")
 
 
+def _lenient_json(raw: str) -> dict:
+    """容忍模型常见毛病（尾逗号 / ```json 围栏），解析不出才回落 _raw。"""
+    for candidate in (raw, re.sub(r",(\s*[}\]])", r"\1", raw)):
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+    return {"_raw": raw}
+
+
 def srt_to_text(srt_path: Path) -> str:
     """剥掉序号和时间轴，只留口播文字。"""
     lines = []

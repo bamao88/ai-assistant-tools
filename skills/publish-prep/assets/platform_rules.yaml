@@ -1,0 +1,72 @@
+_doc: |
+  发布前素材准备（publish-prep）各平台规则矩阵 · 单一真源。
+  主轴=平台；form=内容形式(article|video|both)；both 平台在 variants 下按 form 分支。
+  字数 2026-07 核实，见 claude_md_design/video_pipeline_sop.md §1c。
+  消费方：workflow/publish_prep.md 流程（Phase2）+ 未来 check.py。
+  字数单位：小红书标 utf16（汉字/全角=1，英数半角每2=1）；其余为中文等效字符（英文专名整词保留不拆）。
+  账号→引擎参数(account_arg)真源在 content/accounts.yaml；本文件只管「素材规格」，不管上传（上传走 platform-publish）。
+  凡与 tools/skills/platform-publish/references/*.md 的字数/字段说明冲突，素材规格以本文件为准。
+
+platforms:
+
+  xiaohongshu:
+    form: both
+    engine: xiaohongshu
+    accounts: [zh_xhs_main, zh_xhs_main2, aipm_xhs]   # 口播切片默认落 zh_xhs_main2（个人号）
+    variants:
+      article:                                        # 图文 / 长文
+        title:    {max: 20, unit: utf16, note: 超长按核心含义重写到19-20，不机械截断}
+        body:     {max: 1000, hook: 首屏钩子, cta: 禁导流}
+        abstract: {min: 20, max: 200}
+        keywords: {count: 10, min: 3, strip_space: true, as: tags}
+        cover:    {kind: 卡片, tool: markdown-to-cards}
+      video:
+        title:    {max: 20, unit: utf16}
+        body:     {form: desc, cta: 禁导流}
+        keywords: {count: 10}
+        cover:    {kind: 3x4, tool: zh-video-cover}
+
+  gongzhonghao:
+    form: article
+    engine: gzh-publish
+    accounts: [zh_gzh_self, aipm_gzh]
+    title:       {max: 64}
+    cover_title: {fields: [title_primary, title_secondary], per_line_max: 10, unit: 中文等效, note: ≠文章标题,可分开写}
+    body:        {form: 全文, rewrite: 排版优化不压缩}
+    digest:      {max: 120, required: false}
+    keywords:    {hashtag: false, cover_embed: {fields: [keyword_top, keyword_bottom], max_chars: 3}}
+    cover:       {required: true, kind: 标题卡, spec: 1283x383, tool: "generate_cover.py article", note: 视频/转写类改用数据源封面}
+
+  shipinhao:
+    form: video
+    engine: tencent-video-publish
+    accounts: [zh_shipinhao, aipm_shipinhao]          # 张和号 slot 实跑=zhanghe（accounts.yaml 记 default，待统一）
+    short_title: {min: 6, max: 16, note: 卡片显示；--title→短标题input（2026-07 用户确认）}
+    desc:        {max: 1000, layout: "标题→换行→正文→换行→标签"}
+    keywords:    {count: 5, style: hashtag, field: "视频号精简（5 个）"}
+    cover:       {kind: 9x16, tool: zh-video-cover, note: 官方封面生成后 --thumbnail 上传，不烧首帧}
+
+  bilibili:
+    form: video
+    engine: social-auto-upload
+    accounts: [zh_bilibili]
+    title:    {max: 80}
+    body:     {form: desc}
+    keywords: {sep: comma, max: 10}
+    tid:      {required: true, note: B站分区id；拿不准问用户，别乱填}
+
+  douyin:
+    form: both
+    engine: social-auto-upload
+    caption:  {max: 55, note: 标题+正文合一，无独立标题字段；前15-20字黄金位}
+    keywords: {count: 5, note: 超过5个截断}
+    cover:    {portrait: 3x4, landscape: 4x3}
+    longform: {min_chars: 300, max_chars: 4000, note: 长图文另算，非视频文案}
+
+  wechatsync:
+    form: article
+    engine: wechatsync
+    covers_platforms: [zhihu, juejin, csdn, baijiahao, segmentfault, toutiao]
+    title: {default: 不限, toutiao: {min: 2, max: 30, note: 超限先压缩并告知}}
+    body:  {form: 复用gzh全文}
+    cover: {required: false}

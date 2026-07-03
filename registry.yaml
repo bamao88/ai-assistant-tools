@@ -109,6 +109,13 @@ skills:
     scope: assistant_zh   # 业务专属：不进全局 ~/.claude/skills；仅 assistant_zh 项目本地双 host 软链（install-symlinks.sh）
     purpose: 张和口播视频封面生成（evc 宋体渐变，3:4）：kit 驱动单张/批量，底图轮换+相邻不撞。共享底图池/渐变素材在 platform-publish/assets/video-cover/zhanghe（黑块黄字 9:16 那套仍在 platform-publish）
     uses_engines: []
+  - name: publish-prep
+    layer: L2
+    source: skills/publish-prep
+    install_kind: dir
+    scope: assistant_zh   # 业务专属：不进全局 ~/.claude/skills；仅 assistant_zh 项目本地双 host 软链（install-symlinks.sh）
+    purpose: 发布前素材准备（Stage2）：按平台逐 destination 产 publish_<account>.md（标题候选/各平台正文/封面标题文案/摘要/关键词）。规格真源 assets/platform_rules.yaml（主轴=平台+form 副轴），关键词池 assets/keyword_pool.yaml。卡在 ready_to_publish 之后、platform-publish 上传之前
+    uses_engines: [publish-prep]
   - name: humanizer
     layer: util
     source: vendor/humanizer/SKILL.md

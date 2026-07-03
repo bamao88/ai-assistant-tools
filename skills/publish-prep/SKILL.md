@@ -19,9 +19,9 @@ description: |
 
 - 各平台素材规格 **单一真源** = `assets/platform_rules.yaml`（标题字数 / 正文形态 / 摘要 / 关键词数 / 封面规格 / form）。**不要凭记忆拼字数，照它抄。**
 - 关键词池 = `assets/keyword_pool.yaml`（确定性，engine `build_keywords.py` 读它，数量按平台）。
-- 模板 = `assets/templates/publish_<platform>.md`（frontmatter + 结构脚手架；both 平台内含 form 分节）。
+- 模板 = `assets/templates/publish_<platform-key>.md`（**文件名 = platform_rules 的平台键**：xiaohongshu/gongzhonghao/shipinhao/bilibili/douyin/wechatsync）。模板内含各平台**下游解析契约**注释，照它填，别改 section 名。
 - prompt = `assets/prompts/body_video.md`（视频正文，企业AI落地口径）/ `body_article_adapt.md`（长文→各平台改写）。
-- 代码 = engine `tools/engines/publish-prep/`（`gen_copy.py` 正文 / `gen_title.py` 标题 / `build_keywords.py` 关键词）。
+- 代码 = engine `tools/engines/publish-prep/`（`gen_copy.py` 正文 / `gen_title.py` 标题 / `build_keywords.py` 关键词 / `check.py` 校验）。
 
 ## 流程
 

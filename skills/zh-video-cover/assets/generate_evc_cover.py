@@ -276,58 +276,83 @@ def build_overview(kit: Dict[str, Any], rows: List[Dict[str, Any]], overview_pat
     montage.save(overview_path)
 
 
-def run_batch(kit: Dict[str, Any], manifest_path: Path, overview_path: Optional[Path]) -> Dict[str, Any]:
+def run_batch(kit: Dict[str, Any], manifest_path: Path, overview_path: Optional[Path],
+              record: bool = False) -> Dict[str, Any]:
     manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
     items = {it["content_id"]: it for it in manifest["items"]}
     order = manifest.get("publish_order") or [it["content_id"] for it in manifest["items"]]
+    pool = list_pool(kit)
+    pool_size = len(pool)
+    warnings: List[str] = []
 
-    pool_size = len(list_pool(kit))
+    # 账本驱动 LRU 分配；无账本则 fallback 到取模轮换
+    plan = plan_batch_bases(kit, order, items)
+    exhausted = False
+    if plan is None:
+        base_by_cid = {cid: pool[i % pool_size] for i, cid in enumerate(order)}
+        ledger = None
+        warnings.append("无使用账本，回退到无状态取模轮换(相邻不撞，但不按复用上限/时间岔开)。")
+    else:
+        assignment, exhausted, ledger = plan
+        name2path = {p.name: p for p in pool}
+        base_by_cid = {cid: (name2path[n] if n else None) for cid, n in assignment}
+
     rows: List[Dict[str, Any]] = []
-    for seq, cid in enumerate(order):
+    for cid in order:
+        base = base_by_cid[cid]
+        if base is None:   # 用尽：无未退休帧可分配
+            continue
         it = items[cid]
-        base = pick_base(kit, seq_index=seq)
         lines = split_lines(kit, it["title"])
         res = render_one(kit, base, lines, Path(it["output"]).expanduser(), it.get("lift"))
         res["content_id"] = cid
+        res["publish_date"] = it.get("publish_date", "")
         rows.append(res)
+
+    # 记账：仅 --record 真实批量写回 ledger
+    recorded = False
+    if record and ledger is not None:
+        for r in rows:
+            ledger.setdefault(r["base_image"], {}).setdefault("uses", [])
+            ledger[r["base_image"]]["uses"].append(
+                {"item": r["content_id"], "publish_date": r["publish_date"]})
+        save_ledger(kit, ledger)
+        recorded = True
 
     # 相邻不撞自检
     collisions = [(rows[i]["content_id"], rows[i + 1]["content_id"])
                   for i in range(len(rows) - 1)
                   if rows[i]["base_image"] == rows[i + 1]["base_image"]]
-
-    # 底图使用次数直方图 + 过度重复 / 池子不够告警
     usage: Dict[str, int] = {}
     for r in rows:
         usage[r["base_image"]] = usage.get(r["base_image"], 0) + 1
-    max_reuse = int(kit.get("rotation", {}).get("max_reuse_warn", 2))
-    overused = {f: c for f, c in usage.items() if c > max_reuse}
-    warnings: List[str] = []
-    if overused:
+
+    unassigned = [cid for cid, b in base_by_cid.items() if b is None]
+    if exhausted or unassigned:
+        cap = reuse_cap(kit)
         warnings.append(
-            f"底图过度重复：{overused}（阈值 {max_reuse} 次）。可用底图池仅 {pool_size} 张、本批 {len(rows)} 条。"
-            f"建议补充底图（往 covers/ 加新的张和口播竖帧，见 references/quality-and-base-management.md 的『底图不够怎么办』）"
-            f"或改用别的底图分散。")
-    if len(order) > pool_size * max_reuse:
-        need = -(-len(order) // max_reuse) - pool_size  # ceil(N/max_reuse) - pool
-        warnings.append(
-            f"底图池太小：{len(order)} 条 > {pool_size} 张 × {max_reuse} 次上限，无法做到每张 ≤{max_reuse} 次，"
-            f"至少还需 {max(need,0)} 张新底图才能满足。")
+            f"⚠️ 底图用尽：{len(unassigned)} 条无未退休底图可分配（全池已各用满 {cap} 次）。"
+            f"按 lifecycle：先查 base_videos.yaml 有没有 exhausted:false 的源→抽帧补池(见 references/"
+            f"quality-and-base-management.md 抽帧标准)；无未榨干源则反馈用户提供新口播原片。未分配：{unassigned}")
 
     if overview_path is None:
         overview_path = ASSET_DIR / "generated" / "overview.png"
-    build_overview(kit, rows, overview_path)
+    if rows:
+        build_overview(kit, rows, overview_path)
 
     return {
         "count": len(rows),
         "pool_size": pool_size,
-        "mapping": [{"content_id": r["content_id"], "base": r["base_image"], "lift": r["lift"], "output": r["output"]} for r in rows],
+        "recorded_to_ledger": recorded,
+        "mapping": [{"content_id": r["content_id"], "base": r["base_image"], "lift": r["lift"],
+                     "publish_date": r["publish_date"], "output": r["output"]} for r in rows],
         "base_usage": usage,
         "adjacent_collisions": collisions,
-        "overused_frames": overused,
+        "exhausted": bool(exhausted or unassigned),
         "warnings": warnings,
-        "overview": str(overview_path),
-        "next_step": "看 overview.png：①每张脸是否在视觉中心、头顶留白适中、字够大（短句更大）；不合格用 --lift/--base 单张重出。②warnings 非空说明底图重复过多，考虑补图。",
+        "overview": str(overview_path) if rows else None,
+        "next_step": "看 overview.png 逐张按 rubric 复核(脸在视觉中心/头顶留白/字够大)；不合格 --lift/--base 单张重出。"
+                     "真实发布批量要带 --record 记账；exhausted 时按 warnings 去补图。",
     }
 
 

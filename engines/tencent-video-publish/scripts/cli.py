@@ -287,6 +287,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="publish one assistant_zh item dir by reading publish_copy.md, 成片.mp4, and cover.png",
     )
     sub.add_argument("--item-dir", required=True, help="content item directory containing publish_copy.md")
+    sub.add_argument("--copy-file", default="publish_copy.md", help="publish copy filename in item dir; publish-prep 用 publish_<account>.md（缺失回落 publish_copy.md）")
     sub.add_argument("--file", default="", help="override video file path; defaults to 成片.mp4")
     sub.add_argument("--thumbnail", default="", help="override cover image path; defaults to cover.png")
     sub.add_argument("--short-title", default="")

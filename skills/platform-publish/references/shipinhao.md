@@ -27,6 +27,16 @@ uv sync --python 3.11
 
 如果 patchright 找不到本机 Chrome，提示用户安装 Google Chrome；本 engine 默认使用本机 Chrome channel，不自动下载浏览器。
 
+## 网络分流前置步骤（默认）
+
+为避免 Tailscale exit node 或系统代理导致视频号发布走海外/代理出口，默认发布网络模式是 `local-egress`：账号选定后、任何会访问视频号网页的 CLI 前，先刷新本地分流路由：
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/route-bypass/scripts/publish-network-preflight.zsh shipinhao apply
+```
+
+如果总入口已锁定 `current-egress`（用户明确要求“不走本地流量 / 跳过本地分流 / 直接走当前网络”），跳过本节，不运行 `publish-network-preflight`；执行 `upload-video` 或 `publish-item` 时在命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`。也可以同时传 `--skip-route-bypass`。两者都会让 engine 不再自动刷新或校验本地路由。
+
 ## 账号选择
 
 每次触发后，先运行：
@@ -60,9 +70,9 @@ uv sync --python 3.11
 /Volumes/ExtSSD2601/AI_Assistant/tools/var/state/tencent-video-publish/accounts/default/chrome-profile/
 ```
 
-发布、登录检查和扫码登录优先使用同账号目录下的 `chrome-profile/`；`storage_state.json` 只作为备份、手动 Cookie 导入候选和旧凭证迁移回退。`list-accounts` 的 `logged_state_file_exists` / `profile_dir_exists` 只表示文件或目录是否存在；是否真正有效仍以 `check-login` 为准。
+发布、登录检查和扫码登录优先使用同账号目录下的 `chrome-profile/`；`storage_state.json` 只作为备份、手动 Cookie 导入候选和旧凭证迁移回退。`list-accounts` 的 `logged_state_file_exists` / `profile_dir_exists` 只表示文件或目录是否存在；是否真正有效仍以日常 `check-login` 的 profile 结果或发布命令内置校验为准。
 
-**禁止为了“强制重新扫码”移动、删除或重命名 `storage_state.json` 或 `chrome-profile/`。** 如果 `check-login` 返回 `cookie_invalid`，直接执行 `login --timeout 180`；CLI 会在扫码成功后更新 `chrome-profile/` 并导出 `storage_state.json` 备份，不需要先清理旧文件。当前 engine 会在写入前保留 `storage_state.json.bak_*`，并在 `storage_state.json` 缺失或 JSON 损坏时自动尝试恢复最新有效备份。
+**禁止为了“强制重新扫码”移动、删除或重命名 `storage_state.json` 或 `chrome-profile/`。** 如果日常 `check-login` 返回 `profile_cookie_invalid`，优先在下一次 `upload-video` / `publish-item` 上加 `--login-if-needed`，让扫码发生在同一个发布窗口里；只需要单独维护登录态时才执行 `login --timeout 180`。当前 engine 会在写入前保留 `storage_state.json.bak_*`，并在 `storage_state.json` 缺失或 JSON 损坏时自动尝试恢复最新有效备份。
 
 添加命名账号：
 
@@ -74,7 +84,9 @@ uv sync --python 3.11
 
 ## 登录流程
 
-先检查登录：
+日常发布不需要先独立跑 `check-login`。优先在最终 `upload-video` / `publish-item` 命令里加 `--login-if-needed`：engine 会先用同一个账号 `chrome-profile/` 直接进入发布页；如果未登录，就在同一个可见发布浏览器中输出二维码，用户扫码后继续上传，不会再关闭后重开第二个登录页。
+
+需要单独确认登录态时，可选检查登录：
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
@@ -84,9 +96,13 @@ uv sync --python 3.11
   check-login
 ```
 
-视频号登录态以账号独立 `chrome-profile/` 为准。日常发布前的登录检查默认使用 `--headed check-login`，避免 headless 预检把仍可用的 profile 误判为失效后触发扫码；只有明确要做后台校验、且已验证当前环境 headless 可稳定复用 profile 时，才省略 `--headed`。
+视频号登录态以账号独立 `chrome-profile/` 为准。独立登录检查默认使用 `--headed check-login`，避免 headless 预检把仍可用的 profile 误判为失效后触发扫码；只有明确要做后台校验、且已验证当前环境 headless 可稳定复用 profile 时，才省略 `--headed`。
 
-如果返回 `logged_in: false`，执行扫码登录：
+日常发布前**不要**给 `check-login` 加 `--storage-fallback`。这个参数只用于慢速凭证诊断或旧 `storage_state.json` 迁移；它会尝试 JSON 凭证和最近备份，可能显著变慢，也不能替代 `chrome-profile` 主登录态。日常 profile 检查返回 `profile_cookie_invalid` 时，结论就是当前账号需要重新扫码一次。
+
+同一个视频号账号 slot 的 `check-login` / `login` / `upload-video` / `publish-item` 必须串行执行，不能并发。它们共用同一个 `chrome-profile/`，并发会触发 Chrome `SingletonLock`，表现为 `profile_check_failed`、`Target page, context or browser has been closed` 或 “正在现有的浏览器会话中打开”。遇到这种情况不要扫码，等当前浏览器命令结束后重跑。
+
+如果只想刷新登录态而不发布，执行扫码登录：
 
 ```bash
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish/.venv/bin/python \
@@ -103,7 +119,7 @@ QRCODE_PATH=/absolute/path/to/tencent_video_login_YYYYMMDD_HHMMSS.png
 
 Agent 必须把这张二维码图片展示给用户扫码，不能只转述路径。用户扫码并在手机微信确认后，命令会保存 storage state。
 
-登录命令使用同一账号的可见 `chrome-profile/` 打开视频号登录页；不要改成 headless，视频号 QR 登录回调在 headless 下不稳定。页面确认已登录后会保存 profile，并导出 `storage_state.json` 备份。登录后可再运行 `check-login` 验证；如果返回 `status: cookie_invalid`，不要手动删除 cookie 或 profile，重新运行 `login --timeout 180` 即可。
+登录命令使用同一账号的可见 `chrome-profile/` 打开视频号登录页；不要改成 headless，视频号 QR 登录回调在 headless 下不稳定。页面确认已登录后会保存 profile，并导出 `storage_state.json` 备份。登录后可再运行 `--headed check-login` 验证；如果下一次发布仍未登录，改用发布命令的 `--login-if-needed` 单会话扫码路径。
 
 如二维码超时，命令会刷新并再次打印新的 `QRCODE_PATH`。
 
@@ -151,6 +167,7 @@ rm -f /tmp/shipinhao.cookies
   --account zhanghe \
   --headed \
   publish-item \
+  --login-if-needed \
   --item-dir "/Volumes/ExtSSD2601/AI_Assistant/assistant_zh/content/zh_main/items/ZHC20260613_evc04_001" \
   --publish \
   --schedule-at "2026-07-04 20:20" \
@@ -177,6 +194,7 @@ rm -f /tmp/shipinhao.cookies
   --account aipm \
   --headed \
   publish-item \
+  --login-if-needed \
   --item-dir "/abs/item_dir" \
   --fill-only \
   --hold-open -1
@@ -190,6 +208,7 @@ rm -f /tmp/shipinhao.cookies
   [--account <slot>] \
   --headed \
   upload-video \
+  --login-if-needed \
   --file "/abs/path/video.mp4" \
   --title "视频标题" \
   --desc "视频简介" \
@@ -216,6 +235,7 @@ rm -f /tmp/shipinhao.cookies
   [--account <slot>] \
   --headed \
   upload-video \
+  --login-if-needed \
   --file "/abs/path/video.mp4" \
   --title "流程测试请勿发布" \
   --desc "这是自动化流程测试内容，请勿发布。" \
@@ -298,12 +318,16 @@ rm -f /tmp/shipinhao.cookies
 --category "生活"
 --headed
 --upload-timeout 300
+--login-if-needed
+--skip-route-bypass
 ```
 
 - `--short-title`：视频号短标题，不传时自动从标题截取。
 - `--category`：声明原创时的"原创类型"下拉选项（如 "知识"/"生活"）。**自 2026-05-28 起，upload-video 默认就会声明原创**（勾选"视频为原创" + 同意条款 + 点声明原创按钮）；不传 `--category` 时仍会声明原创，只是不选具体类型。
 - `--headed`：打开可见 Chrome 窗口。真实账号草稿上传默认使用，便于用户观察上传进度；无人值守测试才考虑省略。
 - `--upload-timeout`：等待视频上传完成的秒数；测试小视频可设为 `90`，正式视频保留默认或调大。
+- `--login-if-needed`：发布命令内置扫码兜底。profile 失效时在同一个发布浏览器里展示二维码，扫码成功后继续上传；真实账号日常发布默认加。
+- `--skip-route-bypass`：跳过本地分流路由刷新和校验，直接使用当前网络出口；只有用户明确要求 current-egress 时才加。
 
 ## 视频号发布页字段映射（重要）
 
@@ -324,8 +348,10 @@ rm -f /tmp/shipinhao.cookies
 | `.venv/bin/python` 不存在 | 运行 `uv sync --python 3.11` |
 | `No module named patchright` | 在 engine 目录运行 `uv sync --python 3.11` |
 | Chrome 不可用 | 提示用户安装 Google Chrome，或用 `--headed` 观察 |
-| `logged_in: false` | 先确认是否错误使用了 `--account <slot>`；如果刚才是 headless 检查，先重跑 `--headed check-login`。确认账号无误且 headed 检查仍失败后，才执行 `login` 并展示二维码 |
+| `profile_cookie_invalid` | 当前账号 `chrome-profile` 已失效。确认账号 slot 无误后，日常发布直接在 `publish-item` / `upload-video` 加 `--login-if-needed`，让扫码和上传发生在同一个浏览器会话；仅维护登录态时才单独 `login --timeout 180` |
+| `profile_check_failed` | Chrome/profile 校验本身失败，不要扫码；先看 `profile_error`。如果包含 `SingletonLock` / `正在现有的浏览器会话中打开`，说明同账号命令并发或上个浏览器未退出，等待结束后串行重跑 |
+| `logged_in: false` | 先确认是否错误使用了 `--account <slot>`；如果刚才是 headless 检查，先重跑 `--headed check-login`。确认账号无误后，发布流程优先用 `--login-if-needed` 单会话扫码 |
 | `storage state does not exist` | 直接运行 `check-login`，engine 会自动尝试恢复最新有效备份；仍失败再登录 |
-| `not logged in or cookie invalid` | 重新登录 |
+| `not logged in or cookie invalid` | 用 `--login-if-needed` 重跑发布命令；如果仍失败，再单独 `login --timeout 180` 做登录态维护 |
 | 上传超时或页面选择器失效 | 用 `--headed` 重试；仍失败则按工具反馈机制写入 `tools/feedback/` |
 | 用户要求视频号图文 | 明确告知当前不支持，不要调用视频流程替代 |

@@ -106,7 +106,13 @@ def cmd_set_account_roles(args: argparse.Namespace) -> None:
 def cmd_check_login(args: argparse.Namespace) -> None:
     from tvp.core import check_login
 
-    result = asyncio.run(check_login(storage_state_for(args), headless=not args.headed))
+    result = asyncio.run(
+        check_login(
+            storage_state_for(args),
+            headless=not args.headed,
+            use_storage_fallback=args.storage_fallback,
+        )
+    )
     output(result, 0 if result.get("logged_in") else 1)
 
 
@@ -157,6 +163,10 @@ def cmd_upload_video(args: argparse.Namespace) -> None:
         hold_open_seconds=args.hold_open,
         upload_timeout=args.upload_timeout,
         cover_timeout=args.cover_timeout,
+        skip_route_bypass=args.skip_route_bypass,
+        login_if_needed=args.login_if_needed,
+        login_timeout=args.login_timeout,
+        qrcode_dir=accounts.STATE_DIR / "qrcode",
         headless=not args.headed,
     )
     result = asyncio.run(upload_video(request))
@@ -206,6 +216,10 @@ def cmd_publish_item(args: argparse.Namespace) -> None:
         hold_open_seconds=args.hold_open,
         upload_timeout=args.upload_timeout,
         cover_timeout=args.cover_timeout,
+        skip_route_bypass=args.skip_route_bypass,
+        login_if_needed=args.login_if_needed,
+        login_timeout=args.login_timeout,
+        qrcode_dir=accounts.STATE_DIR / "qrcode",
         headless=not args.headed,
     )
     result = asyncio.run(upload_video(request))
@@ -247,6 +261,11 @@ def build_parser() -> argparse.ArgumentParser:
     sub.set_defaults(func=cmd_set_account_roles)
 
     sub = subparsers.add_parser("check-login", help="check login state")
+    sub.add_argument(
+        "--storage-fallback",
+        action="store_true",
+        help="after chrome-profile fails, try storage_state.json and recent backups; slower diagnostic path",
+    )
     sub.set_defaults(func=cmd_check_login)
 
     sub = subparsers.add_parser("login", help="scan login qrcode and save storage state")
@@ -280,6 +299,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub.add_argument("--upload-timeout", type=int, default=300, help="seconds to wait for video upload completion")
     sub.add_argument("--cover-timeout", type=int, default=60, help="seconds to wait for official cover generation before custom cover upload")
+    sub.add_argument("--skip-route-bypass", action="store_true", help="skip local route-bypass preflight and use current network egress")
+    sub.add_argument("--login-if-needed", action="store_true", help="show QR login in the same publish browser if the profile is not logged in, then continue")
+    sub.add_argument("--login-timeout", type=int, default=180, help="seconds to wait for QR login when --login-if-needed is used")
     sub.set_defaults(func=cmd_upload_video)
 
     sub = subparsers.add_parser(
@@ -303,6 +325,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub.add_argument("--upload-timeout", type=int, default=300, help="seconds to wait for video upload completion")
     sub.add_argument("--cover-timeout", type=int, default=60, help="seconds to wait for official cover generation before custom cover upload")
+    sub.add_argument("--skip-route-bypass", action="store_true", help="skip local route-bypass preflight and use current network egress")
+    sub.add_argument("--login-if-needed", action="store_true", help="show QR login in the same publish browser if the profile is not logged in, then continue")
+    sub.add_argument("--login-timeout", type=int, default=180, help="seconds to wait for QR login when --login-if-needed is used")
     sub.add_argument("--dry-run", action="store_true", help="parse item dir and print upload payload without opening browser")
     sub.set_defaults(func=cmd_publish_item)
 

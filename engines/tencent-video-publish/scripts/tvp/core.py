@@ -2,9 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from contextlib import asynccontextmanager
+import fcntl
 from http.cookies import CookieError, SimpleCookie
 import json
+import os
+import platform
+import shlex
+import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -17,6 +24,7 @@ from tvp import accounts
 
 
 LOGIN_URL = "https://channels.weixin.qq.com"
+PLATFORM_URL = "https://channels.weixin.qq.com/platform"
 UPLOAD_URL = "https://channels.weixin.qq.com/platform/post/create"
 MANAGE_URL = "https://channels.weixin.qq.com/platform/post/list"
 
@@ -53,6 +61,28 @@ COOKIE_ATTRIBUTE_NAMES = {
     "samesite",
     "secure",
 }
+SHIPINHAO_ROUTE_VERIFY_DOMAINS = (
+    "channels.weixin.qq.com",
+    "open.weixin.qq.com",
+    "res.wx.qq.com",
+    "mp.weixin.qq.com",
+    "store.mp.video.tencent-cloud.com",
+    "finderpre.video.qq.com",
+    "finder.video.qq.com",
+    "finderassistancea.video.qq.com",
+    "finderassistanceb.video.qq.com",
+    "finderassistancec.video.qq.com",
+    "finderassistanced.video.qq.com",
+    "finderassistancee.video.qq.com",
+    "wxapp.tc.qq.com",
+    "aladin.wxqcloud.qq.com",
+    "mmec.wxqcloud.qq.com.cn",
+    "res.wxqcloud.qq.com.cn",
+)
+PROFILE_LOCK_TIMEOUT_SECONDS = 30
+PROFILE_LOCK_POLL_SECONDS = 0.25
+PROFILE_LAUNCH_TIMEOUT_SECONDS = 45
+AUTH_PROBE_TIMEOUT_SECONDS = 45
 STEALTH_ARGS = [
     "--disable-blink-features=AutomationControlled",
     "--disable-infobars",
@@ -86,6 +116,10 @@ class UploadVideoRequest:
     hold_open_seconds: int = 0
     upload_timeout: int = 300
     cover_timeout: int = 60
+    skip_route_bypass: bool = False
+    login_if_needed: bool = False
+    login_timeout: int = 180
+    qrcode_dir: Path | None = None
     headless: bool = True
 
 
@@ -115,6 +149,55 @@ def profile_dir_for_storage_state(storage_state: Path) -> Path:
     return storage_state.parent / "chrome-profile"
 
 
+def profile_lock_path(storage_state: Path) -> Path:
+    return storage_state.parent / ".chrome-profile.lock"
+
+
+@asynccontextmanager
+async def profile_context_lock(
+    storage_state: Path,
+    *,
+    purpose: str,
+    timeout_seconds: float = PROFILE_LOCK_TIMEOUT_SECONDS,
+):
+    storage_state.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = profile_lock_path(storage_state)
+    lock_file = lock_path.open("a+", encoding="utf-8")
+    deadline = asyncio.get_event_loop().time() + timeout_seconds
+    acquired = False
+    try:
+        while not acquired:
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                acquired = True
+            except BlockingIOError as exc:
+                if asyncio.get_event_loop().time() >= deadline:
+                    raise RuntimeError(
+                        "视频号账号 chrome-profile 正在被另一个命令使用，"
+                        f"请等待当前 check/login/publish 结束后重试: {profile_dir_for_storage_state(storage_state)}"
+                    ) from exc
+                await asyncio.sleep(PROFILE_LOCK_POLL_SECONDS)
+        lock_file.seek(0)
+        lock_file.truncate()
+        lock_file.write(f"purpose={purpose}\nstarted_at={datetime.now().isoformat()}\n")
+        lock_file.flush()
+        yield
+    finally:
+        if acquired:
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                pass
+        lock_file.close()
+
+
+async def with_hard_timeout(awaitable, *, timeout_seconds: float, label: str):
+    try:
+        return await asyncio.wait_for(awaitable, timeout=timeout_seconds)
+    except TimeoutError as exc:
+        raise RuntimeError(f"{label} timed out after {timeout_seconds:g}s") from exc
+
+
 def credential_metadata(storage_state: Path, credential_source: str = "") -> dict[str, Any]:
     return {
         "storage_state": str(storage_state),
@@ -133,7 +216,11 @@ async def launch_profile_context(playwright, storage_state: Path, *, headless: b
         **launch_kwargs(headless=headless),
         **context_kwargs(),
     }
-    return await playwright.chromium.launch_persistent_context(str(profile_dir), **kwargs)
+    return await with_hard_timeout(
+        playwright.chromium.launch_persistent_context(str(profile_dir), **kwargs),
+        timeout_seconds=PROFILE_LAUNCH_TIMEOUT_SECONDS,
+        label="launch chrome profile",
+    )
 
 
 async def harden_context(context):
@@ -162,6 +249,123 @@ def relevant_url(url: str) -> bool:
 def tail_text(text: str, max_chars: int = 2000) -> str:
     text = text.strip()
     return text[-max_chars:] if len(text) > max_chars else text
+
+
+def route_preflight_script() -> Path:
+    return accounts.tools_root() / "engines" / "route-bypass" / "scripts" / "publish-network-preflight.zsh"
+
+
+def find_nonlocal_route_decisions(status_output: str) -> list[str]:
+    local_interface = ""
+    bad: list[str] = []
+    for line in status_output.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("service="):
+            for token in stripped.split():
+                if token.startswith("interface="):
+                    local_interface = token.split("=", 1)[1]
+            continue
+        if not local_interface or " interface=" not in stripped or "destination=" not in stripped:
+            continue
+        interface = ""
+        destination = ""
+        for token in stripped.split():
+            if token.startswith("interface="):
+                interface = token.split("=", 1)[1]
+            elif token.startswith("destination="):
+                destination = token.split("=", 1)[1]
+        if interface != local_interface or destination == "default":
+            bad.append(stripped)
+    return bad
+
+
+def run_shipinhao_preflight(action: str, timeout: int = 240) -> subprocess.CompletedProcess[str]:
+    script = route_preflight_script()
+    return subprocess.run(
+        [str(script), "shipinhao", action],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def run_shipinhao_preflight_with_admin(timeout: int = 300) -> subprocess.CompletedProcess[str]:
+    script = route_preflight_script()
+    log_path = Path(tempfile.gettempdir()) / "shipinhao-route-bypass-apply.log"
+    command = (
+        f"{shlex.quote(str(script))} shipinhao apply > {shlex.quote(str(log_path))} 2>&1; "
+        "status=$?; "
+        f"tail -200 {shlex.quote(str(log_path))}; "
+        "exit $status"
+    )
+    return subprocess.run(
+        ["osascript", "-e", f"do shell script {json.dumps(command)} with administrator privileges"],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def verify_shipinhao_route_bypass() -> dict:
+    result = run_shipinhao_preflight("status")
+    if result.returncode != 0:
+        return {
+            "ok": False,
+            "error": "route-bypass status failed",
+            "stdout": tail_text(result.stdout),
+            "stderr": tail_text(result.stderr),
+        }
+    bad_routes = find_nonlocal_route_decisions(result.stdout)
+    return {
+        "ok": not bad_routes,
+        "bad_routes": bad_routes[:30],
+        "checked_domains": list(SHIPINHAO_ROUTE_VERIFY_DOMAINS),
+    }
+
+
+def route_bypass_skip_reason(cli_skip: bool = False) -> str:
+    if cli_skip:
+        return "cli --skip-route-bypass"
+
+    network_mode = os.environ.get("PLATFORM_PUBLISH_NETWORK_MODE") or os.environ.get("PUBLISH_NETWORK_MODE") or ""
+    if network_mode.strip().lower() == "current-egress":
+        return "env PLATFORM_PUBLISH_NETWORK_MODE=current-egress"
+
+    for name in ("PLATFORM_PUBLISH_SKIP_ROUTE_BYPASS", "PUBLISH_SKIP_ROUTE_BYPASS", "TVP_SKIP_ROUTE_BYPASS"):
+        if os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}:
+            return f"env {name}"
+
+    return ""
+
+
+def ensure_shipinhao_route_bypass(skip_route_bypass: bool = False) -> dict:
+    skip_reason = route_bypass_skip_reason(skip_route_bypass)
+    if skip_reason:
+        return {"skipped": True, "mode": "current-egress", "reason": skip_reason}
+
+    verify = verify_shipinhao_route_bypass()
+    if verify.get("ok"):
+        return {"verified": True, "already_applied": True}
+
+    result = run_shipinhao_preflight("apply")
+    needs_admin = "sudo:" in result.stderr or "password is required" in result.stderr
+    if result.returncode != 0 and platform.system() == "Darwin" and needs_admin:
+        result = run_shipinhao_preflight_with_admin()
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            "视频号本地网络分流未能应用，停止上传。"
+            f" stdout={tail_text(result.stdout)} stderr={tail_text(result.stderr)}"
+        )
+
+    verify = verify_shipinhao_route_bypass()
+    if not verify.get("ok"):
+        raise RuntimeError(f"视频号本地网络分流校验失败，停止上传: {json.dumps(verify, ensure_ascii=False)}")
+    return {"verified": True, "applied": True}
 
 
 def attach_page_diagnostics(page: Page) -> dict[str, list[dict]]:
@@ -375,8 +579,11 @@ async def probe_login_context(
 ) -> tuple[bool, str, dict | None]:
     page = await context.new_page()
     try:
-        await goto_upload_page_for_probe(page)
-        logged_in = await wait_for_login_completed(page, timeout_ms=timeout_ms)
+        logged_in = await with_hard_timeout(
+            verify_login_session(page, timeout_ms=timeout_ms),
+            timeout_seconds=max(AUTH_PROBE_TIMEOUT_SECONDS, timeout_ms / 1000 + 10),
+            label="probe login session",
+        )
         save_result = await save_storage_state(context, storage_state) if logged_in and save_on_success else None
         return logged_in, page.url, save_result
     finally:
@@ -420,27 +627,28 @@ async def seed_profile_from_storage_state(
     if not storage_state_json_is_valid(storage_state):
         return {"seeded": False, "logged_in": False, "error": "invalid_storage_state"}
 
-    context = await launch_profile_context(playwright, storage_state, headless=headless)
-    context = await harden_context(context)
-    try:
-        await seed_context_from_storage_state(context, storage_state)
-        logged_in, current_url, save_result = await probe_login_context(
-            context,
-            storage_state,
-            save_on_success=save_on_success,
-            timeout_ms=timeout_ms,
-        )
-        return {
-            "seeded": True,
-            "logged_in": logged_in,
-            "current_url": current_url,
-            "storage_state_saved": bool(save_result and save_result.get("saved")),
-            "storage_state_backup": save_result.get("backup", "") if save_result else "",
-        }
-    except Exception as exc:
-        return {"seeded": False, "logged_in": False, "error": str(exc)}
-    finally:
-        await context.close()
+    async with profile_context_lock(storage_state, purpose="seed-profile"):
+        context = await launch_profile_context(playwright, storage_state, headless=headless)
+        context = await harden_context(context)
+        try:
+            await seed_context_from_storage_state(context, storage_state)
+            logged_in, current_url, save_result = await probe_login_context(
+                context,
+                storage_state,
+                save_on_success=save_on_success,
+                timeout_ms=timeout_ms,
+            )
+            return {
+                "seeded": True,
+                "logged_in": logged_in,
+                "current_url": current_url,
+                "storage_state_saved": bool(save_result and save_result.get("saved")),
+                "storage_state_backup": save_result.get("backup", "") if save_result else "",
+            }
+        except Exception as exc:
+            return {"seeded": False, "logged_in": False, "error": str(exc)}
+        finally:
+            await context.close()
 
 
 async def open_authenticated_context(
@@ -763,8 +971,12 @@ async def is_login_completed(page: Page) -> bool:
         return True
     if await has_login_marker(page):
         return False
+    if "login" in page.url:
+        return False
     if page.url.startswith(UPLOAD_URL):
         return await has_upload_form_marker(page)
+    if page.url.startswith(PLATFORM_URL):
+        return True
     return page.url.startswith(MANAGE_URL)
 
 
@@ -776,11 +988,13 @@ async def wait_for_login_completed(page: Page, timeout_ms: int = 15000) -> bool:
             return True
         if await has_login_marker(page):
             return False
+        if "login" in page.url:
+            return False
         if page.url.startswith(UPLOAD_URL):
             if await has_upload_form_marker(page):
                 return True
             stable_candidate_since = None
-        elif page.url.startswith(MANAGE_URL):
+        elif page.url.startswith(MANAGE_URL) or page.url.startswith(PLATFORM_URL):
             now = asyncio.get_event_loop().time()
             if stable_candidate_since is None:
                 stable_candidate_since = now
@@ -795,12 +1009,9 @@ async def wait_for_login_completed(page: Page, timeout_ms: int = 15000) -> bool:
 async def verify_login_session(page: Page, timeout_ms: int = 15000) -> bool:
     """Validate QR login on a page that requires an authenticated session."""
     try:
-        await page.goto(MANAGE_URL, wait_until="domcontentloaded", timeout=60000)
-    except Exception as exc:
-        if "Timeout" not in str(exc):
-            raise
-        await page.wait_for_timeout(3000)
-    await page.wait_for_timeout(1000)
+        await open_upload_page(page)
+    except Exception:
+        return False
     return await wait_for_login_completed(page, timeout_ms=timeout_ms)
 
 
@@ -836,24 +1047,123 @@ async def refresh_qrcode(page: Page) -> None:
     raise RuntimeError("qrcode refresh control not found")
 
 
-async def check_login(storage_state: Path, headless: bool = True, *, save_on_success: bool = True) -> dict:
+def qrcode_output_path(qrcode_dir: Path) -> Path:
+    return qrcode_dir / f"tencent_video_login_{datetime.now():%Y%m%d_%H%M%S}.png"
+
+
+async def save_current_qrcode(page: Page, qrcode_dir: Path) -> Path:
+    src = await extract_qrcode_src(page)
+    qrcode_path = save_data_url_image(src, qrcode_output_path(qrcode_dir))
+    print(f"QRCODE_PATH={qrcode_path}", flush=True)
+    return qrcode_path
+
+
+async def complete_login_on_page(
+    page: Page,
+    context,
+    storage_state: Path,
+    qrcode_dir: Path,
+    *,
+    timeout: int,
+    headless_requested: bool,
+    headless_used: bool,
+) -> dict:
+    qrcode_dir.mkdir(parents=True, exist_ok=True)
+
+    async def verified_result(message: str, qrcode_path: Path | None) -> dict:
+        save_result = await save_storage_state(context, storage_state)
+        return {
+            "success": True,
+            "logged_in": True,
+            "status": "success",
+            "message": message,
+            **credential_metadata(storage_state, "chrome_profile"),
+            "headless_requested": headless_requested,
+            "headless_used": headless_used,
+            "storage_state_saved": save_result.get("saved", False),
+            "storage_state_backup": save_result.get("backup", ""),
+            "qrcode_path": str(qrcode_path) if qrcode_path else "",
+            "current_url": page.url,
+        }
+
+    if await wait_for_login_completed(page, timeout_ms=8000) and await verify_login_session(page):
+        return await verified_result("already logged in", None)
+
+    if not await has_login_marker(page):
+        try:
+            await page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=60000)
+        except Exception as exc:
+            if "Timeout" not in str(exc):
+                raise
+            await page.wait_for_timeout(3000)
+        await page.wait_for_timeout(1500)
+        if await wait_for_login_completed(page, timeout_ms=8000) and await verify_login_session(page):
+            return await verified_result("already logged in", None)
+
+    qrcode_path: Path | None = await save_current_qrcode(page, qrcode_dir)
+    deadline = asyncio.get_event_loop().time() + timeout
+    while asyncio.get_event_loop().time() < deadline:
+        if await is_login_completed(page):
+            await asyncio.sleep(2)
+            if not await verify_login_session(page):
+                return {
+                    "success": False,
+                    "logged_in": False,
+                    "status": "login_verification_failed",
+                    "message": "QR login appeared complete, but authenticated page verification failed",
+                    **credential_metadata(storage_state, "chrome_profile"),
+                    "headless_requested": headless_requested,
+                    "headless_used": headless_used,
+                    "storage_state_saved": False,
+                    "storage_state_backup": "",
+                    "qrcode_path": str(qrcode_path) if qrcode_path else "",
+                    "current_url": page.url,
+                }
+            return await verified_result("login completed", qrcode_path)
+        if await is_qrcode_expired(page):
+            await refresh_qrcode(page)
+            await asyncio.sleep(1)
+            qrcode_path = await save_current_qrcode(page, qrcode_dir)
+        await asyncio.sleep(3)
+
+    return {
+        "success": False,
+        "logged_in": False,
+        "status": "timeout",
+        "message": "waiting for login timed out",
+        **credential_metadata(storage_state, "chrome_profile"),
+        "headless_requested": headless_requested,
+        "headless_used": headless_used,
+        "qrcode_path": str(qrcode_path) if qrcode_path else "",
+        "current_url": page.url,
+    }
+
+
+async def check_login(
+    storage_state: Path,
+    headless: bool = True,
+    *,
+    save_on_success: bool = True,
+    use_storage_fallback: bool = False,
+) -> dict:
     recovered_from_backup = restore_backup_if_needed(storage_state)
     profile_error = ""
     profile_url = ""
 
     async with async_playwright() as playwright:
         try:
-            profile_context = await launch_profile_context(playwright, storage_state, headless=headless)
-            profile_context = await harden_context(profile_context)
-            try:
-                logged_in, profile_url, save_result = await probe_login_context(
-                    profile_context,
-                    storage_state,
-                    save_on_success=save_on_success,
-                    timeout_ms=15000,
-                )
-            finally:
-                await profile_context.close()
+            async with profile_context_lock(storage_state, purpose="check-login"):
+                profile_context = await launch_profile_context(playwright, storage_state, headless=headless)
+                profile_context = await harden_context(profile_context)
+                try:
+                    logged_in, profile_url, save_result = await probe_login_context(
+                        profile_context,
+                        storage_state,
+                        save_on_success=save_on_success,
+                        timeout_ms=15000,
+                    )
+                finally:
+                    await profile_context.close()
             if logged_in:
                 return {
                     "success": True,
@@ -867,6 +1177,20 @@ async def check_login(storage_state: Path, headless: bool = True, *, save_on_suc
                 }
         except Exception as exc:
             profile_error = str(exc)
+
+        if not use_storage_fallback:
+            return {
+                "success": True,
+                "logged_in": False,
+                "status": "profile_check_failed" if profile_error else "profile_cookie_invalid",
+                **credential_metadata(storage_state, "chrome_profile"),
+                "recovered_from_backup": str(recovered_from_backup) if recovered_from_backup else "",
+                "profile_error": profile_error,
+                "profile_current_url": profile_url,
+                "storage_fallback_skipped": True,
+                "latest_backup": str(accounts.latest_storage_state_backup(storage_state) or ""),
+                "current_url": profile_url,
+            }
 
         if not storage_state.exists():
             return {
@@ -1013,95 +1337,30 @@ async def login(storage_state: Path, qrcode_dir: Path, timeout: int = 180, headl
     login_headless = False
 
     async with async_playwright() as playwright:
-        context = await launch_profile_context(playwright, storage_state, headless=login_headless)
-        # Do not inject init scripts on the login page. Even the light webdriver
-        # shim can prevent WeChat's QR iframe from rendering in Patchright.
-        page = await context.new_page()
-        qrcode_path: Path | None = None
-        try:
+        async with profile_context_lock(storage_state, purpose="login"):
+            context = await launch_profile_context(playwright, storage_state, headless=login_headless)
+            # Do not inject init scripts on the login page. Even the light webdriver
+            # shim can prevent WeChat's QR iframe from rendering in Patchright.
+            page = await context.new_page()
             try:
-                await page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=60000)
-            except Exception as exc:
-                if "Timeout" not in str(exc):
-                    raise
-                await page.wait_for_timeout(3000)
-            await page.wait_for_timeout(1500)
-            if await is_login_completed(page) and await verify_login_session(page):
-                save_result = await save_storage_state(context, storage_state)
-                return {
-                    "success": True,
-                    "logged_in": True,
-                    "status": "success",
-                    "message": "already logged in",
-                    **credential_metadata(storage_state, "chrome_profile"),
-                    "headless_requested": headless,
-                    "headless_used": login_headless,
-                    "storage_state_saved": save_result.get("saved", False),
-                    "storage_state_backup": save_result.get("backup", ""),
-                    "qrcode_path": "",
-                    "current_url": page.url,
-                }
-
-            src = await extract_qrcode_src(page)
-            qrcode_path = save_data_url_image(src, qrcode_dir / f"tencent_video_login_{datetime.now():%Y%m%d_%H%M%S}.png")
-            print(f"QRCODE_PATH={qrcode_path}", flush=True)
-
-            deadline = asyncio.get_event_loop().time() + timeout
-            while asyncio.get_event_loop().time() < deadline:
-                if await is_login_completed(page):
-                    await asyncio.sleep(2)
-                    if not await verify_login_session(page):
-                        return {
-                            "success": False,
-                            "logged_in": False,
-                            "status": "login_verification_failed",
-                            "message": "QR login appeared complete, but authenticated page verification failed",
-                            **credential_metadata(storage_state, "chrome_profile"),
-                            "headless_requested": headless,
-                            "headless_used": login_headless,
-                            "storage_state_saved": False,
-                            "storage_state_backup": "",
-                            "qrcode_path": str(qrcode_path) if qrcode_path else "",
-                            "current_url": page.url,
-                        }
-                    save_result = await save_storage_state(context, storage_state)
-                    return {
-                        "success": True,
-                        "logged_in": True,
-                        "status": "success",
-                        "message": "login completed",
-                        **credential_metadata(storage_state, "chrome_profile"),
-                        "headless_requested": headless,
-                        "headless_used": login_headless,
-                        "storage_state_saved": save_result.get("saved", False),
-                        "storage_state_backup": save_result.get("backup", ""),
-                        "qrcode_path": str(qrcode_path),
-                        "current_url": page.url,
-                    }
-                if await is_qrcode_expired(page):
-                    await refresh_qrcode(page)
-                    await asyncio.sleep(1)
-                    src = await extract_qrcode_src(page)
-                    qrcode_path = save_data_url_image(
-                        src,
-                        qrcode_dir / f"tencent_video_login_{datetime.now():%Y%m%d_%H%M%S}.png",
-                    )
-                    print(f"QRCODE_PATH={qrcode_path}", flush=True)
-                await asyncio.sleep(3)
-
-            return {
-                "success": False,
-                "logged_in": False,
-                "status": "timeout",
-                "message": "waiting for login timed out",
-                **credential_metadata(storage_state, "chrome_profile"),
-                "headless_requested": headless,
-                "headless_used": login_headless,
-                "qrcode_path": str(qrcode_path) if qrcode_path else "",
-                "current_url": page.url,
-            }
-        finally:
-            await context.close()
+                try:
+                    await page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=60000)
+                except Exception as exc:
+                    if "Timeout" not in str(exc):
+                        raise
+                    await page.wait_for_timeout(3000)
+                await page.wait_for_timeout(1500)
+                return await complete_login_on_page(
+                    page,
+                    context,
+                    storage_state,
+                    qrcode_dir,
+                    timeout=timeout,
+                    headless_requested=headless,
+                    headless_used=login_headless,
+                )
+            finally:
+                await context.close()
 
 
 async def open_upload_page(page: Page) -> None:
@@ -1109,6 +1368,8 @@ async def open_upload_page(page: Page) -> None:
     await page.wait_for_timeout(1500)
     if await has_upload_form_marker(page):
         return
+    if await has_login_marker(page) or "login" in page.url:
+        raise RuntimeError(f"login required before opening publish entry; url={page.url}")
 
     # 2026-06: 视频号新版后台会把 /platform/post/create 重定向回
     # /platform，发布入口挂在 wujie-app 的 shadow DOM 里。旧直达 URL
@@ -1117,6 +1378,8 @@ async def open_upload_page(page: Page) -> None:
     while asyncio.get_event_loop().time() < deadline:
         if await has_upload_form_marker(page):
             return
+        if await has_login_marker(page) or "login" in page.url:
+            raise RuntimeError(f"login required before opening publish entry; url={page.url}")
         if await click_shadow_button_by_exact_text(page, "发表视频"):
             await wait_for_upload_form_marker(page)
             return
@@ -2185,202 +2448,152 @@ async def upload_video(request: UploadVideoRequest) -> dict:
     if not request.title.strip():
         raise ValueError("title is required")
 
-    login_check = await check_login(request.storage_state, headless=request.headless)
-    if not login_check.get("logged_in"):
-        raise RuntimeError(
-            f"login state invalid ({login_check.get('status')}), login first: {request.storage_state}"
-        )
-    credential_source = str(login_check.get("credential_source") or "chrome_profile")
+    route_status = ensure_shipinhao_route_bypass(skip_route_bypass=request.skip_route_bypass)
+    qrcode_dir = request.qrcode_dir or accounts.STATE_DIR / "qrcode"
+    login_result: dict[str, Any] | None = None
 
     async with async_playwright() as playwright:
         context = None
         browser = None
-        try:
-            context, browser, runtime_auth = await open_authenticated_context(
-                playwright,
-                request.storage_state,
-                headless=request.headless,
-                credential_source=credential_source,
-            )
-            page = await context.new_page()
-            page_diag = attach_page_diagnostics(page)
-            await open_upload_page(page)
-            if not await wait_for_login_completed(page):
-                raise RuntimeError(f"not logged in or cookie invalid: {request.storage_state}")
+        async with profile_context_lock(request.storage_state, purpose="publish"):
+            try:
+                context, browser, runtime_auth = await open_authenticated_context(
+                    playwright,
+                    request.storage_state,
+                    headless=request.headless,
+                    credential_source="chrome_profile",
+                )
+                page = await context.new_page()
+                page_diag = attach_page_diagnostics(page)
+                open_error = ""
+                try:
+                    await open_upload_page(page)
+                    logged_in = await wait_for_login_completed(page)
+                except Exception as exc:
+                    open_error = str(exc)
+                    logged_in = False
 
-            await upload_video_file(page, request.file_path)
-            await fill_title_tags_desc(page, request.title, request.tags or [], request.desc)
-            await set_short_title(page, request.title, request.short_title)
-            # 等视频上传 + 后端处理完成后，再填封面、定时、原创等后续项。
-            # 这些入口在视频处理完成前是"未就绪"状态，过早调用会静默失败。
-            await wait_for_upload_complete(page, timeout_seconds=request.upload_timeout, page_diag=page_diag)
-            original_warning: str | None = None
-            # 封面失败时：fill-only 模式下只 log warning 不阻断（方便人工在浏览器里诊断 DOM）；
-            # 非 fill-only 模式仍然 raise，避免静默以为传上了。
-            thumbnail_warning: str | None = None
-            try:
-                await set_thumbnail(page, request.thumbnail_path, cover_timeout_seconds=request.cover_timeout)
-            except RuntimeError as exc:
-                if request.fill_only:
-                    thumbnail_warning = str(exc)
-                    # 诊断 dump：页面 HTML + 全屏截图 + evaluate 抓 input-editor 实际内容和封面区域 DOM
-                    try:
-                        dump_dir = Path("/tmp/tencent_video_debug")
-                        dump_dir.mkdir(exist_ok=True)
-                        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        await page.screenshot(path=str(dump_dir / f"page_{ts}.png"), full_page=True)
-                        # 用 patchright locator API (piercing shadow DOM + wujie iframe) dump 状态
-                        loc_diag: dict = {}
-                        for name, sel in [
-                            ("editor", ".input-editor"),
-                            ("cover_wrap", ".vertical-cover-wrap"),
-                            ("original_label", "label:has-text('视频为原创')"),
-                            ("original_checkbox", "input[type='checkbox']"),
-                        ]:
-                            try:
-                                loc = page.locator(sel).first
-                                cnt = await loc.count()
-                                if cnt:
-                                    loc_diag[name] = {
-                                        "selector": sel,
-                                        "found": True,
-                                        "visible": await loc.is_visible(),
-                                        "text": (await loc.text_content() or "")[:600],
-                                        "outer_html": (await loc.evaluate("e => e.outerHTML"))[:3000],
-                                    }
-                                else:
-                                    loc_diag[name] = {"selector": sel, "found": False, "count": cnt}
-                            except Exception as le:
-                                loc_diag[name] = {"selector": sel, "error": str(le)}
-                        (dump_dir / f"locator_diag_{ts}.json").write_text(
-                            json.dumps(loc_diag, ensure_ascii=False, indent=2), encoding="utf-8"
+                if not logged_in:
+                    if not request.login_if_needed:
+                        raise RuntimeError(
+                            "login state invalid "
+                            f"({open_error or 'profile_cookie_invalid'}), login first: {request.storage_state}"
                         )
-                        thumbnail_warning += f" | locator_diag: /tmp/tencent_video_debug/locator_diag_{ts}.json + page_{ts}.png"
-                        runtime_diag = {
-                            "cover_runtime": await collect_cover_runtime_diag(page),
-                            "page_events": page_diag,
-                        }
-                        (dump_dir / f"runtime_diag_{ts}.json").write_text(
-                            json.dumps(runtime_diag, ensure_ascii=False, indent=2), encoding="utf-8"
+                    login_result = await complete_login_on_page(
+                        page,
+                        context,
+                        request.storage_state,
+                        qrcode_dir,
+                        timeout=request.login_timeout,
+                        headless_requested=request.headless,
+                        headless_used=request.headless,
+                    )
+                    if not login_result.get("logged_in"):
+                        raise RuntimeError(
+                            f"login state invalid ({login_result.get('status')}), login first: {request.storage_state}"
                         )
-                        thumbnail_warning += f" | runtime_diag: /tmp/tencent_video_debug/runtime_diag_{ts}.json"
-                        # 跳过旧的 frame-based evaluate dump（已知 wujie 下 evaluate 找不到）
-                        diag_js = """
-                            () => {
-                                const editor = document.querySelector('div.input-editor');
-                                const coverArea = document.querySelector('div.vertical-cover-wrap')
-                                    || document.querySelector('[class*="cover"]');
-                                let origArea = null;
-                                for (const el of document.querySelectorAll('label, div, span')) {
-                                    if ((el.innerText || '').includes('视频为原创')) { origArea = el; break; }
-                                }
-                                // 找封面区域附近的所有可点击元素
-                                const coverContext = [];
-                                if (coverArea) {
-                                    const ancestors = coverArea.querySelectorAll('*');
-                                    for (const el of ancestors) {
-                                        const txt = (el.textContent || '').trim();
-                                        if (/修改|编辑|上传/.test(txt) && txt.length < 20) {
-                                            coverContext.push({
-                                                tag: el.tagName,
-                                                cls: (el.className || '').toString().slice(0, 100),
-                                                text: txt.slice(0, 30),
-                                            });
-                                        }
-                                    }
-                                }
-                                return {
-                                    found_here: !!(editor || coverArea || origArea),
-                                    editor_innerText: editor ? editor.innerText.slice(0, 3000) : null,
-                                    editor_innerHTML: editor ? editor.innerHTML.slice(0, 3000) : null,
-                                    cover_outerHTML: coverArea ? coverArea.outerHTML.slice(0, 5000) : null,
-                                    cover_clickable: coverContext.slice(0, 20),
-                                    orig_outerHTML: origArea ? origArea.outerHTML.slice(0, 3000) : null,
-                                };
+                    runtime_auth = "chrome_profile_login_if_needed"
+                    await open_upload_page(page)
+                    if not await wait_for_login_completed(page):
+                        raise RuntimeError(f"not logged in or cookie invalid: {request.storage_state}")
+
+                await upload_video_file(page, request.file_path)
+                await fill_title_tags_desc(page, request.title, request.tags or [], request.desc)
+                await set_short_title(page, request.title, request.short_title)
+                # 等视频上传 + 后端处理完成后，再填封面、定时、原创等后续项。
+                # 这些入口在视频处理完成前是"未就绪"状态，过早调用会静默失败。
+                await wait_for_upload_complete(page, timeout_seconds=request.upload_timeout, page_diag=page_diag)
+                original_warning: str | None = None
+                # 封面失败时：fill-only 模式下只 log warning 不阻断（方便人工在浏览器里诊断 DOM）；
+                # 非 fill-only 模式仍然 raise，避免静默以为传上了。
+                thumbnail_warning: str | None = None
+                try:
+                    await set_thumbnail(page, request.thumbnail_path, cover_timeout_seconds=request.cover_timeout)
+                except RuntimeError as exc:
+                    if request.fill_only:
+                        thumbnail_warning = str(exc)
+                        try:
+                            dump_dir = Path("/tmp/tencent_video_debug")
+                            dump_dir.mkdir(exist_ok=True)
+                            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            screenshot = dump_dir / f"page_{ts}.png"
+                            runtime_path = dump_dir / f"runtime_diag_{ts}.json"
+                            await page.screenshot(path=str(screenshot), full_page=True)
+                            runtime_diag = {
+                                "cover_runtime": await collect_cover_runtime_diag(page),
+                                "page_events": page_diag,
                             }
-                        """
-                        all_diag = []
-                        for idx, frame in enumerate(page.frames):
-                            try:
-                                d = await frame.evaluate(diag_js)
-                                d["frame_idx"] = idx
-                                d["frame_url"] = frame.url
-                                d["frame_name"] = frame.name
-                                if d.get("found_here"):
-                                    all_diag.append(d)
-                                # 顺便 dump 该 frame 的 HTML
-                                try:
-                                    fhtml = await frame.content()
-                                    (dump_dir / f"frame{idx}_{ts}.html").write_text(fhtml, encoding="utf-8")
-                                except Exception:
-                                    pass
-                            except Exception as fe:
-                                all_diag.append({"frame_idx": idx, "frame_url": frame.url, "error": str(fe)})
-                        (dump_dir / f"diag_{ts}.json").write_text(json.dumps(all_diag, ensure_ascii=False, indent=2), encoding="utf-8")
-                        thumbnail_warning += f" | dumped: /tmp/tencent_video_debug/diag_{ts}.json + frame*_{ts}.html + page_{ts}.png"
-                    except Exception as dump_exc:
-                        thumbnail_warning += f" | dump failed: {dump_exc}"
-                else:
-                    raise
-            if request.schedule_at:
-                await set_schedule_time(page, request.schedule_at)
-            await set_short_title(page, request.title, request.short_title)
-            try:
-                await apply_original_statement(page, request.category, page_diag=page_diag)
-            except RuntimeError as exc:
-                if request.fill_only and ("原创" in str(exc)):
-                    original_warning = str(exc)
-                else:
-                    raise
-            if request.fill_only:
-                if request.hold_open_seconds < 0:
-                    if original_warning:
-                        print(f"ORIGINAL_WARNING={original_warning}", flush=True)
-                    if thumbnail_warning:
-                        print(f"THUMBNAIL_WARNING={thumbnail_warning}", flush=True)
-                    print(f"FILL_ONLY_READY={page.url}", flush=True)
-                    await asyncio.Event().wait()
-                if request.hold_open_seconds > 0:
-                    await asyncio.sleep(request.hold_open_seconds)
+                            runtime_path.write_text(json.dumps(runtime_diag, ensure_ascii=False, indent=2), encoding="utf-8")
+                            thumbnail_warning += f" | dumped: {runtime_path} + {screenshot}"
+                        except Exception as dump_exc:
+                            thumbnail_warning += f" | dump failed: {dump_exc}"
+                    else:
+                        raise
+                if request.schedule_at:
+                    await set_schedule_time(page, request.schedule_at)
+                await set_short_title(page, request.title, request.short_title)
+                try:
+                    await apply_original_statement(page, request.category, page_diag=page_diag)
+                except RuntimeError as exc:
+                    if request.fill_only and ("原创" in str(exc)):
+                        original_warning = str(exc)
+                    else:
+                        raise
+                if request.fill_only:
+                    if request.hold_open_seconds < 0:
+                        if original_warning:
+                            print(f"ORIGINAL_WARNING={original_warning}", flush=True)
+                        if thumbnail_warning:
+                            print(f"THUMBNAIL_WARNING={thumbnail_warning}", flush=True)
+                        print(f"FILL_ONLY_READY={page.url}", flush=True)
+                        await asyncio.Event().wait()
+                    if request.hold_open_seconds > 0:
+                        await asyncio.sleep(request.hold_open_seconds)
+                    save_result = await save_storage_state(context, request.storage_state)
+                    return {
+                        "success": True,
+                        "action": "filled_ready_to_submit",
+                        "platform": "tencent_video",
+                        "title": request.title,
+                        "file": str(request.file_path),
+                        **credential_metadata(request.storage_state, runtime_auth),
+                        "runtime_auth": runtime_auth,
+                        "route_status": route_status,
+                        "login_if_needed": request.login_if_needed,
+                        "login_result_status": login_result.get("status", "") if login_result else "",
+                        "storage_state_saved": save_result.get("saved", False),
+                        "storage_state_backup": save_result.get("backup", ""),
+                        "current_url": page.url,
+                        "scheduled_at": request.schedule_at.isoformat() if request.schedule_at else None,
+                        "submitted": False,
+                        "original_warning": original_warning,
+                        "thumbnail_warning": thumbnail_warning,
+                    }
+                action = await submit(page, request.publish)
                 save_result = await save_storage_state(context, request.storage_state)
                 return {
                     "success": True,
-                    "action": "filled_ready_to_submit",
+                    "action": action,
                     "platform": "tencent_video",
                     "title": request.title,
                     "file": str(request.file_path),
-                    **credential_metadata(request.storage_state, credential_source),
+                    **credential_metadata(request.storage_state, runtime_auth),
                     "runtime_auth": runtime_auth,
+                    "route_status": route_status,
+                    "login_if_needed": request.login_if_needed,
+                    "login_result_status": login_result.get("status", "") if login_result else "",
                     "storage_state_saved": save_result.get("saved", False),
                     "storage_state_backup": save_result.get("backup", ""),
                     "current_url": page.url,
                     "scheduled_at": request.schedule_at.isoformat() if request.schedule_at else None,
-                    "submitted": False,
-                    "original_warning": original_warning,
-                    "thumbnail_warning": thumbnail_warning,
+                    "submitted": True,
                 }
-            action = await submit(page, request.publish)
-            save_result = await save_storage_state(context, request.storage_state)
-            return {
-                "success": True,
-                "action": action,
-                "platform": "tencent_video",
-                "title": request.title,
-                "file": str(request.file_path),
-                **credential_metadata(request.storage_state, credential_source),
-                "runtime_auth": runtime_auth,
-                "storage_state_saved": save_result.get("saved", False),
-                "storage_state_backup": save_result.get("backup", ""),
-                "current_url": page.url,
-                "scheduled_at": request.schedule_at.isoformat() if request.schedule_at else None,
-                "submitted": True,
-            }
-        finally:
-            # Manual fill-only flows keep the page open for user-side review and
-            # publishing. Persist any cookies/tokens refreshed during that
-            # session before an interrupt closes the browser.
-            if context:
-                await best_effort_save_storage_state(context, request.storage_state)
-                await context.close()
-            if browser:
-                await browser.close()
+            finally:
+                # Manual fill-only flows keep the page open for user-side review and
+                # publishing. Persist any cookies/tokens refreshed during that
+                # session before an interrupt closes the browser.
+                if context:
+                    await best_effort_save_storage_state(context, request.storage_state)
+                    await context.close()
+                if browser:
+                    await browser.close()

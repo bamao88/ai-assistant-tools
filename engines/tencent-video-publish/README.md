@@ -12,7 +12,9 @@
 
 - 账号按 slot 隔离，凭证保存在 `var/state/tencent-video-publish/accounts/<slot>/`。
 - 正式运行优先复用账号独立 `chrome-profile/`；`storage_state.json` 是备份、Cookie 导入候选和旧凭证迁移回退。
-- `check-login` 会先检查 `chrome-profile/`。如果 profile 未登录，再尝试 `storage_state.json` 和最近备份；JSON 有效时会尝试把登录态写回 profile。
+- 日常 `check-login` 只检查 `chrome-profile/`，这是视频号长期登录态的唯一主凭证；如果返回 `profile_cookie_invalid`，需要重新扫码登录。
+- 只有做凭证诊断或旧凭证迁移时，才给 `check-login` 加 `--storage-fallback`，继续尝试 `storage_state.json` 和最近备份；JSON 有效时会尝试把登录态写回 profile。
+- `upload-video` / `publish-item` 不再先独立跑一轮 `check-login`；发布命令会在同一个 `chrome-profile` 浏览器上下文里验证并继续上传。传 `--login-if-needed` 时，如果 profile 已失效，会在同一个发布窗口输出二维码，扫码成功后直接继续上传。
 - 写入 `storage_state.json` 时先写临时文件并校验 JSON，再替换正式文件。
 - 替换前保留最近的 `storage_state.json.bak_*` 备份。
 - `check-login` 会在 JSON 凭证缺失或损坏时自动尝试恢复最新有效备份，但 profile 仍是主凭证。
@@ -27,6 +29,12 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-video-publish
 uv sync --python 3.11
 ```
 
+网络预检：
+
+- 发布前默认执行视频号本地网络分流预检。
+- 明确要走当前网络出口时，在命令前加 `PLATFORM_PUBLISH_NETWORK_MODE=current-egress`，或在 `upload-video` / `publish-item` 上加 `--skip-route-bypass`。
+- 两种跳过方式都会让 engine 不刷新、不校验本地分流路由。
+
 常用命令：
 
 ```bash
@@ -36,9 +44,10 @@ uv sync --python 3.11
 .venv/bin/python scripts/cli.py --account wxp login --timeout 180
 .venv/bin/python scripts/cli.py --account wxp --headed check-login
 .venv/bin/python scripts/cli.py --account wxp import-cookies --cookie-file /tmp/wxp.cookies
-.venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "标题" --desc "简介" --tags AI 工具
-.venv/bin/python scripts/cli.py --account wxp --headed upload-video --file /abs/video.mp4 --title "测试" --fill-only --hold-open -1 --upload-timeout 90 --cover-timeout 10
-.venv/bin/python scripts/cli.py --account zhanghe --headed publish-item --item-dir /abs/item_dir --publish --schedule-at "2026-07-04 20:20" --upload-timeout 360 --cover-timeout 90
+.venv/bin/python scripts/cli.py --account wxp --headed upload-video --login-if-needed --file /abs/video.mp4 --title "标题" --desc "简介" --tags AI 工具
+.venv/bin/python scripts/cli.py --account wxp --headed upload-video --login-if-needed --file /abs/video.mp4 --title "测试" --fill-only --hold-open -1 --upload-timeout 90 --cover-timeout 10
+.venv/bin/python scripts/cli.py --account zhanghe --headed publish-item --login-if-needed --item-dir /abs/item_dir --publish --schedule-at "2026-07-04 20:20" --upload-timeout 360 --cover-timeout 90
+PLATFORM_PUBLISH_NETWORK_MODE=current-egress .venv/bin/python scripts/cli.py --account zhanghe --headed publish-item --login-if-needed --skip-route-bypass --item-dir /abs/item_dir
 .venv/bin/python scripts/cli.py --account zhanghe publish-item --item-dir /abs/item_dir --dry-run
 ```
 
@@ -57,7 +66,11 @@ rm -f /tmp/wxp.cookies
 
 `--no-verify` 只保存候选凭证文件，不会替换正式 `storage_state.json`，也不会写入 `chrome-profile/`；只有验证通过的候选凭证才会被提升并迁移到 profile。
 
-视频号登录态以账号独立 `chrome-profile/` 为准。日常发布前的登录检查优先使用 `--headed check-login`，避免 headless 预检把仍可用的 profile 误判为失效；只有在确认当前环境支持后台校验时，才省略 `--headed`。
+视频号登录态以账号独立 `chrome-profile/` 为准。日常发布前的登录检查优先使用 `--headed check-login`，避免 headless 预检把仍可用的 profile 误判为失效；只有在确认当前环境支持后台校验时，才省略 `--headed`。不要在日常发布前加 `--storage-fallback`，它只用于慢速凭证诊断。
+
+同一账号 slot 的浏览器命令必须串行执行。`check-login` / `login` / `upload-video` / `publish-item` 共用同一个 `chrome-profile/`，并发会触发 Chrome `SingletonLock`，不是登录态失效，也不是扫码理由。
+
+日常发布优先在 `upload-video` / `publish-item` 上加 `--login-if-needed`，而不是先 `check-login`、再 `login`、再发布。这样扫码只发生在同一个发布窗口里，扫码成功后不会重新打开第二个登录页。
 
 封面说明：
 

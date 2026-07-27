@@ -23,22 +23,39 @@ description: |
 - prompt = `assets/prompts/body_video.md`（视频正文，企业AI落地口径）/ `body_article_adapt.md`（长文→各平台改写）。
 - 代码 = engine `tools/engines/publish-prep/`（`gen_copy.py` 正文 / `gen_title.py` 标题 / `build_keywords.py` 关键词 / `check.py` 校验）。
 
+## 发布包定义
+
+发布前素材不是“标题 + 正文”两项，而是一组面向平台分发的发布包。每个 destination 至少要形成并可复核：
+
+- **正式标题**：长文原始标题 / 长平台标题，承接文章判断。
+- **平台发布标题**：平台标题栏使用，按该平台字数压缩，不机械截断。
+- **封面标题**：首图/封面文字，和平台标题可以成组但不必相同。
+- **发布页正文 / 描述**：平台编辑器里的正文或描述。所有平台都要写够信息密度；小红书图文用 frontmatter `description`，小红书视频/视频号用 `## 正文`，B站用 `## 简介 desc`，不能只写 50-100 字摘要。
+- **摘要 / digest**：给公众号 digest、内部摘要或短平台摘要使用，和小红书 `description` 分开。
+- **关键词 / 话题**：固定账号词 + 正文主题词 + 有依据的当日热词，不能为了蹭词硬塞。
+- **资产引用**：封面图、卡片图、视频、配图路径。
+
 ## 流程
 
 **步骤 1 — 定契约（每 item）**：确认 persona；列 item 的 destinations（账号→平台→form）。账号→引擎参数真源 `content/accounts.yaml` + `workflow/publish_pipeline/resolve_account.py`。
 
-**步骤 2 — 逐 destination 跑 6 子步**（读 `platform_rules.yaml[平台]`，both 平台按 `item.format` 取 variant）：
+**步骤 2 — 逐 destination 跑 7 子步**（读 `platform_rules.yaml[平台]`，both 平台按 `item.format` 取 variant）：
 
 1. **正文**：视频→engine `gen_copy.py`（Kimi 读 `body_video.md`，`--platform`）→ **Claude 守门/重写**（我方优化，非直接采纳）；长文→按 `body_article_adapt.md` 各平台改写（复用 `zh-cross-platform-adapt`）。
-2. **标题候选**：engine `gen_title.py --platform <平台> [--form <form>]`（dbs 75 公式，**字数上限自动从 platform_rules 按平台解析**：小红书20/视频号6-16/公众号64/B站80/抖音55）→ `workflow/writing_playbook/title.md` 三规律+红线守门 → 采用1+备选2-3（标公式号）。
-3. **封面标题文案**（统一抽象·长文视频都产，非必填）：独立字段，≠正文标题；可与标题结合或独立；从候选标题挑（`feedback_cover_text_from_titles`）。
-4. **摘要**：gzh digest ≤120 / xhs abstract 20–200，Claude 写。
-5. **关键词**：engine `build_keywords.py <正文> --platform <平台>`（确定性，数量自动按平台）。gzh 无 hashtag（封面嵌词）。
-6. **配图**（仅长文）：`diagram-design`（暖色纸感·手机优先）。
+2. **标题候选**：engine `gen_title.py --platform <平台> [--form <form>]`（dbs 75 公式，**字数上限自动从 platform_rules 按平台解析**：小红书20/视频号6-16/公众号64/B站80/抖音55）→ `workflow/writing_playbook/title.md` 三规律+红线守门 → 采用1+备选2-3（标公式号）。标题要和封面标题一起看，避免一个太平、一个过猛。
+3. **封面标题文案**（统一抽象·长文视频都产）：独立字段，≠正文标题；可与标题结合或独立；从候选标题挑（`feedback_cover_text_from_titles`）。封面标题必须能在首屏独立成立。
+4. **发布页正文 / SEO 描述**：按平台正文槽位写。小红书图文写 frontmatter `description`，目标 400-800 字，最低 280、最高 1000；小红书视频和视频号写 `## 正文`，目标 300-800 字，最低 200、最高 1000；B站写 `## 简介 desc`，目标 300-1200 字。它不是全文搬运，也不是一句摘要，要放核心判断、关键场景、工具/方法名、目标人群、边界和检索词。不要为了热词硬塞无关模型名；用户明确给出的热点或市场库/日报确认的热点，只有和正文真实相关才进入。
+5. **摘要 / digest**：gzh digest ≤120 / xhs abstract 20–200，Claude 写；注意 xhs `abstract` 只是短摘要，不能替代发布页 `description`。
+6. **关键词**：engine `build_keywords.py <正文> --platform <平台>`（确定性，数量自动按平台）。关键词由 fixed + topical + trending 合成；trending 只放有来源的当日热词，事实性热词先核验。gzh 无 hashtag（封面嵌词）。
+7. **配图**（仅长文）：`diagram-design`（暖色纸感·手机优先）。
 
 **步骤 3 — 落盘 + 校验**：按对应 `templates/publish_<platform-key>.md` 写 `content/<persona>/items/<id>/publish_<account>.md`，mark ✅ 采用标题。**跑 `python3 tools/engines/publish-prep/check.py <file> --platform <平台> [--form <form>]`**（校验下游可解析 + 字数/关键词数/摘要区间/无导流CTA/无 raw mermaid）；红了先修再交。
 
-**步骤 4 — 交回上传**：
+**步骤 4 — 发布前对齐**：
+
+在正式上传前，把发布包里用户最可能要拍板的字段合并给用户看：正式标题、平台标题、封面标题、发布页 description 首段/长度、关键词/话题、封面/卡片路径。用户刚参与过其中任一项时，视为这组字段需要整体对齐，不能只对齐封面或标题。
+
+**步骤 5 — 交回上传**：
 - **视频号**：`tencent-video-publish publish-item --item-dir <item> --copy-file publish_<account>.md`（引擎已支持读 publish_<account>.md，缺失回落 publish_copy.md）。
 - **小红书/其他**：交回 `platform-publish`（读 publish_<account>.md 的 frontmatter/section）。
 - **封面图渲染是下一步**（视频→`zh-video-cover`；长文→gzh 封面卡/`markdown-to-cards`）：读本阶段定好的封面标题文案。

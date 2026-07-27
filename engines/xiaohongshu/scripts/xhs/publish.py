@@ -57,7 +57,7 @@ def publish_image_content(page: Page, content: PublishImageContent) -> None:
     click_publish_button(page)
 
 
-def fill_publish_form(page: Page, content: PublishImageContent) -> None:
+def fill_publish_form(page: Page, content: PublishImageContent) -> str:
     """填写图文发布表单，不点击发布按钮。
 
     Args:
@@ -108,6 +108,8 @@ def fill_publish_form(page: Page, content: PublishImageContent) -> None:
         content.is_original,
         content.visibility,
     )
+    _assert_no_failed_uploads(page)
+    return _capture_pre_publish_screenshot(page)
 
 
 def click_publish_button(page: Page) -> None:
@@ -119,7 +121,10 @@ def click_publish_button(page: Page) -> None:
     Raises:
         PublishError: 点击失败。
     """
+    _assert_no_failed_uploads(page)
+    _capture_pre_publish_screenshot(page)
     _wait_for_submit_publish_button(page)
+    _assert_no_failed_uploads(page)
     if not _click_submit_publish_button(page):
         raise PublishError("未找到可点击的发布按钮")
     time.sleep(3)
@@ -548,35 +553,208 @@ def _remove_pop_cover(page: Page) -> None:
 
 
 def _upload_images(page: Page, image_paths: list[str]) -> None:
-    """逐张上传图片。"""
+    """分批上传图片并检查失败态。"""
     import os
 
     valid_paths = [p for p in image_paths if os.path.exists(p)]
     if not valid_paths:
         raise PublishError("没有有效的图片文件")
 
-    for i, path in enumerate(valid_paths):
-        selector = UPLOAD_INPUT if i == 0 else FILE_INPUT
-        logger.info("上传第 %d 张图片: %s", i + 1, path)
+    max_attempts = max(1, int(os.getenv("XHS_IMAGE_UPLOAD_ATTEMPTS", "2")))
+    retry_delay = max(0.0, float(os.getenv("XHS_IMAGE_UPLOAD_RETRY_DELAY", "30")))
+    last_error: Exception | None = None
 
-        page.set_file_input(selector, [path])
-        _wait_for_upload_complete(page, i + 1)
-        time.sleep(1)
+    for attempt in range(1, max_attempts + 1):
+        if attempt > 1:
+            logger.warning(
+                "图片上传第 %d 次尝试失败，重置发布页后重试（等待 %.1fs）",
+                attempt - 1,
+                retry_delay,
+            )
+            _navigate_to_publish_page(page)
+            _click_publish_tab(page, "上传图文")
+            if retry_delay:
+                time.sleep(retry_delay)
+        try:
+            _upload_images_once(page, valid_paths)
+            return
+        except (PublishError, UploadTimeoutError) as e:
+            last_error = e
+            if attempt >= max_attempts:
+                raise
+
+    if last_error:
+        raise last_error
+
+
+def _upload_images_once(page: Page, valid_paths: list[str]) -> None:
+    """执行一次图片上传尝试。"""
+    import os
+
+    initial_count = len(_get_image_upload_slots(page))
+    batch_size = max(1, int(os.getenv("XHS_IMAGE_UPLOAD_BATCH_SIZE", str(len(valid_paths)))))
+    batch_pause = max(0.0, float(os.getenv("XHS_IMAGE_UPLOAD_BATCH_PAUSE", "8")))
+    start_delay = max(0.0, float(os.getenv("XHS_IMAGE_UPLOAD_START_DELAY", "25")))
+    logger.info(
+        "分批上传 %d 张图片: batch_size=%d, start_delay=%.1fs, batch_pause=%.1fs",
+        len(valid_paths),
+        batch_size,
+        start_delay,
+        batch_pause,
+    )
+    if start_delay:
+        time.sleep(start_delay)
+
+    uploaded = 0
+    for batch_start in range(0, len(valid_paths), batch_size):
+        batch = valid_paths[batch_start : batch_start + batch_size]
+        for i, path in enumerate(batch, start=batch_start + 1):
+            logger.info("待上传第 %d 张图片: %s", i, path)
+
+        selector = UPLOAD_INPUT if batch_start == 0 else FILE_INPUT
+        page.set_file_input(selector, batch)
+        uploaded += len(batch)
+        _wait_for_upload_complete(page, initial_count + uploaded)
+        if uploaded < len(valid_paths):
+            time.sleep(batch_pause)
 
 
 def _wait_for_upload_complete(page: Page, expected_count: int) -> None:
     """等待图片上传完成。"""
-    max_wait = 60.0
+    max_wait = 90.0
+    stable_required = 4.0
     start = time.monotonic()
+    stable_since: float | None = None
 
     while time.monotonic() - start < max_wait:
-        count = page.get_elements_count(IMAGE_PREVIEW)
-        if count >= expected_count:
-            logger.info("图片上传完成: %d", count)
-            return
+        slots = _get_image_upload_slots(page)
+        failed = [slot for slot in slots[:expected_count] if slot.get("failed")]
+        if failed:
+            failed_indexes = ", ".join(str(slot.get("index")) for slot in failed)
+            artifact_path = _capture_upload_state(page, "failed", slots)
+            raise PublishError(f"图片上传失败: 第 {failed_indexes} 张，诊断截图: {artifact_path}")
+
+        visible_count = len(slots)
+        successful_count = sum(
+            1
+            for slot in slots[:expected_count]
+            if slot.get("has_preview") and not slot.get("pending") and not slot.get("failed")
+        )
+        if visible_count >= expected_count and successful_count >= expected_count:
+            now = time.monotonic()
+            if stable_since is None:
+                stable_since = now
+            if now - stable_since >= stable_required:
+                logger.info("图片上传完成: %d", visible_count)
+                return
+        else:
+            stable_since = None
         time.sleep(0.5)
 
-    raise UploadTimeoutError(f"第{expected_count}张图片上传超时(60s)")
+    artifact_path = _capture_upload_state(page, "timeout", _get_image_upload_slots(page))
+    raise UploadTimeoutError(f"第{expected_count}张图片上传超时({int(max_wait)}s)，诊断截图: {artifact_path}")
+
+
+def _get_image_upload_slots(page: Page) -> list[dict]:
+    """读取当前图片上传 slot 状态。"""
+    raw = page.evaluate(
+        """
+        (() => {
+            const slots = Array.from(document.querySelectorAll('.img-preview-area .pr'));
+            return JSON.stringify(slots.map((slot, idx) => {
+                const text = (slot.innerText || slot.textContent || '').trim();
+                const cls = String(slot.className || '');
+                const failed = !!slot.querySelector('.mask.failed') || /上传失败|上传出错|失败/.test(text);
+                const pending = !failed && (
+                    !!slot.querySelector('[class*="loading"], [class*="progress"]') ||
+                    /上传中|处理中|等待上传/.test(text)
+                );
+                const hasPreview = !!slot.querySelector('img.preview, img.img, img');
+                return {
+                    index: idx + 1,
+                    class_name: cls,
+                    text,
+                    failed,
+                    pending,
+                    has_preview: hasPreview
+                };
+            }));
+        })()
+        """
+    )
+    try:
+        data = json.loads(raw or "[]")
+    except json.JSONDecodeError:
+        return []
+    return data if isinstance(data, list) else []
+
+
+def _assert_no_failed_uploads(page: Page) -> None:
+    """发布前硬检查：页面出现上传失败时禁止继续。"""
+    slots = _get_image_upload_slots(page)
+    failed = [slot for slot in slots if slot.get("failed")]
+    if not failed:
+        return
+    failed_indexes = ", ".join(str(slot.get("index")) for slot in failed)
+    artifact_path = _capture_upload_state(page, "pre_publish_failed", slots)
+    raise PublishError(f"页面存在上传失败图片，禁止发布: 第 {failed_indexes} 张，诊断截图: {artifact_path}")
+
+
+def _capture_upload_state(page: Page, reason: str, slots: list[dict]) -> str:
+    """保存上传失败现场，返回截图路径。"""
+    import base64
+    import os
+    import tempfile
+
+    ts = int(time.time())
+    base = os.path.join(tempfile.gettempdir(), f"xhs_upload_{reason}_{ts}")
+    screenshot_path = f"{base}.png"
+    state_path = f"{base}.json"
+
+    try:
+        result = page._send_session(
+            "Page.captureScreenshot",
+            {"format": "png", "captureBeyondViewport": False},
+        )
+        with open(screenshot_path, "wb") as f:
+            f.write(base64.b64decode(result.get("data", "")))
+    except Exception as e:
+        logger.warning("上传诊断截图保存失败: %s", e)
+
+    try:
+        payload = {
+            "reason": reason,
+            "url": page.evaluate("window.location.href"),
+            "slots": slots,
+        }
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        logger.info("上传诊断状态已保存: %s", state_path)
+    except Exception as e:
+        logger.warning("上传诊断状态保存失败: %s", e)
+
+    logger.info("上传诊断截图已保存: %s", screenshot_path)
+    return screenshot_path
+
+
+def _capture_pre_publish_screenshot(page: Page) -> str:
+    """保存发布前截图，方便人工/agent 复核。"""
+    import base64
+    import os
+    import tempfile
+
+    path = os.path.join(tempfile.gettempdir(), f"xhs_pre_publish_check_{int(time.time())}.png")
+    try:
+        result = page._send_session(
+            "Page.captureScreenshot",
+            {"format": "png", "captureBeyondViewport": False},
+        )
+        with open(path, "wb") as f:
+            f.write(base64.b64decode(result.get("data", "")))
+        logger.info("发布前截图已保存: %s", path)
+    except Exception as e:
+        logger.warning("发布前截图保存失败: %s", e)
+    return path
 
 
 # ========== 表单提交 ==========

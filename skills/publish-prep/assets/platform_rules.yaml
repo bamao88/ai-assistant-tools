@@ -17,12 +17,13 @@ platforms:
       article:                                        # 图文 / 长文
         title:    {max: 20, unit: utf16, note: 超长按核心含义重写到19-20，不机械截断}
         body:     {max: 1000, hook: 首屏钩子, cta: 禁导流}
-        abstract: {min: 20, max: 200}
+        abstract: {min: 20, max: 200, required: false, note: 短摘要/内部摘要，不等同发布页正文}
+        description: {min: 280, target: "400-800", max: 1000, required: true, as: publish_page_desc, note: 发布页正文/SEO 描述；放关键判断、场景词、工具词和账号关键词，不只写一句摘要}
         keywords: {count: 10, min: 3, strip_space: true, as: tags}
         cover:    {kind: 卡片, tool: markdown-to-cards}
       video:
         title:    {max: 20, unit: utf16}
-        body:     {form: desc, cta: 禁导流}
+        body:     {form: desc, min: 200, target: "300-800", max: 1000, cta: 禁导流, note: 视频发布页正文/SEO 描述，不能只写一句话}
         keywords: {count: 10}
         cover:    {kind: 3x4, tool: zh-video-cover}
 
@@ -42,7 +43,7 @@ platforms:
     engine: tencent-video-publish
     accounts: [zh_shipinhao, aipm_shipinhao]          # 张和号 slot 实跑=zhanghe（accounts.yaml 记 default，待统一）
     short_title: {min: 6, max: 16, note: 卡片显示；--title→短标题input（2026-07 用户确认）}
-    desc:        {max: 1000, layout: "标题→换行→正文→换行→标签"}
+    desc:        {min: 200, target: "300-800", max: 1000, layout: "标题→换行→正文→换行→标签", note: 发布页正文/SEO 描述，不能只写一句话}
     keywords:    {count: 5, style: hashtag, field: "视频号精简（5 个）"}
     cover:       {kind: 9x16, tool: zh-video-cover, note: 官方封面生成后 --thumbnail 上传，不烧首帧}
 
@@ -51,7 +52,7 @@ platforms:
     engine: social-auto-upload
     accounts: [zh_bilibili]
     title:    {max: 80}
-    body:     {form: desc}
+    body:     {form: desc, min: 200, target: "300-1200", max: 2000, note: 简介/SEO 描述}
     keywords: {sep: comma, max: 10}
     tid:      {required: true, note: B站分区id；拿不准问用户，别乱填}
 

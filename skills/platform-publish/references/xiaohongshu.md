@@ -58,11 +58,81 @@ node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
 
 按优先级路由：
 
+0. 已有 `publish_<account>.md` + `assets/xhs_cards/card_*.png` / `card_*.jpg`，或用户明确说这些是 `publish-prep` / `markdown-to-cards` 生成并确认过的卡片图 → **Markdown 卡片图文流程**（走 `fill-publish`，不要走小红书原生长文）
 1. 用户明确说"长文" → **长文流程**
 2. 用户明确说"视频" / 提供 `.mp4` / `.mov` / `.avi` 路径 → **视频流程**
 3. 用户明确说"图文" / 提供图片路径或图片 URL → **图文流程**
 4. 提供 `.md` 文件路径或含 frontmatter（`---`）的 Markdown 内容 → **长文流程**
 5. 不明确 → 用 `AskUserQuestion` 询问（长文 / 图文 / 视频）
+
+---
+
+## Markdown 卡片图文流程（Publish Skill / publish-prep 产物）
+
+适用场景：内容已经通过 `publish-prep` / `markdown-to-cards` 形成发布包，目录里有：
+
+- `publish_<account>.md`：frontmatter 含 `title` / `description` / `keywords`
+- `assets/xhs_cards/card_00_cover.png` 和后续 `card_*.png` / `card_*.jpg`
+- 用户已经确认平台标题、封面标题、发布页正文和卡片图
+
+这种情况是**图文发布**，不是小红书原生长文。不要调用 `long-article` / `next-step`，否则会进入小红书原生长文模板，丢掉已确认的 Markdown 卡片视觉。
+
+### 执行步骤
+
+1. 用 `extract_frontmatter.py` 从 `publish_<account>.md` 提取：
+   - `files.title_file` → `fill-publish --title-file`
+   - `files.desc_file` → `fill-publish --content-file`
+   - `keywords` → `--tags`
+2. 图片按本地已确认卡片顺序传入 `--images`：
+   - `card_00_cover.png`
+   - `card_01.png`
+   - `card_02.png` / 上传修复后的 `card_02_upload.jpg`
+   - 后续卡片
+   - 如果原卡片是大尺寸 PNG，优先先生成等比例高质量 JPG 上传副本；原图保留不动，只有视觉检查通过后才使用上传副本。
+3. 填写图文表单：
+
+```bash
+/Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python \
+  /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py \
+  --account <ACCOUNT> \
+  fill-publish \
+  --title-file "<files.title_file>" \
+  --content-file "<files.desc_file>" \
+  --images "<card_00_cover>" "<card_01>" "<card_02>" "<card_03>" \
+  --tags "<keyword_1>" "<keyword_2>" \
+  --original
+```
+
+4. 发布前必须检查页面上传状态：
+   - 图片 slot 数量 = 本次传入图片数量
+   - 每个 slot 都有图片预览
+   - 页面没有"上传失败"、失败态 class、红色错误提示
+   - 标题、正文、话题、原创声明正确
+   - **必须截图检查当前发布页**：优先使用 `fill-publish` JSON 返回的 `pre_publish_screenshot`，或引擎日志里的 `/tmp/xhs_pre_publish_check_*.png`，由 agent 视觉确认图片区没有灰色失败卡、缺图、顺序错乱、标题/正文/话题异常。
+   - **CLI 的 `"success": true` 不等于上传成功**：如果页面文字含"上传失败"，或 DOM 里出现 `.mask.failed`，必须停止，不得点击发布。
+5. 只有用户已授权 `agent-submit`，且第 4 步全部通过，才允许调用 `click-publish`。正式点击前再次截图/DOM 检查；截图和检查结果要在发布记录或对话里说明。
+6. 发布后用 `测试号` 读取公开主页或公开笔记详情，确认：
+   - 新笔记标题正确
+   - 正文和话题正确
+   - `imageList` 数量 = 本次发布图片数量
+   - 再把 `note_url`、`published_at` 回填到本地 `published.md` / `content_index.yaml`
+
+### 上传失败处理
+
+- 第一次看到某张图片上传失败时，先保留当前页面，不要关闭重来。
+- 不能因为上传失败减少卡片数量；卡片数量由内容质量决定，发布链路必须适配内容。
+- PNG 反复失败时，把同画面重新编码成高质量 JPG 上传副本后重传，例如：
+
+```bash
+sips -s format jpeg -s formatOptions 95 "<card_png>" --out "<card_upload.jpg>"
+```
+
+- 大尺寸卡片可生成等比例上传副本，例如宽度 1080、质量 95；这只是上传格式适配，不改正文、不裁切、不减少卡片，必须截图确认文字可读。
+- 当前引擎默认等待上传入口稳定 25 秒后，把同一批图片一次性交给原生多文件输入；失败后重置发布页并等待 30 秒再重试一次。`XHS_IMAGE_UPLOAD_BATCH_SIZE` 仅用于诊断或平台行为变化时的手动回退。
+- 当前引擎会在上传失败/超时时保存 `/tmp/xhs_upload_*.png` 和 `/tmp/xhs_upload_*.json`，并在可恢复范围内重置发布页自动重试一次。
+- 重传或使用上传副本后，发布记录里写明使用了哪个上传目录或替代文件。
+- 在所有图片恢复成功前，禁止点击发布。
+- 当前引擎会在 `fill-publish`、`publish` / `click-publish` 前保存发布页截图并检查失败态；如果仍然看到页面异常，以页面截图为准，不能相信日志。
 
 ---
 

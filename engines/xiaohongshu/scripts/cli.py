@@ -812,7 +812,7 @@ def cmd_fill_publish(args: argparse.Namespace) -> None:
 
     browser, page = _connect(args)
     try:
-        fill_publish_form(
+        pre_publish_screenshot = fill_publish_form(
             page,
             PublishImageContent(
                 title=title,
@@ -830,6 +830,7 @@ def cmd_fill_publish(args: argparse.Namespace) -> None:
                 "title": title,
                 "images": len(image_paths),
                 "status": "表单已填写，等待确认发布",
+                "pre_publish_screenshot": pre_publish_screenshot,
             }
         )
     finally:

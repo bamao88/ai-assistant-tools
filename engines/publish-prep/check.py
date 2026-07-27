@@ -42,7 +42,7 @@ def split_frontmatter(md: str) -> tuple[dict, str]:
 
 
 def read_section(text: str, heading: str) -> str:
-    pat = re.compile(rf"^##\s+{re.escape(heading)}(?:\s|[（(]|$).*$", re.M)
+    pat = re.compile(rf"^##[ \t]+{re.escape(heading)}(?:[ \t]|[（(]|$).*$", re.M)
     m = pat.search(text)
     if not m:
         return ""
@@ -87,11 +87,19 @@ def check(path: Path, platform: str, form: str | None) -> dict:
             n = len(t)
             if lo and hi and not (lo <= n <= hi):
                 errors.append(f"短标题 {n} 字，需 {lo}-{hi}：{t}")
-        if not read_section(md, "正文"):
+        shipinhao_body = read_section(md, "正文")
+        if not shipinhao_body:
             errors.append("视频号缺 ## 正文 段")
+        else:
+            desc_rule = rule.get("desc") or {}
+            dmin, dmax = desc_rule.get("min", 0), desc_rule.get("max", 1000)
+            if (dmin or dmax) and not (dmin <= len(shipinhao_body.strip()) <= dmax):
+                target = desc_rule.get("target")
+                target_note = f"，目标 {target}" if target else ""
+                errors.append(f"视频号正文 {len(shipinhao_body.strip())} 字，需 {dmin}–{dmax}{target_note}")
         if not any("视频号精简" in l and re.search(r"#[\w一-鿿-]+", l) for l in md.splitlines()):
             errors.append("视频号缺『视频号精简』+ #标签 同行（下游 parse_shipinhao_tags 读不到）")
-        body_text = read_section(md, "正文")
+        body_text = shipinhao_body
 
     # ---- 小红书：走 extract_frontmatter 契约（frontmatter block-list keywords）----
     elif platform == "xiaohongshu":
@@ -106,14 +114,41 @@ def check(path: Path, platform: str, form: str | None) -> dict:
             errors.append("keywords 需 frontmatter YAML 块列表（- 项）且 ≥3；flow list/占位不合格")
         elif not re.search(r"^keywords:\s*\n(?:[ \t]*-\s+.+\n?)+", md, re.M):
             errors.append("keywords 非块列表格式（extract_frontmatter 只认 `keywords:\\n  - x`）")
+        xhs_body_section = read_section(md, "正文") or body_md
         if form == "article":
             ab = str(fm.get("abstract", "") or "")
             amin, amax = (rule.get("abstract") or {}).get("min", 20), (rule.get("abstract") or {}).get("max", 200)
-            if not (amin < len(ab) <= amax):
+            if ab and not (amin < len(ab) <= amax):
                 errors.append(f"abstract {len(ab)} 字，需 {amin}–{amax}")
-        body_text = read_section(md, "正文") or body_md
+            desc_rule = rule.get("description") or {}
+            desc = str(fm.get("description", "") or "").strip()
+            if desc_rule.get("required") and not desc:
+                errors.append("小红书图文缺 frontmatter description（发布页正文/SEO 描述，不能只靠 abstract）")
+            elif desc:
+                dmin, dmax = desc_rule.get("min", 0), desc_rule.get("max", 1000)
+                if not (dmin <= len(desc) <= dmax):
+                    target = desc_rule.get("target")
+                    target_note = f"，目标 {target}" if target else ""
+                    errors.append(f"description {len(desc)} 字，需 {dmin}–{dmax}{target_note}")
+        elif form == "video":
+            body_rule = rule.get("body") or {}
+            desc = xhs_body_section.strip()
+            if not desc:
+                errors.append("小红书视频缺 ## 正文（发布页正文/SEO 描述）")
+            else:
+                dmin, dmax = body_rule.get("min", 0), body_rule.get("max", 1000)
+                if (dmin or dmax) and not (dmin <= len(desc) <= dmax):
+                    target = body_rule.get("target")
+                    target_note = f"，目标 {target}" if target else ""
+                    errors.append(f"小红书视频正文 {len(desc)} 字，需 {dmin}–{dmax}{target_note}")
+        body_text = "\n\n".join(
+            x for x in [
+                str(fm.get("description", "") or "").strip(),
+                xhs_body_section,
+            ] if x
+        )
 
-    # ---- 公众号 / 其他 ----
+    # ---- 公众号 / B站 / 抖音 / 其他 ----
     else:
         title = str(fm.get("title", "") or "")
         tmax = (rule.get("title") or {}).get("max")
@@ -123,7 +158,40 @@ def check(path: Path, platform: str, form: str | None) -> dict:
             dig = str(fm.get("digest", "") or "")
             if dig and len(dig) > (rule.get("digest") or {}).get("max", 120):
                 errors.append(f"digest {len(dig)} 字，需 ≤120")
-        body_text = body_md
+            body_text = body_md
+        elif platform == "bilibili":
+            if not title:
+                errors.append("B站缺 frontmatter title")
+            if not str(fm.get("tid", "") or "").strip():
+                errors.append("B站缺 frontmatter tid（分区 id）")
+            tags = str(fm.get("tags", "") or "")
+            if tags:
+                tag_count = len([t for t in re.split(r"[,，]\s*", tags) if t.strip()])
+                kmax = (rule.get("keywords") or {}).get("max", 10)
+                if tag_count > kmax:
+                    errors.append(f"B站 tags {tag_count} 个，需 ≤{kmax}")
+            body_text = read_section(md, "简介 desc") or read_section(md, "正文") or body_md
+            body_rule = rule.get("body") or {}
+            dmin, dmax = body_rule.get("min", 0), body_rule.get("max", 2000)
+            if (dmin or dmax) and not (dmin <= len(body_text.strip()) <= dmax):
+                target = body_rule.get("target")
+                target_note = f"，目标 {target}" if target else ""
+                errors.append(f"B站简介 {len(body_text.strip())} 字，需 {dmin}–{dmax}{target_note}")
+        elif platform == "douyin":
+            caption = str(fm.get("caption", "") or "").strip()
+            cmax = (rule.get("caption") or {}).get("max")
+            if not caption:
+                errors.append("抖音缺 frontmatter caption")
+            elif cmax and len(caption) > cmax:
+                errors.append(f"抖音 caption {len(caption)} 字，需 ≤{cmax}")
+            tags = fm.get("tags")
+            if isinstance(tags, list):
+                kmax = (rule.get("keywords") or {}).get("count", 5)
+                if len(tags) > kmax:
+                    errors.append(f"抖音 tags {len(tags)} 个，需 ≤{kmax}")
+            body_text = caption
+        else:
+            body_text = body_md
 
     # ---- 通用：无导流 CTA / 无 raw mermaid ----
     for pat in CTA_PATTERNS:

@@ -28,10 +28,12 @@ topical:
   "创业|公司|pmf": [创业]
   "vibe coding|vibecoding": [vibecoding]
   "售前|项目经理|解决方案": [职场]
-  "demo|从0到1|立项|调研": [产品经理]
+  "demo|prd|需求|验收|原型|从0到1|立项|调研": [需求管理, 产品经理, aicoding]
   "企业|落地|数字员工|降本|咨询|toB|to b": [企业ai落地]   # pivot 后补（d2c 已实际使用）
+  "kimi|moonshot": [kimi]
+  "deepseek|deepseek v|deepseekv": [deepseek]
 
 trending: []
-_trending_note: 预留扩展点；未来「小红书热词监控」把当下高流量词写入此数组，构造器以最高优先级采纳（挤掉 fill 通用词）。
+_trending_note: 预留扩展点；未来「小红书热词监控」或用户明确给出的当日热点把高流量词写入此数组，构造器以最高优先级采纳（挤掉 fill 通用词）。热词必须和正文真实相关，不为蹭 SEO 硬塞；事实性热点先用市场库/日报/来源核验。
 
 fill_pool: [人工智能, aicoding, 程序员, 职场, ai应用, 产品经理, 互联网, 普通人逆袭]

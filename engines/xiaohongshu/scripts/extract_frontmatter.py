@@ -10,7 +10,7 @@
   "keywords": ["kw1", "kw2", ...],
   "body": "正文...",
   "markdown_for_cards": "# 标题\n\n正文...",
-  "description": "摘要前200字...",
+  "description": "发布页正文/SEO 描述...",
   "valid": true,
   "errors": []
 }
@@ -29,6 +29,26 @@ import os
 import json
 import re
 import time
+
+
+def read_frontmatter_text(fm_text, field):
+    """读取 frontmatter 文本字段，支持 `field: |` 多行和 `field: xxx` 单行。"""
+    # 多行 field: |（支持段间空行）
+    m = re.search(rf'^{re.escape(field)}:\s*\|\s*\n((?:(?:[ \t]+.*|[ \t]*)\n)*)', fm_text, re.MULTILINE)
+    if m:
+        raw = m.group(1)
+        stripped_lines = []
+        for line in raw.split('\n'):
+            stripped_lines.append(line.strip())
+        while stripped_lines and not stripped_lines[-1]:
+            stripped_lines.pop()
+        return '\n'.join(stripped_lines)
+
+    # 单行 field: "xxx"
+    m = re.search(rf'^{re.escape(field)}:\s*["\']?(.+?)["\']?\s*$', fm_text, re.MULTILINE)
+    if m:
+        return m.group(1).strip()
+    return ''
 
 
 def extract(filepath):
@@ -73,30 +93,16 @@ def extract(filepath):
     if not title:
         errors.append('title 为空')
 
-    # --- 提取 abstract ---
-    abstract = ''
-    # 方式1: 多行 abstract: |（支持段间空行）
-    # 匹配从 abstract: | 到下一个顶层 key（行首非空格字符+冒号）之间的所有内容
-    m = re.search(r'^abstract:\s*\|\s*\n((?:(?:[ \t]+.*|[ \t]*)\n)*)', fm_text, re.MULTILINE)
-    if m:
-        raw = m.group(1)
-        # 保留段间空行作为换行，去掉每行的缩进
-        stripped_lines = []
-        for line in raw.split('\n'):
-            s = line.strip()
-            stripped_lines.append(s)
-        # 去尾部空行，拼接
-        while stripped_lines and not stripped_lines[-1]:
-            stripped_lines.pop()
-        abstract = '\n'.join(stripped_lines)
-    else:
-        # 方式2: 单行 abstract: "xxx"
-        m = re.search(r'^abstract:\s*["\']?(.+?)["\']?\s*$', fm_text, re.MULTILINE)
-        if m:
-            abstract = m.group(1).strip()
+    # --- 提取 abstract / description ---
+    abstract = read_frontmatter_text(fm_text, 'abstract')
+    publish_description = read_frontmatter_text(fm_text, 'description') or abstract
 
     if len(abstract) <= 20:
         errors.append(f'abstract 太短（{len(abstract)}字，需 >20）')
+    if len(publish_description) <= 20:
+        errors.append(f'description 太短（{len(publish_description)}字，需 >20）')
+    if len(publish_description) > 1000:
+        errors.append(f'description 太长（{len(publish_description)}字，需 <=1000）')
 
     # --- 提取 keywords ---
     keywords = []
@@ -124,13 +130,13 @@ def extract(filepath):
     # 清理可能出现的多余空行
     body_for_cards = re.sub(r'\n{3,}', '\n\n', body_for_cards)
     markdown_for_cards = f'# {title}\n\n{body_for_cards}' if title else body_for_cards
-    description = abstract[:200] + ('...' if len(abstract) > 200 else '')
+    description = publish_description
 
     if not markdown_for_cards.startswith('# '):
         errors.append('markdown_for_cards 不以 "# " 开头')
 
     # 占位检查
-    for field_name, val in [('title', title), ('abstract', abstract)]:
+    for field_name, val in [('title', title), ('abstract', abstract), ('description', description)]:
         if any(bad in val for bad in ['占位', 'xxx', 'XXX', 'placeholder']):
             errors.append(f'{field_name} 包含占位内容')
 

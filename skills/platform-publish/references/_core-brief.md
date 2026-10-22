@@ -1,0 +1,1 @@
+../../content-package-create/references/_core-brief.md

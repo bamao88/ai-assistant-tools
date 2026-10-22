@@ -1,0 +1,4 @@
+interface:
+  display_name: "写作｜文章润色"
+  short_description: "润色已有中文文章，减少机器腔、翻译腔和废话，保留事实、结构与引用"
+  default_prompt: "使用 $article-expression-polish 润色这篇已有文章，改善中文表达与阅读节奏，保留事实、结构和来源。"

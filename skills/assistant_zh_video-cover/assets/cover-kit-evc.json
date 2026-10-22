@@ -1,0 +1,144 @@
+{
+  "id": "zhanghe-video-cover-evc",
+  "name": "张和口播视频封面(宋体渐变 / evc)",
+  "schema": "video-cover-kit/v1",
+  "style_id": "evc-serif-gradient",
+  "version": 1,
+
+  "usage": {
+    "summary": "给张和本人出镜的口播视频生成 3:4 封面：固定人像底图轮换 + 底部黑色渐变 + 思源宋体白色大字标题。张和唯一认可的口播切片封面样式(标杆 ZHC20260613_evc*)。",
+    "applies_to": [
+      "张和本人正脸出镜的口播(talking-head)视频切片",
+      "画幅 3:4 (竖版切片封面)",
+      "目标平台：视频号 / 小红书视频切片"
+    ],
+    "do_not_use_for": [
+      "非张和出镜(嘉宾/学员/他人) —— 底图是张和人像，会与内容不符",
+      "屏幕录制 / 演示 / PPT / 无真人出镜 —— 人像底图与内容无关",
+      "9:16 黑块黄字样式 —— 改用 Agent-Publish 的 cover-kit.json",
+      "公众号横版封面 —— 改用 assets/gongzhonghao/ai-pm-assistant kit",
+      "小红书图文卡片 —— 改用 markdown-to-cards skill"
+    ],
+    "decision_gate": "调用前核两条：①张和本人口播出镜？②要 3:4 宋体渐变(evc)样式？两条都 yes 才用本 kit；任一 no → 另选方案。",
+    "why_constrained": "covers/ 是张和固定人像帧、按轮换选取、与具体视频内容无关。只有『张和口播=品牌人像+大字标题』这种形态，底图与内容脱节才不影响观感。"
+  },
+
+  "invoke": {
+    "engine": "generate_evc_cover.py",
+    "command": "单张: python3 generate_evc_cover.py --title \"第一行|第二行\" [--base frameXX|--base-image PATH] [--output PATH]  ||  批量: python3 generate_evc_cover.py --batch manifest.json [--overview PATH]",
+    "inputs": {
+      "--title": "单张必填。2 行标题，用 | 或换行或字面 \\n 分行。",
+      "--base": "可选。从 covers/ 池按文件名(如 frame-03)指定底图，不推进轮换游标。",
+      "--base-image": "可选。外部绝对路径底图，覆盖轮换；必须仍是张和口播帧。",
+      "--output": "可选。输出 PNG 路径；省略写到 generated/。",
+      "--batch": "批量模式：manifest.json，见 references/evc-style.md。按发布/列表顺序轮换底图、各写 cover.png、出对比总览图。",
+      "--overview": "批量对比总览图输出路径；省略写到 generated/overview.png。"
+    },
+    "default_base_selection": "单张省略 --base/--base-image 时从 covers/ 池(排除 rotation.exclude 后) round-robin 取下一张；批量按列表顺序取模，不碰游标(确定性、可重跑一致)。",
+    "outputs": {
+      "cover": "<output>.png —— 3:4 = 1242×1660 成品封面",
+      "overview": "批量对比总览图(每列一条)"
+    },
+    "downstream": "写进 item 目录 cover.png；发布走 Agent-Publish(视频号封面走 tencent-video-publish 的 cli.py，见 references/shipinhao.md)。"
+  },
+
+  "canvas": {
+    "_doc": "evc 直接以成品画幅为工作画布：先裁底图(lift)+resize，再叠渐变，最后写字。",
+    "width": 1242,
+    "height": 1660,
+    "aspect": "3:4"
+  },
+
+  "shared_assets_dir": "/Volumes/ExtSSD2601/AI_Assistant/tools/skills/platform-publish/assets/video-cover/zhanghe",
+  "covers_dir": "covers",
+  "_shared_doc": "底图池 covers/ 与渐变素材是张和品牌共享资产，与黑块黄字 kit 共用，留在 Agent-Publish 原地；covers_dir/gradient.file 相对 shared_assets_dir 解析。新底图丢进 covers/ 自动纳入(除非在 rotation.exclude)。",
+
+  "gradient": {
+    "_doc": "设计师黑色渐变素材：白顶(255)→透明、黑底(0)→纯黑，居中拉伸到 canvas 后 alpha_composite。",
+    "file": "gradient-3x4-bottom-black.png",
+    "mode": "luminance-alpha"
+  },
+
+  "base_crop": {
+    "_doc": "3:4 裁切 + 人物上移。lift=占裁切高的比例；kit 底图 3/16 位置最舒服(1/8 太低、5/16 太高)。",
+    "lift_default": 0.1875,
+    "lift_overrides": {"frame-08.jpg": 0.26},
+    "resample": "lanczos"
+  },
+
+  "text": {
+    "_doc": "白字思源宋体 Heavy + 2px 黑描边，居中，垂直中心 y=0.75·H；字号由最长行像素宽驱动。",
+    "color": "#ffffff",
+    "stroke_width": 2,
+    "stroke_color": "#000000",
+    "font_file": "fonts/SourceHanSerifCN-Heavy.otf",
+    "font_alias": "思源宋体 Heavy",
+    "align": "center",
+    "center_y_frac": 0.75,
+    "max_line_width_px": 1060,
+    "max_font_px": 132,
+    "min_font_px": 78,
+    "line_gap_frac": 0.18,
+    "line_gap_min_px": 14
+  },
+
+  "rotation": {
+    "strategy": "round-robin",
+    "state_file": ".rotation_state_evc.json",
+    "exclude": ["frame-06.png"],
+    "max_reuse_warn": 2,
+    "_doc": "state_file 是 gitignored 运行时游标(无账本时的 fallback 单张模式用)。exclude=贴脸自拍帧一提就切发，本风格排除。max_reuse_warn=旧的软告警阈值(账本模式下由 reuse_cap 硬管)。"
+  },
+
+  "lifecycle": {
+    "_doc": "底图资产生命周期：base_videos 登记源 → 抽帧(质量闸) → 池 + 账本(每张用几次/上次排期日期) → 复用封顶 reuse_cap → 用尽去新源 → 无源反馈用户。",
+    "reuse_cap": 3,
+    "ledger_file": "pool_ledger_evc.json",
+    "base_videos_file": "base_videos.yaml",
+    "pick_strategy": "账本驱动 LRU：在未退休(uses<reuse_cap)帧里挑『上次排期日期最旧/从没用过』的，批量内相邻不撞。账本缺失则 fallback 回 rotation 轮换。",
+    "use_definition": "一次使用=封面写进真实 item(--record 批量)，按该 item 真实排期 publish_date 记账；测试/tmp 不记账。",
+    "exhaustion": "批量填不满(会逼某张超 reuse_cap)→ 找 base_videos 里 exhausted:false 的源抽帧补池 → 无未榨干源则停下反馈用户。"
+  },
+
+  "extraction": {
+    "_doc": "从 base_videos 未抽时间段抽帧。数量不封顶，唯一闸=质量标准；AI 密集采样→视觉筛→去重→逐张自渲染+Read复核硬性6条，过的全进池。",
+    "tool": "tools/engines/screenshot/video_frame.py (content-visual-assets 方式三)；或本 skill assets/extract_frames.py 的 sample/promote",
+    "sample_every_sec": 2.5,
+    "count_limit": null,
+    "quality_gate": [
+      "张和本人正脸出镜(非他人/非过度侧脸背身)",
+      "睁眼(不闭眼/半眯)",
+      "清晰,无动态模糊",
+      "未叠字幕/框架/UI(原片干净帧)",
+      "口型自然(闭嘴或自然微张;剔怪嘴型/露牙龈)",
+      "构图能裁:3:4+上移~3/16 后脸在视觉中心/头顶有余量/脸不被切/脸不过小"
+    ],
+    "dedup": "同批表情/角度雷同只留一张",
+    "enforce": "逐张自渲染封面+Read复核6条,过的全进池;数量不封顶;用户不逐张审(质量已稳),仅无源可抽/自检拿不准才反馈"
+  },
+
+  "title": {
+    "lines_per_cover": 2,
+    "split_on": ["|", "\\n", "\n"],
+    "source_convention": "从已生成的候选标题里挑字数合适/好裁的，允许轻裁不擅改(feedback_cover_text_from_titles)。",
+    "optional_generator": "可选先用 dbs-xhs-title 公式生成候选标题。"
+  },
+
+  "fonts": [
+    {
+      "label": "思源宋体 Heavy",
+      "family": "Source Han Serif CN",
+      "style": "Heavy",
+      "role": "active —— 当前标题字体，text.font_file 指向它(bundled 一份自包含)",
+      "bundled_file": "fonts/SourceHanSerifCN-Heavy.otf",
+      "source_note": "Adobe/Google Source Han Serif；也在 engines/video-clip/assets/fonts/。",
+      "license_note": "SIL OFL，免费商用。"
+    }
+  ],
+
+  "geometry_notes": [
+    "全部风格参数由本 kit 驱动，generate_evc_cover.py 零硬编码。",
+    "字号由最长行像素宽驱动(≤max_line_width_px)，短句自动放大到 max_font_px 封顶、长句缩到 min_font_px。",
+    "与黑块黄字 kit(cover-kit.json)的差异集中在 canvas/gradient/base_crop/text/rotation.exclude；两套是并列不同风格。"
+  ]
+}

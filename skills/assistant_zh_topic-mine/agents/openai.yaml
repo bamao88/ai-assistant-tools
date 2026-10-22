@@ -1,0 +1,4 @@
+interface:
+  display_name: "assistant_zh｜增量选题挖掘"
+  short_description: "增量选题挖掘"
+  default_prompt: "使用 $assistant_zh_topic-mine 完成增量选题挖掘，遵守本项目现有账号、来源与状态规则。"

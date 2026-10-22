@@ -20,7 +20,7 @@ mac/wechat/weekly_sync.sh (Tue 9:10，仓外 Node，本 skill 不接管)
         all_student.json（本地主数据，留 assistant_zh/student_manage/）
                     │ 被以下消费
                     ▼
-        employment 配方（取学员档案作 LLM hint）→ 飞书客户管理表 tblfCYoeornDw0XF
+        employment 配方（取学员档案作 LLM hint）→ 飞书客户管理表（项目配置 `feishu.table_id`）
 ```
 
 周更编排（原 `run.py` / `update_and_notify.py`，去掉 merge_refer 步）在 engine `recipes/run.py`。
@@ -28,22 +28,24 @@ mac/wechat/weekly_sync.sh (Tue 9:10，仓外 Node，本 skill 不接管)
 
 ## 飞书表 = 唯一真源
 
-| 项 | 值 |
-|---|---|
-| 表名 | 客户管理（wiki 节点 `ENIFwsi9cilbJ3km9DCcyRMTngd`，base 内显示名「数据表」）|
-| App Token | `YTcFbyGS4arILPseQJscA6J7nqb` |
-| Table ID | `tblfCYoeornDw0XF` |
-| profile | `zhanghe` |
-| 规模 | ~2103 条、45 字段（完整 CRM：线索+学员+渠道+成交+分成+几期学员+客户标签）|
-| 链接 | https://izux3goqsa.feishu.cn/wiki/ENIFwsi9cilbJ3km9DCcyRMTngd?table=tblfCYoeornDw0XF |
+资源与账号值读取项目根 `config/customer-management.private.json` 的 `feishu`：
 
-> 该 base 里**只有这一张表**。曾经的旧表（`tblBZDlfYC7OQ6aR`、`tbl2LOMxbMV4ipwe`）均已废弃，
-> 相关 sync 代码已于 2026-05-30 清理删除。
+| 字段 | 含义 |
+|---|---|
+| `wiki_node` | 客户管理表所在 wiki 节点 |
+| `app_token` | Base 的 App Token |
+| `table_id` | 当前唯一客户总表的 ID |
+| `profile` | 使用该资源的 lark-cli profile |
+| `url` | 当前表的可打开链接 |
+| `retired_table_ids` | 已废弃表，仅供核对历史，不作为目标 |
+
+读取及直接运行 CLI 的例子见 SKILL.md「项目身份与资源配置」。值必须从项目配置传给原命令，
+不复制本文件中的字段名充当 ID。当前表规模由最近只读镜像确认，不把历史计数写成配置事实。
 
 ## 本地 ↔ 飞书 关系（重要）
 
-- **飞书是真源，本地是子集来源，不是镜像。** `all_student.json`（~1307 条）由微信群成员/好友抽取
-  而来，只是喂给飞书的来源之一；飞书 2103 条里还含大量本地没有的线索行。
+- **飞书是真源，本地是子集来源，不是镜像。** `all_student.json`由微信群成员/好友抽取
+  而来，只是喂给飞书的来源之一；飞书表中还含大量本地没有的线索行。
 - 本地只回写飞书 **7 个字段**：`wxid`/`微信名称`/`备注`/`客户画像`/`拿到offer`/`添加微信`/
   `加好友日期`，其余 38 字段（渠道/成交/分成/手机号/几期学员等）**飞书侧人工维护，本地不碰**。
 - 写飞书唯一入口 = engine 的 `outputs/`（就业字段 + 好友 roster + 群序号），由 `employment` /
@@ -57,9 +59,9 @@ mac/wechat/weekly_sync.sh (Tue 9:10，仓外 Node，本 skill 不接管)
 cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines && python3 -m customer-management gather --new   # 本地有飞书镜像缺的人
 ```
 
-- 镜像产物 `student_manage/customer_management_mirror.json`（整表 2103 行 / 45 字段，带 `synced_at`）
+- 镜像产物 `student_manage/customer_management_mirror.json`（带 `synced_at` 的整表快照）
   由 acquire 的 mirror 能力拉取（只发 GET，绝不回写）。要最新数据就重新拉。
-- 之后「5期多少人 / 各渠道 / 各标签分布」等统计直接读这个 JSON，本地秒答。
+- 之后按期次、渠道或标签统计时直接读这个 JSON，并注明其快照时间。
 - 文件较大（~4M），已 gitignore。
 - 本地主数据字段定义见 `student_manage/FIELD_SPEC.md`（含 `添加微信`：roster 派生）。
 
@@ -81,6 +83,6 @@ cd /Volumes/ExtSSD2601/AI_Assistant/tools/engines && python3 -m customer-managem
 | 现象 | 原因 | 处理 |
 |---|---|---|
 | LLM 反复 429 | rate limit | 加备用 key，或降低并发 |
-| lark-cli `permission denied` | profile zh / zhanghe 失效 | `lark-cli auth login --profile zhanghe` |
+| lark-cli `permission denied` | 项目 `feishu.profile` 失效 | 先读取该字段，再运行 `lark-cli auth login --profile <实际profile>` |
 | WeFlow Mac 没跑 | `mac/wechat/state/` 不存在 | engine 仍可基于上次 raw/chat 跑（数据可能旧 1 周），不阻塞 |
 | engine 找不到数据 | `config.py` 的 DATA_ROOT 不对 | 确认 `CUSTOMER_MGMT_DATA_ROOT` 或默认指向 assistant_zh 仓根 |

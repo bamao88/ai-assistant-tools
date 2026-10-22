@@ -37,6 +37,25 @@
         "最终成片固定命名 成片.mp4，与该 item 的 publish_copy.md 同目录。",
         "item 目录已存在则直接写入；不存在则按 content_index.yaml 里的 persona+content_id 创建。"
       ]
+    },
+    {
+      "name": "assistant_wxp_self",
+      "detect": [
+        "源视频或任务路径在 /Volumes/ExtSSD2601/AI_Assistant/assistant_wxp_self/ 下",
+        "用户提到 content_id 形如 WXP20260729_190143_001、WXP 个人号或个人号口播",
+        "任务使用 wxp_self profile 或 wxp_self_natural_v1 美颜 preset"
+      ],
+      "target": "/Volumes/ExtSSD2601/AI_Assistant/assistant_wxp_self/content/items/{content_id}/",
+      "all_artifacts_here": true,
+      "final_name": "成片.mp4",
+      "vars": {
+        "content_id": "WXP 个人号内容条目 ID，形如 WXP20260729_190143_001"
+      },
+      "resolve_content_id": "未知 content_id 时，先在 assistant_wxp_self/content/items/ 按源文件名、标题和最近任务匹配；仍无法唯一确定时问用户，不要写入其他 item。",
+      "notes": [
+        "工作文件建议放 item/assets/video_edit/，最终成片放 item 根目录。",
+        "beauty_face_pip 的 manifest、compare、preview 属于必须保留的质检证据。"
+      ]
     }
   ]
 }

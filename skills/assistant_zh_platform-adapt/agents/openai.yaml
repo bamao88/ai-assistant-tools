@@ -1,0 +1,4 @@
+interface:
+  display_name: "assistant_zh｜跨平台改写"
+  short_description: "跨平台改写"
+  default_prompt: "使用 $assistant_zh_platform-adapt 完成跨平台改写，遵守本项目现有账号、来源与状态规则。"

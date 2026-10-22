@@ -1,0 +1,4 @@
+interface:
+  display_name: 通用｜内容制作管理
+  short_description: 整理作品素材、脚本、成片与确认版本，衔接剪辑设计和发布物料制作
+  default_prompt: 使用 $content-production-prep 完成本次内容制作管理任务。

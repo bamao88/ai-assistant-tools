@@ -1,0 +1,4 @@
+interface:
+  display_name: 通用｜图解设计
+  short_description: 围绕产品和技术内容制作结构图、流程图与可用于文章的说明图
+  default_prompt: 使用 $diagram-design 为本次内容制作清晰的图解。

@@ -1,0 +1,4 @@
+interface:
+  display_name: "assistant_zh｜知识只读查询"
+  short_description: "知识只读查询，遵守项目资料和状态边界"
+  default_prompt: "使用 $assistant_zh_knowledge-query-read 完成知识只读查询，遵守本项目现有账号、来源与状态规则。"

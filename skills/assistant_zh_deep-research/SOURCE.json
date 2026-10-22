@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "skill": "assistant_zh_deep-research",
+  "upstream": {
+    "url": "https://github.com/199-biotechnologies/claude-deep-research-skill.git",
+    "checkout_commit": "5d83cd7beaf3a1b1f6de020ccda2d84872a1e575",
+    "note": "Local project checkout includes changes beyond upstream; the file hashes identify the pre-migration working snapshot."
+  },
+  "source_project": "assistant_zh",
+  "source_runtime_path": ".agents/skills/deep-research",
+  "source_snapshot_date": "2026-10-22",
+  "license": {
+    "license_file_present": false,
+    "status": "upstream package provides no separate LICENSE file; README declares MIT",
+    "declaration_source": "README.md, License section",
+    "note": "No copyright owner or license text has been invented. Preserve upstream notices and confirm terms before independent redistribution."
+  },
+  "excluded": [
+    ".git/",
+    "__pycache__/",
+    "*.pyc"
+  ],
+  "pre_migration_sha256": {
+    ".gitignore": "d7298b4ebea3ed98f8e5cd5fa3bed70dc854d513daad892e350ea729fc69ae3f",
+    "README.md": "a9ba780793d69a35d414277eff9da214cf3ddc75a240231cd73bd285b5968b3b",
+    "SKILL.md": "c38dfae2dde606df40de80e52cc913d0b4b35f16e9a1a36c312f96bb2d62e2e3",
+    "reference/continuation.md": "3a182e62233cd64dbf5028308344a4b7c43f594a686ce2bb614a929c579c9082",
+    "reference/html-generation.md": "a8ebc64d52b7cd9a78fee69f1f274f1ab791106ebd3449f17800735146ef644f",
+    "reference/methodology.md": "d17cab6a258c2b5fe8514b0eda88395fe0d3dac3711c21480f2229e182666ec5",
+    "reference/quality-gates.md": "60b969ceee0346d7e219a66b881c554f0fa452ff5a598d858f7a8e30a19fc24d",
+    "reference/report-assembly.md": "15507f905282962fc7f31cd26a795ae123fa267c45983e4c1fd15a08eae782b9",
+    "reference/weasyprint_guidelines.md": "d70421ea6985664d9fd1feaae94f36e3c749e74eb8703bc67236df9489165cdb",
+    "requirements.txt": "de63fe8300f89040ccfb6229aee53b61345fa478946e043587d7f65d46df4ffa",
+    "schemas/claim.schema.json": "1e0b780f12bdb35bc3bc9cd07becf1d7f5f30de88bd9fb99fe357d3d91f8e9dd",
+    "schemas/evidence.schema.json": "98939f1fc14006bea38404349818585ca6818a749ddf63aafbf933a19eef3e00",
+    "schemas/run_manifest.schema.json": "34abe54027d76bec15f716c9ea471baed533a6f4c1a3db2a85ef80831b9274ec",
+    "schemas/source.schema.json": "2ac2697ec8c2578c4fe550da5ab4c3dcb5e4de4fa0141e726919085a023aff49",
+    "scripts/citation_manager.py": "02334e5286b2a541fb2a6409959ea43ac7bc8b749d3cbeb427ff7fafb78d1a02",
+    "scripts/evidence_store.py": "6deba75f5902be0d272f2992f54988b8a316fc4bc44cd3b094b812bb4409d140",
+    "scripts/extract_claims.py": "21a3cbfe711e466926e47b60a5294a82f3f956310309c469fc8a429203a56eb8",
+    "scripts/md_to_html.py": "506c38771d32fbccf931a27b7b64cf20c0df5113b2914b051c17e9d178fc1b17",
+    "scripts/research_engine.py": "72a9026e84b55c28322d6598a3b36063e1c19cfd473e95b1dd289d4c3de3f68f",
+    "scripts/source_evaluator.py": "8421efa7b862bb139108e6da40b285706188cb272843bf39082c8b9888d5050e",
+    "scripts/validate_report.py": "c7c55cda1b6d5feaf4cbd8c36f6b271f8d78ddc97c5318fe5757881eef918e22",
+    "scripts/verify_citations.py": "b77a9430aa2c9aec47a88434237879a02db75f87cd35a2429a5d7584f234f6ef",
+    "scripts/verify_claim_support.py": "b172e88a3844e1ba590a7fc9a9d141ef310f5e628231e77448e9c45a7d881bc8",
+    "scripts/verify_html.py": "28bbba06906fa2f9bae87ea20b68390ce4f4bc76f00343991a8ad2119e21b36c",
+    "templates/mckinsey_report_template.html": "6b2d742f5279e78df71543bfb6c4fd88d7ee1c726b54fa945616307b2157c1f1",
+    "templates/report_template.md": "50788e213c78d42a2fcedbfe153e4c34bbea5b7b978f8646f1b4b5c83ba04115",
+    "tests/fixtures/invalid_report.md": "9b5177dbd31b80ea1d1e16f159989f232f6b6875dbc7ea7fddf70ba1fd0ad311",
+    "tests/fixtures/valid_report.md": "e6a24a5deec1ec65279cb446c58f9309a3d6f4e040e37f1bda09c64a73829b5a",
+    "tests/test_citation_manager.py": "5e882bdd6c32403e95942bab56fb0ef09543468a0a289a336fb01c0453d8fb1e",
+    "tests/test_evidence_store.py": "2c88f366833808cd7ad89784993eea8ba4c832d560fed6503182e919b339ddfc",
+    "tests/test_extract_claims.py": "9b6ce7fe815f95b1e238ed3c1ba6e65b22d5bc8abbc4599e50fcf6063692c0d7",
+    "tests/test_verify_claim_support.py": "5402a8d6ca02fe6cfd3d73b0208191e78e00561ad5932e793ca4bfb88ac4c651"
+  }
+}

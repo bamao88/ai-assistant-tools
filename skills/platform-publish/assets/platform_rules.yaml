@@ -1,0 +1,95 @@
+_doc: |
+  Agent-Publish 发布包素材规格矩阵 · 单一真源。
+  主轴=平台；form=内容形式(article|video|both)；both 平台在 variants 下按 form 分支。
+  字数 2026-07 核实，见 claude_md_design/video_pipeline_sop.md §1c。
+  消费方：content-package-create 制作阶段 + engines/publish-prep/check.py + check_bundle.py；Agent-Publish 只复核已交付字段。
+  字数单位：小红书标 utf16（汉字/全角=1，英数半角每2=1）；其余为中文等效字符（英文专名整词保留不拆）。
+  账号→引擎参数(account_arg)真源在 content/accounts.yaml；本文件只管「素材规格」，不管上传（上传走 Agent-Publish）。
+  凡与 tools/skills/platform-publish/references/*.md 的字数/字段说明冲突，素材规格以本文件为准。
+
+global_red_lines:
+  no_cross_platform_derivation:
+    rule: 禁止从其他平台已经压缩过的成品字段继续派生。
+    plain: 小红书 20 字标题不能裁成视频号 16 字标题；每个平台都要回 core_brief 的完整标题种子重新展开。
+    gate: engines/publish-prep/check_bundle.py 会拦截连续子串和编辑距离过近的跨平台标题。
+  no_mechanical_truncation:
+    rule: 超长字段按核心含义重写，不按字数机械截断。
+    plain: 字数不够时重写句子，不是从末尾砍字。
+  no_traffic_cta:
+    rule: 禁止评论区、私信、扣 1、关注我等导流 CTA。
+    plain: 发布页正文只让内容自己成立，不做容易限流的动作诱导。
+  no_fabrication:
+    rule: 标题、数字、身份、案例、工具名必须来自源稿、core_brief 或用户明确提供的信息。
+    plain: 没有证据就不要补故事。
+
+platforms:
+
+  xiaohongshu:
+    form: both
+    engine: xiaohongshu
+    accounts: [zh_xhs_main, zh_xhs_main2, aipm_xhs]   # 口播切片默认落 zh_xhs_main2（个人号）
+    variants:
+      article:                                        # 图文 / 长文
+        title:    {max: 20, unit: utf16, note: 超长按核心含义重写到19-20，不机械截断}
+        body:     {max: 1000, hook: 首屏钩子, cta: 禁导流}
+        abstract: {min: 20, max: 200, required: false, note: 短摘要/内部摘要，不等同发布页正文}
+        description: {min: 280, target: "400-800", max: 1000, required: true, as: publish_page_desc, note: 发布页正文/SEO 描述；放关键判断、场景词、工具词和账号关键词，不只写一句摘要}
+        keywords: {count: 10, min: 3, strip_space: true, as: tags}
+        cover:    {kind: 卡片, tool: markdown-to-cards}
+      video:
+        title:    {max: 20, unit: utf16}
+        body:     {form: desc, min: 200, target: "300-800", max: 1000, cta: 禁导流, note: 视频发布页正文/SEO 描述，不能只写一句话}
+        keywords: {count: 10}
+        cover:    {kind: 3x4, tool: assistant_zh_video-cover}
+
+  gongzhonghao:
+    form: both
+    engine: gzh-publish
+    accounts: [zh_gzh_self, aipm_gzh]
+    title:       {max: 64}
+    cover_title: {fields: [title_primary, title_secondary], per_line_max: 10, unit: 中文等效, note: ≠文章标题,可分开写}
+    body:        {form: 全文, rewrite: 排版优化不压缩}
+    digest:      {max: 120, required: false}
+    keywords:    {hashtag: false, cover_embed: {fields: [keyword_top, keyword_bottom], max_chars: 3}}
+    cover:       {required: true, kind: 标题卡, spec: 1283x383, tool: "generate_cover.py article", note: 视频/转写类改用数据源封面}
+    variants:
+      article: {}
+      newspic:
+        title: {max: 32, unit: unicode_codepoint, source: 微信官方新增草稿文档}
+        body: {form: 纯文本说明, note: 不进入文章HTML排版；空说明仍传content字段，平台实际限制以返回为准}
+        images: {min: 1, max: 20, ordered: true, local_only: true, permanent: true}
+        cover: {required: false, kind: 首图封面, note: images首项即封面；可选cover_info设置裁切，不套文章独立封面kit}
+
+  shipinhao:
+    form: video
+    engine: tencent-video-publish
+    accounts: [zh_shipinhao, aipm_shipinhao]          # 张和号 slot 实跑=zhanghe（accounts.yaml 记 default，待统一）
+    short_title: {min: 6, max: 16, note: 卡片显示；--title→短标题input（2026-07 用户确认）；按 core_brief 重写，不从其他平台标题机械裁剪}
+    desc:        {min: 200, target: "300-800", max: 1000, layout: "标题→换行→正文→换行→标签", note: 发布页正文/SEO 描述，不能只写一句话}
+    keywords:    {count: 5, style: hashtag, field: "视频号精简（5 个）"}
+    cover:       {kind: 9x16, tool: Agent-Publish video-cover/zhanghe, note: 官方封面生成后 --thumbnail 上传，不烧首帧}
+
+  bilibili:
+    form: video
+    engine: social-auto-upload
+    accounts: [zh_bilibili]
+    title:    {max: 80}
+    body:     {form: desc, min: 200, target: "300-1200", max: 2000, note: 简介/SEO 描述；min为账号建议，max为校验上限}
+    keywords: {sep: comma, max: 10}
+    tid:      {required: true, note: B站分区id；拿不准问用户，别乱填}
+
+  douyin:
+    form: both
+    engine: social-auto-upload
+    caption:  {max: 55, note: 标题+正文合一，无独立标题字段；前15-20字黄金位}
+    keywords: {count: 5, note: 超过5个截断}
+    cover:    {portrait: 3x4, landscape: 4x3}
+    longform: {min_chars: 300, max_chars: 4000, note: 长图文另算，非视频文案}
+
+  wechatsync:
+    form: article
+    engine: wechatsync
+    covers_platforms: [zhihu, juejin, csdn, baijiahao, segmentfault, toutiao]
+    title: {default: 不限, toutiao: {min: 2, max: 30, note: 超限先压缩并告知}}
+    body:  {form: 复用gzh全文}
+    cover: {required: false}

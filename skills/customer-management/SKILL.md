@@ -2,14 +2,14 @@
 name: customer-management
 description: |
   张和自媒体的客户/学员资产管理统一入口：把「微信现场」准确记进飞书客户管理表
-  `tblfCYoeornDw0XF`（唯一真源）。一句话调度现成命令——抓数据 → AI 按任务卡读懂 →
+  （项目私有配置 `feishu.table_id`，唯一真源）。一句话调度现成命令——抓数据 → AI 按任务卡读懂 →
   回写飞书，不再手跑十几个脚本。
   处理：把新学员整理入表、看就业/回访情况、整理客户资产（数据体检/订正）、
   好友刷新建行、付款金额从截图补全、客户表同步飞书、缺 wxid/重复/填错列等数据修复。
   当用户说「把这个新学员整理进表」「X期新学员入群了」「看下就业情况/哪些学员转型成功」
   「统计 offer」「做一份回访分析」「整理客户资产」「客户表体检/订正」「刷新好友/建行」
   「补付款金额/付款截图」「同步飞书客户管理表」时触发。
-  不处理：内容抓取/博主调研（→ platform-fetch）、内容发布分发（→ platform-publish）、
+  不处理：内容抓取/博主调研（→ platform-fetch）、内容发布分发（→ Agent-Publish）、
   私域转化话术/朋友圈/群发（→ private-ops）、招生季统筹物料（→ campaign-ops）、
   知识库 wiki（→ knowledge-management）。微信采集层 mac/wechat（仓外 Node）是上游，
   本 skill 只读其产出的数据湖，不接管。
@@ -24,13 +24,47 @@ allowed-tools:
 # customer-management — 客户/学员资产管理
 
 薄入口（router，不是手册）。两个世界：**微信（客户真人现场）↔ 飞书客户管理表
-`tblfCYoeornDw0XF`（总账本，唯一真源）**。所有活儿本质都是「把微信现场准确记进总账本」。
+（总账本，唯一真源；ID 读取下方项目配置）**。所有活儿本质都是「把微信现场准确记进总账本」。
 
 - **代码真源**：`/Volumes/ExtSSD2601/AI_Assistant/tools/engines/customer-management/`（engine）。
 - **业务数据**：留在 `assistant_zh/student_manage/`（`all_student.{json,csv}` / 飞书镜像 /
   FIELD_SPEC / staff_exclude / state / pending）与 `assistant_zh/analytics/`，engine 经
   `config.py` 单点读写（`CUSTOMER_MGMT_DATA_ROOT` 可覆盖）。
 - 详细 runbook、字段口径、踩坑见 `references/`。
+
+## 项目身份与资源配置（先加载）
+
+当前业务项目根目录由 `CUSTOMER_MGMT_DATA_ROOT` 指定，默认
+`/Volumes/ExtSSD2601/AI_Assistant/assistant_zh`。在使用账号、群或飞书资源前，读取项目根的
+`config/customer-management.private.json`，并使用其中的真实值：
+
+| 字段 | 用途 |
+|---|---|
+| `collection_account.wxid` | 当前采集账号；raw 数据湖与图片容器的身份依据 |
+| `feishu.app_token` / `table_id` / `profile` / `url` | 当前客户总表与 CLI 身份 |
+| `groups.core_chatroom_id` | 核心学员群 |
+| `groups.channel_attribution[]` | 成员文件与渠道选项的实际对应关系 |
+| `private_matching_examples` | 必须核对历史样本时才加载的本地身份例子 |
+
+该文件只存业务项目，本机 Git 排除；真实身份和原始样本不复制到公共 Skill。
+这份配置供 Agent 解析业务目标，现有 engine 接口与参数保持原样；不能把字段名或示例值直接传给 CLI。
+需显式调用飞书 CLI 时，可从配置读取参数后执行原命令，例如只读列字段：
+
+```bash
+python3 - <<'PYCONFIG'
+import json, os, subprocess
+from pathlib import Path
+project_root = Path(os.environ.get('CUSTOMER_MGMT_DATA_ROOT',
+    '/Volumes/ExtSSD2601/AI_Assistant/assistant_zh'))
+context = json.loads((project_root / 'config/customer-management.private.json').read_text())
+feishu = context['feishu']
+subprocess.run(['lark-cli', 'base', '+field-list', '--profile', feishu['profile'],
+    '--app-token', feishu['app_token'], '--table-id', feishu['table_id']], check=True)
+PYCONFIG
+```
+
+运行现成 engine 配方时继续使用它已有的身份配置；若目标与项目配置不一致，先核对其配置来源，
+不通过改表 ID 或替换账号来绕过。
 
 ## 怎么跑（两种等价形式）
 
@@ -96,21 +130,21 @@ python3 -m customer-management read-chat --wxid <wxid> --layer all
 - `28b52ffd…` 开头的 hex 是 **zstd 压缩,不是加密、不是垃圾**——绝大多数是真人对话(群发课程/回放链接、学员反馈)。`core.normalize_messages` 已自动解压;搜索/阅读用 `--layer all` 才包含它们。只有解压出 `<…>` XML 的才是系统消息可忽略。
 - **`isSelf` 永远是 0,不可信**;判断谁发的靠 staff 名单(`core.is_staff_sender` 已实现,命令里已用)。
 - **图片按需解**:`python3 -m customer-management read-chat --wxid X` 的信息地图会列出有几张图;要看图内容跑 `python3 -m capabilities.acquire.resolve_images --wxid X`(本机解密)。
-- **默认账号 = 八毛/小助理**(`wxid_vre3jz2a7vwb22`);raw 数据湖与图片容器都来自这个采集号。
+- **默认采集账号**读取项目配置 `collection_account.wxid`；raw 数据湖与图片容器必须对应同一采集身份。
 
 细节与两个示例 query 的端到端见 `references/ad-hoc-chat-read.md`。
 
 ## 人员匹配（找人 / 比对总表，先读这节再判"查无"）
 
 把"问卷登记 / 私戳线索 / 聊天提到的人"对上总表行或群成员时，**别只用「真名 + 手机」**——
-会大面积漏掉真实老学员（2026-06-25 复训核对：判"总表查无"7 人里 6 人其实都在表）。
+会漏掉已有记录；历史核对样本保留在项目私有配置中。
 
 - 匹配真源用**群成员文件** `knowledge_base/client/raw/chat/members_<roomid>_chatroom.json`
   （字段最全，比 `dashboard.json` 富）：`wxid / 微信号 / 备注名 / 昵称 / 群昵称 / 显示名称`。
 - 宽口径逐层 union：**手机(纯数字相等) → 微信号/wxid 全等 → 真名/别名子串命中任一名字字段**；
   拿到 `wxid` 后**回查总表 `wxid` 列**确认是否已在表。
-- `微信号`（`donglu_1029` 这种 alias）是问卷"微信账号"最有效的桥；总表行普遍缺它，所以反向搜真名/手机搜不到。
-- `备注名` 常编码期次/学员状态/staff（`小璐-三期`、`张和老师弟弟`），可定几期、识别家属。
+- `微信号`（如合成示例 `example_alias_001`）是问卷"微信账号"最有效的桥；总表行普遍缺它，所以反向搜真名/手机搜不到。
+- `备注名` 常编码期次/学员状态/staff（合成示例 `示例学员-三期`、`示例讲师家属`），可定几期、识别家属。
 - 刷新群成员（拿最新富字段）：`cd /Volumes/ExtSSD2601/mac/wechat && ELECTRON_RUN_AS_NODE=1 /Applications/WeFlow.app/Contents/MacOS/WeFlow sync_groups.js --members-only --skip-old`（必须走 WeFlow Electron，裸 node 报 `WCDB DLL 不存在`）。
 
 完整字段表、匹配顺序、期次/staff 旁证见 `references/person-matching.md`。

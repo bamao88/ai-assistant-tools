@@ -1,0 +1,4 @@
+interface:
+  display_name: "assistant_wxp_self｜口播稿文字"
+  short_description: "起草或修改八毛实际说出口的口播台词，减少念稿感，保留已确定的事实与结构"
+  default_prompt: "使用 $assistant_wxp_self_spoken-script-style，按已确定的内容与结构起草或修改这段八毛口播台词，让表达自然可说。"

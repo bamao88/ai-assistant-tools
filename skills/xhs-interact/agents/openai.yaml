@@ -1,0 +1,4 @@
+interface:
+  display_name: 通用｜小红书评论与互动
+  short_description: 按用户明确指令处理小红书评论、回复、点赞和收藏等账号互动
+  default_prompt: 使用 $xhs-interact 完成本次小红书评论与互动任务。

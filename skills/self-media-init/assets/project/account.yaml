@@ -1,0 +1,20 @@
+schema_version: 1
+account:
+  id: null
+  display_name: null
+  stage: exploring
+  platform_accounts: []
+  # 每项结构：id（项目内稳定 ID）, platform, display_name, native_id
+  # 工具身份按需加 tool_profile 或 credential_env；不保存凭据值。
+paths:
+  positioning: profile/positioning.md
+  data_contract: DATA.md
+  research_accounts: research/accounts.csv
+  research_samples: research/samples.csv
+  materials_index: materials/index.csv
+  topics_index: topics/index.csv
+  content_index: content/index.csv
+  publications: content/publications.csv
+  metrics: reviews/metrics.csv
+  reviews_index: reviews/index.csv
+  handoff: START-HERE.md

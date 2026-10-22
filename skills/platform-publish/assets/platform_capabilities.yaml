@@ -1,0 +1,63 @@
+_doc: |
+  当前活动发布入口统一为本机已运行Chrome扩展会话；先运行会话hook。
+  这里声明流程能力，不表示每个平台已经在本轮真实上传/发布验收。
+  历史CLI/API能力保留在引擎和history，不作为自动降级路线。
+
+execution_policy:
+  machine: local-only
+  browser: existing-owner-chrome-extension
+  session_guard: scripts/guard_existing_chrome.py
+  hook_phases: [before_connect, before_upload, before_submit]
+  login: human-in-current-chrome-if-needed
+  new_profile: forbidden
+  cookie_restore: forbidden
+  remote_publishing: disabled
+
+tiers:
+  D: 已绑定Chrome网页操作，Agent检查后按最新授权停止或提交
+  E: 能力不足时仅交付素材和保留原页，不换执行环境
+
+platforms:
+  xiaohongshu:
+    tier: D
+    engine: browser
+    can: {fill_only: true, screenshot: true, draft: true, reversible: true}
+    gaps: ["登录与页面身份逐次核验；会话hook通过不代表真实发布通过"]
+    submit_default: manual-submit
+  gongzhonghao:
+    tier: D
+    engine: browser
+    forms: [article, newspic]
+    can: {fill_only: true, screenshot: true, draft: true, reversible: true}
+    gaps: ["网页贴图、预览、发表和群发权限须逐项真实核验；历史API不自动启用"]
+    submit_default: manual-submit
+  shipinhao:
+    tier: D
+    engine: browser
+    can: {fill_only: true, screenshot: true, draft: true, reversible: true}
+    gaps: ["网页账号及具体表单能力按任务核验；不调用slot引擎"]
+    submit_default: manual-submit
+  bilibili:
+    tier: D
+    engine: browser
+    can: {fill_only: true, screenshot: true, draft: true, reversible: true}
+    gaps: ["网页可停在未提交页；不使用直接投稿CLI"]
+    submit_default: manual-submit
+  douyin:
+    tier: D
+    engine: browser
+    can: {fill_only: true, screenshot: true, draft: false, reversible: true}
+    gaps: ["最多5个话题；页面字段和两种封面必须实际保存读回"]
+    submit_default: manual-submit
+  wechatsync:
+    tier: D
+    engine: browser
+    can: {fill_only: true, screenshot: true, draft: true, reversible: true}
+    gaps: ["逐平台网页验证，不启用独立Cookie直传或批量同步"]
+    submit_default: manual-submit
+  toutiao:
+    tier: D
+    engine: browser
+    can: {fill_only: true, screenshot: true, draft: true, reversible: true}
+    gaps: ["自动保存状态须实际读回；不等于公开发布"]
+    submit_default: manual-submit

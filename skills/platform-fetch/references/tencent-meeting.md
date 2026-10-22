@@ -50,7 +50,7 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/tencent-meeting/scripts/m
 
 - 有 `meeting_id`：直接用于 `get_records_list`、`get_meeting` 等工具。
 - 有 9 位 `meeting_code`：先用 `get_meeting_by_code` 转换，或直接传给 `get_records_list --meeting-code`。
-- 只有 `https://meeting.tencent.com/crm/...` / `cw/...` 分享短链：官方 MCP 不以分享短码为主键。不要硬套旧短链脚本；请让用户补会议号、会议时间范围，或用时间范围查询录制列表后按标题/时间匹配。
+- 只有 `https://meeting.tencent.com/crm/...` / `cw/...` 分享短链：官方 MCP 不以分享短码为主键。先用已知时间范围/标题匹配，或在现有授权 Chrome 会话中按 [分享链接浏览器读取](tencent-meeting-browser-share.md) 获取资料；无法匹配且没有可访问会话时再补会议号或时间范围。
 
 ## 录制与转写流程
 

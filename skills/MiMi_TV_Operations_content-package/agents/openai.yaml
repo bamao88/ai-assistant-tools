@@ -1,0 +1,4 @@
+interface:
+  display_name: MiMi_TV_Operations｜内容制作
+  short_description: 按猫猫电视机当前规则准备成片、封面、标题和正文，交付本地审阅包
+  default_prompt: 使用 $MiMi_TV_Operations_content-package 参考之前笔记准备一周7条新视频，包含封面图与文字、平台标题、正文、关键词、来源和审阅包，不发布。

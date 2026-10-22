@@ -1,0 +1,4 @@
+interface:
+  display_name: "assistant_zh｜发布状态记账"
+  short_description: "发布状态记账"
+  default_prompt: "使用 $assistant_zh_publication-record 完成发布状态记账，遵守本项目现有账号、来源与状态规则。"

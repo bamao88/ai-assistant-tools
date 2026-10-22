@@ -1,75 +1,41 @@
-# B站视频投稿（reference）
+# B站视频投稿：本机现有 Chrome
 
-把**本地视频文件投稿到哔哩哔哩**。底层 = `vendor/social-auto-upload` 的 `sau bilibili` 子命令，它再封装开源 `biliup`（B站投稿事实标准，自动下载二进制）。
+本 reference 仅处理 B站视频。使用本台电脑中用户已经登录的日常 Chrome；先执行 [本机 Chrome 会话门](_local-chrome.md)，在 `before_connect`、`before_upload`、`before_submit` 校验同一任务锁定的浏览器和配置。发现独立脚本配置、另一台电脑或绑定变化时由 hook 报错并停止。
 
-> ⚠️ 这份 reference 只管 **B站视频投稿**。B站**专栏文章**走 `references/wechatsync.md`（完全不同的 API）。
+不启动 biliup、SAU、platform-video 或其它独立浏览器，不运行平台 CLI 登录检查，不转换/导入 Cookie。实际页面要求登录、短信或扫码时保留原页，请用户帮助完成认证。
 
-## 引擎路径与前置
+## 接管、身份与查重
 
-```bash
-ENGINE=/Volumes/ExtSSD2601/AI_Assistant/tools/vendor/social-auto-upload
-SAU="$ENGINE/.venv/bin/sau"      # CLI 入口；等价于 .venv/bin/python -m sau_cli
-```
+1. 从当前浏览器清单绑定用户日常 Chrome 的真实配置，优先复用本条已有页；需要新标签时仍属于该配置。
+2. 投稿页入口来自已有实现：`https://member.bilibili.com/platform/upload/video/frame`，也可从当前已登录创作中心正常进入。
+3. 核对目标账号名称和 UID，与本条项目账号映射一致；不套用其它业务的默认账号、脚本 slot 或分区。
+4. 在稿件管理页检查本条是否已有投稿，尤其上次结果未知时先查重。仅验证接管时只读取身份和稿件状态，不选择文件、不填表、不存草稿、不投稿。
 
-- 账号凭证存在 `tools/var/state/social-auto-upload/cookies/bilibili_<account>.json`（已软链，凭证只放 var/）。
-- 首次执行会自动从 GitHub Release 下载 `biliup` 二进制到 `~/.social-auto-upload/tools/biliup/`（需联网 + 能访问 github）。
-- 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.bilibili`（当前：`张和`）。**只发这个账号**，发别的先与用户确认。
-- 账号标识约定：`张和` = 本项目（assistant_zh，负责张和全部自媒体）名下的 B站 号，cookie 落 `bilibili_张和.json`。其 B站 真实昵称 **和哥专业讲AI**（UID `36184382`）。注意：不要与小红书里的 `缪东旭_个人`(MiaoDX) 混淆——那是另一个人，旧白名单曾误填 `MiaoDX`，已纠正。
+## 发布包与平台字段
 
-## 命令
+核对同一作品 `core_brief.md`、`publish_<account>.md`、已确认视频、封面、简介、标签、分区和版权类型，按 [素材规格](../assets/platform_rules.yaml) 校验。
 
-**登录（必须在真实交互终端里跑——agent 不能代扫码）：**
-```bash
-"$SAU" bilibili login --account 张和
-```
-- biliup 会在终端显示二维码；若终端显示不全，打开当前目录的 `qrcode.png` 扫码。
-- 非交互环境（agent 自动跑）会直接返回提示让用户自己在本地终端执行。**遇到未登录时，让用户手动跑这一行**，不要尝试自动化扫码。
+- 标题上限 80，简介校验上限 2000，最多 10 个标签；当前页面若有更具体限制，以实际提示再核对发布包。超限按含义改写并同步包，不机械截断或凑字。
+- 正文保留用户确认的段落与空行。标题、简介、来源、标签各自填写，不把内部素材备注拼进简介。
+- 版权类型按本条事实选择自制或转载。外部转载选择“内容为转载”，在必填来源字段填本条已确认原链接；不从脚本默认值推断原创授权。
+- 分区按当前投稿页的真实选项选择并记录；历史 API 的 tid 不能直接等同新版网页大类。发布包中的分区字段与页面映射不一致时记录实际选择，不沿用别人的科技/知识默认。
 
-**检查登录态（只读）：**
-```bash
-"$SAU" bilibili check --account 张和     # 底层 biliup renew；返回有效/失效
-```
+## 原页上传与填写
 
-**投稿视频：**
-```bash
-"$SAU" bilibili upload-video --account 张和 \
-  --file /abs/path/video.mp4 \
-  --title "标题" \
-  --desc "简介" \
-  --tid 122 \
-  --tags AI,工具 \
-  --schedule "2026-06-10 21:30"     # 可选：定时发布
-```
-- 必填：`--account --file --title --desc --tid`。
-- `--tid` = B站分区 id（必填）。`--tags` 逗号分隔。`--schedule` 格式 `YYYY-MM-DD HH:MM`，映射到 biliup `--dtime` 定时发布。
-- 参数映射：`biliup -u <cookie> upload <file> --title --desc --tid [--tag a,b] [--dtime <epoch>]`。
+1. 选择本条已确认视频，观察平台“上传完成”等真实状态；文件错误、风控和验证弹窗优先在原页处理，不以重跑整轮投稿修复。
+2. 填标题和分段简介，来源另填必填字段。删除与本条无关的默认标签；逐个输入并确认形成独立标签，连续过快输入可能漏项。
+3. 上传自定义封面，分别检查 4:3 与 16:9。平台自动同步两种比例不等于裁切合格，必须检查文字和主体完整。
+4. 点击封面编辑“完成”后等待弹窗关闭并核对投稿页缩略图；“完成”只是保存封面，不是最终投稿。
+5. 内容类型/原创等声明根据本条已确认要求和真实素材选择，不自动继承历史作品声明。
+6. 即时/定时按本次授权设置。定时时检查开关、日期、UTC+08:00及小时分钟；页面底部可能仍显示“立即投稿”，不能凭按钮文字判断定时是否生效。
 
-## ⚠️ 安全：B站没有"纯草稿"中间态
+## 提交边界与收尾
 
-- biliup `upload` **执行即投稿**（进审核队列），不像视频号能停在草稿。
-- 因此 **upload-video 是对外发布动作**：必须先把 标题/简介/分区/标签/视频文件 与用户逐项确认，**用户明确说"投"再执行**。
-- 想留缓冲就用 `--schedule` 设一个未来时间（定时投稿），给用户留撤回/改动窗口。
-- 投稿成功后把 biliup 返回里的稿件信息/链接（aid/bvid）原样汇报给用户。
+按 [执行与质量](_execution-quality.md) 核对账号 UID、视频完成状态、双比例封面、标题、简介分段、标签、来源/版权、分区、声明与定时设置，保存页面及字段证据。会话 `before_submit` hook 通过后才可执行本次允许的最终动作。
 
-## 分区 tid 速查（务必与用户确认，勿臆测）
+- `manual-submit` 或仅验证/填表：保留未提交表单。页面有“存草稿”不代表获准保存；只有任务授权草稿时才操作，草稿保存效果须单独核验。
+- 已获 `agent-submit` 且质量门通过：在同一页面独立点击投稿一次，不调用执行即投稿的旧 CLI。沿用已具备的授权，不重复确认。
+- 投稿结果不明时先查稿件列表，不重复点击、不重传。记录平台回执、aid/bvid和实际稿件链接；“投递成功”与审核通过/公开播放分别报告。
+- 成功后只关闭当前作品的任务发布页，保留其它平台未完成页与用户原有标签；每轮刷新全部未完成页的保留标记。
 
-常用（科技/知识向，贴合 AI 内容）：
-- `122` 科技 → 野生技术协会
-- `201` 知识 → 科学科普
-- `188` 数码 → 手机平板 / 科技数码
-- `21`  生活 → 日常
-
-完整分区以 B站投稿页或 `bilibili-API-collect` 的分区表为准。拿不准就问用户内容属于哪个分区，不要随便填一个 tid。
-
-## 失败兜底
-
-- 报 `account file is missing` / check 返回失效 → 登录态掉了，让用户重跑 `bilibili login`。
-- biliup 下载失败（github 限流/断网）→ 重试；已下载过会复用本地版本。
-- 投稿被风控/分区不符 → 把 biliup 的 stderr 原文给用户，按提示改 tid 或内容。
-
-## 素材准备（可选，发布前）
-
-- 字幕/封面/关键帧 → `video-content`（engines/video-research）
-- 剪辑切片 → engines/video-slicer
-- 封面图 → video-cover kit
-- 开头优化 → `dbs-hook`
+旧 CLI、OAuth/凭据诊断和历史验证保存在 `history/bilibili-video-legacy.md`，不可作为当前执行入口。文档与 hook 检查不替代本机 Chrome 真实接管、上传或最终投稿验证；各层结果分别记录。

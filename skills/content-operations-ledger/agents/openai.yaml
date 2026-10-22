@@ -1,0 +1,6 @@
+interface:
+  display_name: 通用｜运营台账与数据复盘
+  short_description: 维护发布排期与记录，处理官方导出和指标快照，追踪内容复盘与改进
+  default_prompt: 使用 $content-operations-ledger 核对官方导出与发布状态，更新总表和下一次维护事项。
+policy:
+  allow_implicit_invocation: true

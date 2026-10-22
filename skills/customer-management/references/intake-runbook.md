@@ -17,7 +17,7 @@
 | 抽取产物（数据湖，只读）| `knowledge_base/client/raw/chat/`（members_<room>.json, messages_user_<wxid>.json）|
 | 付款截图子流程 | `payment` 配方 + `cards/payment.md`（见 `payment-vision.md`）|
 | 入营写入器 | `intake` 配方（`python3 -m customer-management intake <worksheet.json>`）|
-| 飞书真源 | `tblfCYoeornDw0XF`（app `YTcFbyGS4arILPseQJscA6J7nqb`, profile zhanghe）|
+| 飞书真源 | 项目根 `config/customer-management.private.json` 的 `feishu`（先读实际 `app_token` / `table_id` / `profile`，加载方式见 SKILL.md）|
 
 WeFlow 跑法（仓外采集）：`cd /Volumes/ExtSSD2601/mac/wechat && ELECTRON_RUN_AS_NODE=1 /Applications/WeFlow.app/Contents/MacOS/WeFlow <脚本>`。
 
@@ -25,10 +25,10 @@ WeFlow 跑法（仓外采集）：`cd /Volumes/ExtSSD2601/mac/wechat && ELECTRON
 
 - 每个写动作都备份 + 写 `student_manage/CHANGELOG.md` + `student_manage/logs/<date>.log`（没日志不算做完）。
 - 飞书只填空不覆盖；缺行不自动建；真写飞书要用户明确授权「同步飞书」。
-- 数据源账号 = 小助理号（八毛 `ZH_WXID_NEW`），不用张和2号。
+- 数据源账号读取项目配置 `collection_account.wxid`，与当前数据湖保持一致。
 - 加好友日期对入表的人**永不为空**（查不到首聊用入表当天兜底）。
 - 私戳过的潜客一旦成交（进本期群），删其「活动标签」里的「…私戳」选项。
-- 渠道：聊天里说的来源命中「渠道」字段已有选项才填；在两个直播群任一里→渠道含「黄钊」。
+- 渠道：聊天里说的来源命中「渠道」字段已有选项才填；群成员归因使用项目配置 `groups.channel_attribution[]` 的成员文件与渠道映射。
 
 ## 快速路径 — 单个/小批量（固定流程）
 
@@ -40,7 +40,7 @@ WeFlow 跑法（仓外采集）：`cd /Volumes/ExtSSD2601/mac/wechat && ELECTRON
   messages_user 文件判断——增量同步会漏；查不到→入表当天兜底，**永不为空**）。
 - **全量聊天**（`dump_chat.js`）读：自我介绍（保守，无内容留空不编造）/ 手机号（正则 `1[3-9]\d{9}`，
   真号优先取群备注名里的）/ 渠道（映射到「渠道」字段已有选项才填）。
-- **直播群→黄钊**：查该 wxid 是否在 `members_57142409146_chatroom.json` / `members_54283028472_chatroom.json`。
+- **群成员归因**：先读 `groups.channel_attribution[]`，逐项检查该 wxid 是否出现在 `member_files` 指定的真实群成员文件中；命中时填对应 `channel_label`，不把示例群号当业务输入。
 - **付款**：`python3 -m customer-management payment --wxid <wxid>` → 读 montage 定位交易页 → 实付(取整) +
   付款方式 + 凭证图。无清晰支付页→实付留空 + 备注待核 + 传证据图。（视觉读用法见 `payment-vision.md`）
 

@@ -1,6 +1,6 @@
 schema_version: 2
 root: /Volumes/ExtSSD2601/AI_Assistant/tools
-updated: 2026-06-04
+updated: 2026-10-22
 
 # Single source of truth for the shared tools directory.
 # Four-tier layout:
@@ -9,7 +9,9 @@ updated: 2026-06-04
 #   vendor/  - external clones (own upstream git); some expose a skill.
 #   var/     - runtime: state, output, data, logs, drafts, review (gitignored).
 #
-# Skills are installed into ~/.claude/skills as symlinks (see scripts/sync-skills.py).
+# Discovery links follow hosts/scope (see scripts/sync-skills.py).
+# media_domain groups the Codex media-operations system; project is ownership,
+# project_entry preserves an existing local entry independently of global discovery.
 # Nothing under skills/ holds heavy code; nothing under engines/ triggers directly.
 #
 # install_kind:
@@ -19,48 +21,68 @@ updated: 2026-06-04
 skills:
   # --- L1 verb routers (cross-platform entry points) ---
   - name: platform-fetch
+    media_domain: materials
     layer: L1
     source: skills/platform-fetch
     install_kind: dir
+    hosts: [claude, codex]
     purpose: 封闭平台内容抓取统一入口（小红书 / 公众号 / 视频号博主作品列表 / 腾讯会议官方 MCP / 视频字幕封面关键帧）
     uses_engines: [xiaohongshu, gzh-scraper, wechat-channels-fetch, tencent-meeting, video-research]
-  - name: platform-publish
+  - name: Agent-Publish
+    media_domain: distribution
     layer: L1
     source: skills/platform-publish
     install_kind: dir
-    purpose: 内容发布与多平台分发统一入口（小红书 / 公众号 / 视频号 / B站视频 / 抖音视频 / wechatsync 全平台）
-    uses_engines: [xiaohongshu, gzh-publish, tencent-video-publish, markdown-to-cards, platform-draft-direct]
-    uses_vendor: [wechatsync, social-auto-upload]
+    hosts: [claude, codex]
+    purpose: 本机复用已登录Chrome，三阶段会话hook后逐平台检查、上传或按授权提交；无登录请本人在原页登录，不启用独立配置/远端/凭据直传
+    uses_engines: [publish-prep, gzh-publish]
+    uses_vendor: []
 
   # --- L2 workflows ---
-  - name: blogger-research
+  - name: self-media-init
+    media_domain: strategy
     layer: L2
-    source: skills/blogger-research
+    source: skills/self-media-init
     install_kind: dir
-    purpose: 博主调研：批量抓取博主公开内容 + 结构化分析报告
-    uses_engines: [xiaohongshu, gzh-scraper, wechat-channels-fetch]
-  - name: xhs-ops
+    hosts: [claude, codex]
+    purpose: 自媒体账号项目初始化与补齐：盘点已有资料、建立定位和资产台账、明确事实源与后续能力入口，交付第一轮内容验证安排；检查模式只读
+  - name: content-production-prep
+    media_domain: materials
     layer: L2
-    source: skills/xhs-ops
+    source: skills/content-production-prep
     install_kind: dir
-    purpose: 小红书复合运营工作流（搜索+详情+发布+互动）
-    uses_engines: [xiaohongshu]
+    hosts: [claude, codex]
+    purpose: 自媒体内容素材包制备工作流：在选题已确定后整理内容 item、锁定口径、归档素材/脚本/转录稿/成片/封面/标题/正文/标签，并在进入剪辑、设计、审核或发布前做状态与素材完整性检查；不直接发布
+  - name: content-package-create
+    media_domain: distribution
+    layer: L2
+    source: skills/content-package-create
+    install_kind: dir
+    hosts: [claude, codex]
+    purpose: 标题与平台文案：根据已确定内容制作标题、笔记正文、平台配文、封面文字和完整发布包；完整文章交 source-longform-writing，不进入平台后台
+    uses_engines: [publish-prep, markdown-to-cards]
   - name: video-content
+    media_domain: materials
     layer: L2
     source: skills/video-content
     install_kind: dir
-    purpose: 视频内容处理（本地/URL 逐字稿、字幕、关键帧、素材研究、标题备选）
+    hosts: [claude, codex]
+    purpose: 视频字幕与研究：提取本地/URL 音视频逐字稿、字幕、关键帧和研究素材；完整文章由 source-longform-writing 编排，平台标题交 content-package-create
     uses_engines: [video-research]
   - name: video-clip
+    media_domain: production
     layer: L2
     source: skills/video-clip
     install_kind: dir
-    purpose: 视频剪辑/合成（直接拼接 / 章节进度条成长片 / 片尾钩子卡 / 变速 / 字幕 / 遮名）；复杂框架页切片路由回业务项目
-    uses_engines: [video-clip, video-slicer]
-  - name: creator-profile
+    hosts: [claude, codex]
+    purpose: 口播/长视频成片统一工作流：经 video-compose 编排转录→选题脚本→人工确认→剪辑/字幕/铸造/组装；支持 PPT 风格、原视频快剪和按需叠加，统一执行输出路由与质量门
+    uses_engines: [video-compose, video-select, video-slicer, video-framework-render, video-clip]
+  - name: content-creator-research
+    media_domain: research
     layer: L2
-    source: skills/creator-profile
+    source: skills/content-creator-research
     install_kind: dir
+    hosts: [claude, codex]
     purpose: 自媒体人前期对标剖析综合工作流，四大子能力（teardown 博主拆解 / benchmark 博主对比 / niche-mapping 赛道测绘 / hook-decoding 钩子解码），带 fixture 与 checklist。产出止于结构化报告，不做物料包装。
     uses_engines: [xiaohongshu]
   - name: deep-research
@@ -69,59 +91,95 @@ skills:
     install_kind: file
     external: true
     purpose: 多源研究、证据持久化、引用跟踪报告
+  - name: source-longform-writing
+    media_domain: production
+    layer: L2
+    source: skills/source-longform-writing
+    install_kind: dir
+    hosts: [claude, codex]
+    purpose: 文章写作：把 YouTube、播客、访谈、网页、官方文档、论文或混合资料写成中文长文；只有链接也从本入口开始，衔接资料获取、方向确认、完整文章、必要配图与表达润色
+  - name: tencent-meeting-mcp
+    layer: L2
+    source: skills/tencent-meeting-mcp
+    install_kind: dir
+    purpose: 腾讯会议管理、参会人查询、录制/转写/智能纪要查询的官方 MCP skill；内容抓取场景仍优先走 platform-fetch 的腾讯会议 reference
 
   # --- atomic / utility ---
   - name: xhs-auth
+    media_domain: distribution
     layer: atomic
     source: skills/xhs-auth
     install_kind: dir
+    hosts: [claude, codex]
     purpose: 小红书登录 / 登录态检查 / 多账号管理
     uses_engines: [xiaohongshu]
   - name: xhs-interact
+    media_domain: community
     layer: atomic
     source: skills/xhs-interact
     install_kind: dir
+    hosts: [claude, codex]
     purpose: 小红书评论 / 回复 / 点赞 / 收藏
     uses_engines: [xiaohongshu]
   - name: markdown-to-cards
+    media_domain: production
     layer: util
     source: skills/markdown-to-cards
     install_kind: dir
+    hosts: [claude, codex]
     purpose: Markdown 转小红书风格卡片图片
     uses_engines: [markdown-to-cards]
-  - name: find-images
+  - name: content-visual-assets
+    media_domain: production
     layer: util
-    source: skills/find-images
+    source: skills/content-visual-assets
     install_kind: dir
+    hosts: [claude, codex]
     purpose: 为文章寻找合适配图，支持直接截图和登录墙场景下的网络搜索提取
     uses_engines: [screenshot]
+  - name: diagram-design
+    media_domain: production
+    layer: util
+    source: skills/diagram-design
+    install_kind: dir
+    hosts: [claude, codex]
+    purpose: 创建技术/产品图示的独立 HTML + inline SVG；供发布包长文配图阶段调用
+  - name: article-expression-polish
+    media_domain: production
+    layer: util
+    source: skills/article-expression-polish
+    install_kind: dir
+    hosts: [claude, codex]
+    purpose: 文章润色：对已有中文文章改善表达、密度与阅读节奏，减少机器腔、翻译腔与废话；保留事实、结构、引用和来源边界
+  - name: assistant_wxp_self_spoken-script-style
+    media_domain: production
+    layer: util
+    source: skills/assistant_wxp_self_spoken-script-style
+    install_kind: dir
+    scope: global
+    project: assistant_wxp_self
+    hosts: [claude, codex]
+    purpose: WXP 口播脚本文字风格；仅处理实际说出口的台词、自然说话节奏和念稿感，不作为文章、笔记正文或标题封面文案的通用风格层
   - name: customer-management
+    media_domain: community
+    project_entry: ../assistant_zh/.agents/skills/customer-management
+    project: assistant_zh
     layer: L2
     source: skills/customer-management
     install_kind: dir
     scope: assistant_zh   # 业务专属：不进全局 ~/.claude/skills；仅 assistant_zh 项目本地双 host 软链
     purpose: 客户/学员资产管理（4 能力 + 任务卡 + 配方）：学员入表 / 就业回访 / 客户资产体检订正 / 好友刷新建行 / 付款 / 客户表同步飞书 / ad-hoc 读聊天检索
     uses_engines: [customer-management]
-  - name: zh-video-cover
+  - name: assistant_zh_video-cover
+    media_domain: production
+    project_entry: ../assistant_zh/.agents/skills/assistant_zh_video-cover
+    project: assistant_zh
     layer: L2
-    source: skills/zh-video-cover
+    source: skills/assistant_zh_video-cover
     install_kind: dir
     scope: assistant_zh   # 业务专属：不进全局 ~/.claude/skills；仅 assistant_zh 项目本地双 host 软链（install-symlinks.sh）
-    purpose: 张和口播视频封面生成（evc 宋体渐变，3:4）：kit 驱动单张/批量，底图轮换+相邻不撞。共享底图池/渐变素材在 platform-publish/assets/video-cover/zhanghe（黑块黄字 9:16 那套仍在 platform-publish）
+    purpose: 张和口播视频封面生成（evc 宋体渐变，3:4）：kit 驱动单张/批量，底图轮换+相邻不撞。共享底图池/渐变素材在 platform-publish/assets/video-cover/zhanghe（黑块黄字 9:16 那套仍在 Agent-Publish）
     uses_engines: []
-  - name: publish-prep
-    layer: L2
-    source: skills/publish-prep
-    install_kind: dir
-    scope: assistant_zh   # 业务专属：不进全局 ~/.claude/skills；仅 assistant_zh 项目本地双 host 软链（install-symlinks.sh）
-    purpose: 发布前素材准备（Stage2）：按平台逐 destination 产 publish_<account>.md（标题候选/各平台正文/封面标题文案/摘要/关键词）。规格真源 assets/platform_rules.yaml（主轴=平台+form 副轴），关键词池 assets/keyword_pool.yaml。卡在 ready_to_publish 之后、platform-publish 上传之前
-    uses_engines: [publish-prep]
-  - name: humanizer
-    layer: util
-    source: vendor/humanizer/SKILL.md
-    install_kind: file
-    external: true
-    purpose: 去 AI 味写作润色
   - name: dbs
     layer: external
     source: vendor/dbskill/skills/dbs
@@ -156,13 +214,6 @@ skills:
     install_kind: dir
     external: true
     purpose: 短视频开头优化，诊断并生成方案
-    uses_vendor: [dbskill]
-  - name: dbs-xhs-title
-    layer: external
-    source: vendor/dbskill/skills/dbs-xhs-title
-    install_kind: dir
-    external: true
-    purpose: 小红书标题公式，按 75 个爆款公式匹配标题
     uses_vendor: [dbskill]
   - name: dbs-ai-check
     layer: external
@@ -255,12 +306,227 @@ skills:
     external: true
     purpose: 合并多次诊断存档为报告
     uses_vendor: [dbskill]
+  - name: content-topic-planning
+    media_domain: topics
+    layer: L2
+    source: skills/content-topic-planning
+    install_kind: dir
+    hosts: [claude, codex]
+    purpose: 研究、比较、深化选题，并按需巡看平台，为后续制作明确取舍依据
+    uses_engines: [platform-scout, xiaohongshu]
+  - name: content-operations-ledger
+    media_domain: review
+    layer: L2
+    source: skills/content-operations-ledger
+    install_kind: dir
+    hosts: [claude, codex]
+    purpose: 维护发布排期与记录，处理官方导出和指标快照，追踪内容复盘与改进
+  - name: product-deep-research
+    media_domain: research
+    layer: L2
+    source: skills/product-deep-research
+    install_kind: dir
+    hosts: [claude, codex]
+    purpose: 基于一手证据研究产品全貌与关键机制，形成完整报告或来源型文章
+
+  - name: assistant_wxp_self_xhs-cover
+    media_domain: production
+    project_entry: ../assistant_wxp_self/skills/assistant_wxp_self_xhs-cover
+    layer: L2
+    source: skills/assistant_wxp_self_xhs-cover
+    install_kind: dir
+    scope: global
+    project: assistant_wxp_self
+    hosts: [codex]
+    purpose: 八毛小红书封面制作，使用本项目已认可的个人视觉
+
+  - name: assistant_wxp_self_knowledge-cards
+    media_domain: production
+    project_entry: ../assistant_wxp_self/skills/assistant_wxp_self_knowledge-cards
+    layer: L2
+    source: skills/assistant_wxp_self_knowledge-cards
+    install_kind: dir
+    scope: global
+    project: assistant_wxp_self
+    hosts: [codex]
+    purpose: 八毛知识卡片独立制作：分析、拆分、分页、生图与验收
+
+  - name: MiMi_TV_Operations_content-package
+    media_domain: production
+    project_entry: ../../MiMi_TV_Operations/.codex/skills/MiMi_TV_Operations_content-package
+    layer: L2
+    source: skills/MiMi_TV_Operations_content-package
+    install_kind: dir
+    scope: global
+    project: MiMi_TV_Operations
+    hosts: [codex]
+    purpose: 猫猫电视机内容制作与本地审阅包
+
+  - name: MiMi_TV_Operations_content-management
+    media_domain: review
+    project_entry: ../../MiMi_TV_Operations/.codex/skills/MiMi_TV_Operations_content-management
+    layer: L2
+    source: skills/MiMi_TV_Operations_content-management
+    install_kind: dir
+    scope: global
+    project: MiMi_TV_Operations
+    hosts: [codex]
+    purpose: 猫猫电视机运营台账、官方数据与复盘
+
+  # Project-local Codex workbenches; sources are maintained here.
+  - name: assistant_zh_topic-mine
+    media_domain: topics
+    layer: L2
+    source: skills/assistant_zh_topic-mine
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/assistant_zh_topic-mine
+    hosts: [codex]
+    purpose: 发掘候选与来源
+
+  - name: assistant_zh_topic-select
+    media_domain: topics
+    layer: L2
+    source: skills/assistant_zh_topic-select
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/assistant_zh_topic-select
+    hosts: [codex]
+    purpose: 选择推荐与确认选题
+
+  - name: assistant_zh_topic-review
+    media_domain: topics
+    layer: L2
+    source: skills/assistant_zh_topic-review
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/assistant_zh_topic-review
+    hosts: [codex]
+    purpose: 复核选题与更新判断
+
+  - name: assistant_zh_knowledge-ingest
+    media_domain: materials
+    layer: L2
+    source: skills/assistant_zh_knowledge-ingest
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/knowledge-ingest
+    hosts: [codex]
+    purpose: 资料入库与来源归档
+
+  - name: assistant_zh_knowledge-triage
+    media_domain: materials
+    layer: L2
+    source: skills/assistant_zh_knowledge-triage
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/knowledge-triage
+    hosts: [codex]
+    purpose: 知识待处理分拣
+
+  - name: assistant_zh_knowledge-query-read
+    media_domain: materials
+    layer: L2
+    source: skills/assistant_zh_knowledge-query-read
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/knowledge-query-read
+    hosts: [codex]
+    purpose: 只读检索项目知识
+
+  - name: assistant_zh_knowledge-query-owner
+    media_domain: materials
+    layer: L2
+    source: skills/assistant_zh_knowledge-query-owner
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/knowledge-query-owner
+    hosts: [codex]
+    purpose: 管理项目知识与修订
+
+  - name: assistant_zh_knowledge-query
+    media_domain: materials
+    layer: L2
+    source: skills/assistant_zh_knowledge-query
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/knowledge-query
+    hosts: [codex]
+    purpose: 兼容旧知识管理调用
+    compatibility_for: assistant_zh_knowledge-query-owner
+
+  - name: assistant_zh_deep-research
+    media_domain: research
+    layer: L2
+    source: skills/assistant_zh_deep-research
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/deep-research
+    hosts: [codex]
+    purpose: 项目研究编排与报告
+
+  - name: assistant_zh_publication-record
+    media_domain: review
+    layer: L2
+    source: skills/assistant_zh_publication-record
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/assistant_zh_publication-record
+    hosts: [codex]
+    purpose: 记录各渠道发布事实
+
+  - name: assistant_zh_metrics-record
+    media_domain: review
+    layer: L2
+    source: skills/assistant_zh_metrics-record
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/assistant_zh_metrics-record
+    hosts: [codex]
+    purpose: 记录官方指标快照
+
+  - name: assistant_zh_content-review
+    media_domain: review
+    layer: L2
+    source: skills/assistant_zh_content-review
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/assistant_zh_content-review
+    hosts: [codex]
+    purpose: 项目内容复盘
+
+  - name: assistant_zh_platform-adapt
+    media_domain: distribution
+    layer: L2
+    source: skills/assistant_zh_platform-adapt
+    install_kind: dir
+    scope: assistant_zh
+    project: assistant_zh
+    project_entry: ../assistant_zh/.agents/skills/assistant_zh_platform-adapt
+    hosts: [codex]
+    purpose: 项目多平台内容适配
 
 engines:
   - id: xiaohongshu
     path: engines/xiaohongshu
     runtime: "python (.venv) — scripts/cli.py"
     purpose: 小红书登录/搜索/发布/互动/图文视频长文自动化
+  - id: platform-scout
+    path: engines/platform-scout
+    runtime: "python — scripts/xhs_recommend_scout.py"
+    purpose: 平台低频巡看采集与二次核验执行器：推荐流/关键词搜索收集候选，证据覆盖偏窄时写明提醒，按指定候选打开笔记详情和作者主页，为可拍选题决策提供证据；MVP 支持小红书测试号
   - id: gzh-publish
     path: engines/gzh-publish
     runtime: "node/tsx — src/index.ts"
@@ -288,15 +554,15 @@ engines:
   - id: video-select
     path: engines/video-select
     runtime: "python — video_select 包（单向 import video-slicer 句/时间核心）"
-    purpose: "第②环·选片 Eval Harness + 成片脚本：Runner(topics 选题 / generate 候选=总编→组装→字级去口水决策→钩子) + gates(精选合并/无重叠/正文≥60s/可执行/零编造门禁) + score(候选 vs 冻结 golden 逼近度) + select_clips_a(方案A备用对照)；4 条提示词全在 prompts/(topic-select/body-edit/refine-deduct/hook·按功能命名·无人设/账号)；Harness 数据 eval/(fixtures 入库·golden 冻结参照随迭代升版 / runs 不入库 / words 软链 / notes 经验)；capabilities.json 声明(stage=select)。定「剪成什么」不定「怎么剪」。无独立触发 skill"
+    purpose: "第②环·选片 Eval Harness + 成片脚本：Runner(topics 选题 / generate 候选=总编→组装→字级去口水决策→钩子) + dedup + gates + score + select_clips_a；5 条提示词全在 prompts/(topic-select/body-edit/refine-deduct/hook/dedup-merge)；Harness 数据 eval/(fixtures 入库 / runs 不入库 / notes 经验)；capabilities.json 同时声明腾讯会议格式适配。定「剪成什么」不定「怎么剪」。无独立触发 skill"
   - id: video-slicer
     path: engines/video-slicer
     runtime: "python — video_slicer 包"
-    purpose: "积木厂·剪辑策略原子：cut_sentence(句级·线上)/cut_word(词级·方案B twostage) 共存 + 内容决策 pages_gen/srt_fix + transcribe(字级转写·火山主/阿里兜底) + segment(静音分句) + script_clean(字级去口水) + cut_video(切片) + run_cut(字级线端到端) + ④承重墙 subtitle_align(读剪辑账本搬字幕时间·remap_time 重放)/subtitle_protect(别动清单钉回+结构自检)；定制层 personas/zh_main.md + profiles/zh_main/{...,keeplist.json} + references/字级去口水与承接句保护.md；capabilities.json 声明(带六环 stage 标签)。无独立触发 skill"
+    purpose: "积木厂·文字/时间能力：transcribe 字级转写 + cut_sentence/cut_word 剪辑策略 + pages_gen/srt_fix + script_clean + cut_video/run_cut（含源容器↔ASR 音频时间基准门）+ ④ subtitle_align/subtitle_protect；定制层 personas/zh_main.md + profiles/zh_main/ + references/字级去口水与承接句保护.md；无独立触发 skill"
   - id: video-clip
     path: engines/video-clip
     runtime: "python (.venv: pillow+opencv) — atoms/*.py（ffmpeg；endcard 渲 html 卡需 node/puppeteer；首次跑 requirements.txt）"
-    purpose: "积木厂·叠加/裁剪/自检原子库：通用叠加(拼接/进度条/片尾/变速/字幕/封面/标题/人脸/遮名) + ③裁剪承重墙(rough_cut 3a切段拼身子/trim_silence 3c去长静音吐区间/speed_adapt 3d固定档换轨) + 源适配(reframe_crop 裁外框/name_mask --black 多块挡UI/denoise_voice demucs可选) + 自检门(align_check 门A切点+门D字幕对齐/len_check 身子时长) + _manifest.py(剪辑账本读写+remap_time 重放·承重墙数据模型)；capabilities.json 声明(带六环 stage 标签)；总能力表+配方在 video-compose；回归测试 test_atoms.sh"
+    purpose: "积木厂·叠加/裁剪/自检原子库：通用叠加(拼接/进度条/片尾/变速/字幕/封面/标题/人脸/遮名) + ③裁剪承重墙(rough_cut 时间基准门+切段拼身子/trim_silence 去长静音/speed_adapt 固定档换轨) + 源适配(beauty_face_pip/reframe_crop/name_mask/denoise_voice) + 自检门(align_check/len_check) + _manifest.py 剪辑账本；capabilities.json 声明；总能力表+配方在 video-compose；回归测试 test_atoms.sh"
   - id: video-framework-render
     path: engines/video-framework-render
     runtime: "python (独立 .venv: pillow+opencv-python-headless) — video_framework_render.render 模块（ffmpeg+libass；node puppeteer 经 PUPPETEER_PATH；字体 Hannotate/PingFang SC）"
@@ -304,7 +570,7 @@ engines:
   - id: video-compose
     path: engines/video-compose
     runtime: "python — selector.py/run.py/build_catalog.py（无重依赖；调度各引擎）"
-    purpose: "组合层（薄·唯一对外入口，只指挥不产原子）：catalog.json(跨引擎汇总31原子·带六环 stage 标签) + recipes.json(zh_business PPT版/zh_clip_cut 裁剪版真chain/landscape_business 横版/raw_quickcut…) + selector(选配方·按六环分组) + run(跨引擎编排·真chain 委派 clip_cut_run.py) + clip_cut_run.py(裁剪版链式执行器·剪辑账本流转)；依赖单向 compose→各引擎。六环主链=转写→选片→裁剪→字幕→铸造→组装；架构主轴 §3.4/D7"
+    purpose: "组合层（薄·唯一对外入口，只指挥不产原子）：catalog.json 由四个能力引擎 capabilities.json 重建 + recipes.json 命名配方 + selector 选配方 + run/clip_cut_run 执行 + verify_contracts.py 防能力/配方/登记漂移；六环主链=转写→选片→裁剪→字幕→铸造→组装"
   - id: tencent-meeting
     path: engines/tencent-meeting
     runtime: "python — scripts/mcp_cli.py（官方 MCP 桥接；legacy 下载脚本保留）"
@@ -331,18 +597,14 @@ engines:
     purpose: "客户管理引擎：9 命令 gather/intake/employment/friends-sync/group-order/payment/health-check/read-chat/search-chat；4 能力 acquire/recognize/analyze(任务卡 cards/)/resolve + write_policy + recipes。被 scope:assistant_zh 的 customer-management skill 调用，业务数据留 assistant_zh"
   - id: publish-prep
     path: engines/publish-prep
-    runtime: "python — 原子 build_keywords.py(确定性关键词,读 skill keyword_pool.yaml)/gen_copy.py(Kimi正文,读 skill prompts/body_video.md)/gen_title.py(dbs公式标题)；路径经 config.py 锚 assistant_zh(PUBLISH_PREP_DATA_ROOT 可覆盖)；legacy/ 为冻结批次脚本(batch_gen/batch_title/finalize)不运行"
-    purpose: "发布前素材准备引擎：被 scope:assistant_zh 的 publish-prep skill 调用；规格/池/模板/prompt 在 skills/publish-prep/assets，业务数据(content items/.env/LLM客户端)留 assistant_zh"
+    runtime: "python — 原子 build_keywords.py(确定性关键词,读 Agent-Publish profiles/keyword_pool.yaml)/gen_copy.py(Kimi正文,读 Agent-Publish assets/prompts/body_video.md)/gen_title.py(vendor/dbskill 标题公式)/check.py(单平台发布包校验)/check_bundle.py(同 item 多平台派生校验)；路径经 config.py 锚 assistant_zh(PUBLISH_PREP_DATA_ROOT 可覆盖)；legacy/ 为冻结批次脚本(batch_gen/batch_title/finalize)不运行"
+    purpose: "发布包生成与校验引擎：由 content-package-create 负责生成，Agent-Publish 只校验已交付包；规格/模板/prompt 暂保留在 skills/platform-publish/assets 以兼容现有路径，业务关键词池在其 profiles/<profile>，业务数据留 assistant_zh"
 
 vendor:
   - id: wechatsync
     path: vendor/wechatsync
     upstream: https://github.com/wechatsync/Wechatsync
-    purpose: 多平台文章同步（知乎/掘金/CSDN/头条/B站/百家号/搜狐号/简书/博客园/抖音图文）；含 MCP server，被 platform-publish 调用
-  - id: humanizer
-    path: vendor/humanizer
-    upstream: https://github.com/blader/humanizer
-    purpose: 去 AI 味写作 skill（外部 clone，暴露 humanizer skill）
+    purpose: 保留的多平台文章同步工具及MCP server；Agent-Publish现改用本机已有Chrome，不再默认调用直传
   - id: deep-research
     path: vendor/deep-research
     upstream: https://github.com/199-biotechnologies/claude-deep-research-skill
@@ -357,7 +619,7 @@ vendor:
   - id: social-auto-upload
     path: vendor/social-auto-upload
     upstream: https://github.com/dreammis/social-auto-upload
-    purpose: 多平台视频发布（B站视频投稿封装 biliup / 抖音浏览器自动化）；经 platform-publish 的 references/bilibili-video.md 与 references/douyin.md 调用，仅用其 sau CLI，不暴露自带 skill。凭证落 var/state/social-auto-upload/cookies
+    purpose: 保留的多平台视频工具（biliup及抖音浏览器自动化）；Agent-Publish现改用本机已有Chrome，不再默认调用sau CLI，不暴露自带skill。历史凭证落var/state/social-auto-upload/cookies
 
 var:
   description: 运行时目录，全部 gitignore，永不放代码
@@ -373,21 +635,36 @@ var:
 # Triggers intentionally removed (folded into the L1 routers / superseded).
 # sync-skills.py removes any stale ~/.claude/skills entry matching these names.
 deprecated:
+  - id: platform-publish
+    replaced_by: Agent-Publish
+    note: 发布Skill改名；源目录skills/platform-publish保留，触发和安装入口统一为Agent-Publish
+  - id: content-platform-publish
+    replaced_by: Agent-Publish
+    note: 旧Codex/Claude安装名改为Agent-Publish，发布能力和素材路径继续复用
+  - id: video-source-longform-writing
+    replaced_by: source-longform-writing
+    note: 来源型长文统一收口到 source-longform-writing；视频截图、GIF、字幕拼图只是 source-assets 分支，不单独暴露触发入口
+  - id: publish-prep
+    replaced_by: content-package-create
+    note: 旧发布包制作入口由 content-package-create 接管；规格/模板/prompt 暂保留原路径以兼容引擎
+  - id: dbs-xhs-title
+    replaced_by: content-package-create
+    note: 标题公式库本体保留在 vendor/dbskill，由内容包制作流程按需要读取；不再单独接单
   - id: shipinhao-publish
-    replaced_by: platform-publish
+    replaced_by: Agent-Publish
     note: 视频号发布能力并入统一发布入口，正文在 skills/platform-publish/references/shipinhao.md
   - id: video-research
     replaced_by: video-content
     note: 触发入口扩展为本地/URL 视频内容处理；底层 engine 仍为 engines/video-research
   - id: xhs-publish
-    replaced_by: platform-publish
+    replaced_by: Agent-Publish
     note: 正文迁入 skills/platform-publish/references/xiaohongshu.md
   - id: gzh-publish
-    replaced_by: platform-publish
+    replaced_by: Agent-Publish
     note: 正文迁入 skills/platform-publish/references/gongzhonghao.md
   - id: wechatsync
-    replaced_by: platform-publish
-    note: 发布触发整合进 platform-publish；正文迁入 references/wechatsync.md（CLI 仍在 vendor/wechatsync）
+    replaced_by: Agent-Publish
+    note: 发布触发整合进 Agent-Publish；正文迁入 references/wechatsync.md（CLI 仍在 vendor/wechatsync）
   - id: content-research-hub
     replaced_by: platform-fetch
     note: 已归档到 var/review/_deprecated/content_research_hub
@@ -409,10 +686,50 @@ deprecated:
   - id: xhs-like
     replaced_by: xhs-interact
   - id: xhs-long-article-publish
-    replaced_by: platform-publish
+    replaced_by: Agent-Publish
   - id: xhs-publish-article
-    replaced_by: platform-publish
+    replaced_by: Agent-Publish
   - id: xhs-publish-post
-    replaced_by: platform-publish
+    replaced_by: Agent-Publish
   - id: xhs-publish-video
-    replaced_by: platform-publish
+    replaced_by: Agent-Publish
+
+  - id: prepare-content-package
+    replaced_by: content-production-prep
+    reason: 自媒体 Skill 职责与命名收敛，旧入口移出发现目录
+
+  - id: creator-profile
+    replaced_by: content-creator-research
+    reason: 自媒体 Skill 职责与命名收敛，旧入口移出发现目录
+
+  - id: find-images
+    replaced_by: content-visual-assets
+    reason: 自媒体 Skill 职责与命名收敛，旧入口移出发现目录
+
+  - id: wxp-expression-style
+    replaced_by: assistant_wxp_self_spoken-script-style
+    reason: 自媒体 Skill 职责与命名收敛，旧入口移出发现目录
+
+  - id: wxp-xhs-cover
+    replaced_by: assistant_wxp_self_xhs-cover
+    reason: 自媒体 Skill 职责与命名收敛，旧入口移出发现目录
+
+  - id: wxp-knowledge-cards
+    replaced_by: assistant_wxp_self_knowledge-cards
+    reason: 自媒体 Skill 职责与命名收敛，旧入口移出发现目录
+
+  - id: zh-video-cover
+    replaced_by: assistant_zh_video-cover
+    reason: 自媒体 Skill 职责与命名收敛，旧入口移出发现目录
+
+  - id: blogger-research
+    replaced_by: content-creator-research
+    reason: 自媒体 Skill 职责与命名收敛，旧入口移出发现目录
+
+  - id: daily-topic-scout
+    replaced_by: content-topic-planning
+    reason: 自媒体 Skill 职责与命名收敛，旧入口移出发现目录
+
+  - id: xhs-ops
+    replaced_by: content-topic-planning / content-creator-research / Agent-Publish / xhs-interact
+    reason: 自媒体 Skill 职责与命名收敛，旧入口移出发现目录

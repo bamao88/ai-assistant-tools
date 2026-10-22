@@ -1,0 +1,4 @@
+interface:
+  display_name: "通用｜账号与对标研究"
+  short_description: "按问题研究单个或多个账号，交代样本范围并提炼有依据的内容判断"
+  default_prompt: "使用 $content-creator-research 完成本次账号或对标研究，复用已有资料并交代证据范围。"

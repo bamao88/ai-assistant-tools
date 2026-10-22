@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "project_name": "项目名称",
+  "timezone": "Asia/Shanghai",
+  "primary_scope": "project",
+  "tracking_started_at": null,
+  "observation_hours": [
+    24,
+    72,
+    168
+  ],
+  "observation_tolerance_hours": 4,
+  "paths": {
+    "master": "CONTENT_MANAGEMENT.md",
+    "review_report": "CONTENT_REVIEW.md",
+    "content_index": "content/index.csv",
+    "publications": "content/publications.csv",
+    "metrics": "reviews/metrics.csv",
+    "checks": "reviews/platform-checks.csv",
+    "maintenance": "reviews/maintenance.csv",
+    "import_receipts": "reviews/ledger-imports",
+    "iteration_brief": "planning/CONTENT_ITERATION_BRIEF.md"
+  },
+  "platform_accounts": {},
+  "inventory_notes": {},
+  "require_official_exports": true
+}

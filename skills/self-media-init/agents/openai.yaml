@@ -1,0 +1,4 @@
+interface:
+  display_name: 通用｜自媒体账号初始化
+  short_description: 建立或补齐账号定位、资料目录与运营底座，连接现有制作和数据流程
+  default_prompt: 使用 $self-media-init 初始化当前自媒体账号项目，先盘点已有资料，再补齐账号档案、对标库和第一轮内容验证安排。

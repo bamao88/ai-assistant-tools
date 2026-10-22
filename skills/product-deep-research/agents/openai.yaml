@@ -1,0 +1,4 @@
+interface:
+  display_name: 通用｜产品深度调研
+  short_description: 基于一手证据研究产品全貌与关键机制，形成完整报告或来源型文章
+  default_prompt: 使用 $product-deep-research 完成本次产品深度调研任务。

@@ -48,7 +48,7 @@
 
 - 不改任何剪辑算法 / 视觉版式效果——这是**纯搬运 + 解耦**，不是重构成片观感。锁定几何值原样迁移。
 - 不**重做**方案B 本身——但本迁移必须与方案B 协调推进，见 §1.4。方案B 代码（`video-slicer/twostage/`）已在 tools 下、位置正确。
-- 不动发布链路（`tencent-video-publish`、`platform-publish`）。
+- 不动发布链路（`tencent-video-publish`、`Agent-Publish`）。
 - 不做选段质量评测 / A-B 盲评（另立项）。
 
 ---

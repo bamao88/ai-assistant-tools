@@ -1,0 +1,4 @@
+interface:
+  display_name: assistant_zh｜口播视频封面
+  short_description: 为张和已定标题生成三比四宋体渐变封面，保留底图轮换与视觉核验
+  default_prompt: 使用 $assistant_zh_video-cover 完成本次口播视频封面任务。

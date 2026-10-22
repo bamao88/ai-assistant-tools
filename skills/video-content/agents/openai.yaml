@@ -1,0 +1,4 @@
+interface:
+  display_name: "素材｜视频字幕与研究"
+  short_description: "只提取视频逐字稿、字幕、关键帧与素材研究包，获取后交回原写作任务继续"
+  default_prompt: "使用 $video-content 提取本次需要的视频逐字稿、字幕、关键帧或素材研究包；若为文章任务取材，完成后返回原写作任务继续。"

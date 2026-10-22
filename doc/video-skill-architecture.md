@@ -1,187 +1,193 @@
-# 视频剪辑 skill：架构 + 维护指南
+# 视频剪辑 Skill：架构与维护指南
 
-> **要更新 / 迭代视频 skill（口播切片成片这条线）就先读这份文档。** 它告诉你东西在哪、怎么改、怎么验证不回归。
-> 这份是「现状真源 + 怎么动手」；要看**为什么这么设计 / 迁移决策 / 历史**，去 [`video-tools-migration-plan.md`](./video-tools-migration-plan.md)。
+> 更新口播/长视频成片这条线前先读。它讲清楚：系统分几块、信息以谁为准、要改某件事去哪改、怎样证明没有改坏。
+> 迁移历史见 [`video-tools-migration-plan.md`](./video-tools-migration-plan.md)；本轮系统化计划见 [`plan/video-clip-skill-systematization-plan.md`](./plan/video-clip-skill-systematization-plan.md)。
 
 ## 一句话定位
 
-把张和口播 → 竖版切片成片这条业务，按「**原子能力 + 可选组合**」组织成**四个引擎**。
-AI 干活的统一入口是 `skills/video-clip/SKILL.md`：开头「**入口分流**」先判手上是「已有脚本→直接剪」还是「长视频→先①转录+②选题、🛑停下来人工 review、确认后再剪」；剪辑环节给**两条默认线**（PPT 风格 `zh_business`/`landscape_business` · 原视频风格 `zh_clip_cut`，都自带字幕LLM+默认变速）+ **可选叠加**（裁切放大盖UI/前钩子/片尾/标题/遮名）。转录、选题、剪辑同属这条线、只是住在不同引擎目录。
-组织原则**不是引擎边界，而是能力组合**：能力是积木、配方是把积木串起来的预设，AI 按视频选配方或自由组合。
-句级 / 词级两套剪辑策略**共存**（不是谁替代谁）。
+`video-clip` 是口播/长视频到成片的唯一用户入口。它不亲自实现所有算法，而是让 `video-compose` 调度四个能力引擎，走完“转录 → 选题 → 剪辑 → 字幕 → 铸造 → 组装”。
 
-成片有**两种风格**，都走同一条**六环主链**，只在第⑤环「铸造」时选不同风格：
-- **PPT 框架页版**（配方 `zh_business`）：把口播内容重画成一张张**手写白板 PPT**（全程手写体、纯黑、大留白、标题写成问题或结论、要点用纯数字 `1. 2. 3.`）+ 人脸抠成右下角圆窗。**风格已经用户拍板定稿**（见下「PPT 风格·定稿与锁定」）、有 G4 基线不许回归。
-- **裁剪版**（配方 `zh_clip_cut`）：把录屏本身收拾干净——裁切放大铺满 + 盖掉多余 UI + 烧药丸字幕。
+大白话：Skill 是前台，`video-compose` 是调度员，四个能力引擎是不同工位。
 
-## PPT 风格·定稿与锁定（🔒 谁都别擅自改）
+## 真实结构：一个组合层 + 四个能力引擎
 
-"生成 PPT / 框架页 / PPT 风格成片" = 同一条线，**默认就走配方 `zh_business`、版式 `layout:vertical`**，不需要任何特殊参数。风格长什么样**已经用户拍板定稿**，定的是「**手写白板极简**」：白底、全程手写体、纯黑字、左对齐、大留白；标题写成一个问题或一个结论；正文要点用纯数字 `1. 2. 3.`（不是圆圈①②③）；人像圆窗放在右下角靠底、字幕在它上方。
+```text
+用户
+ │
+ ▼
+skills/video-clip/                 前台：分流、人工停顿、落点、质量门
+ │
+ ▼
+engines/video-compose/             组合层：选配方、审链、执行、验契约
+ ├── engines/video-select/         ② 选题与成片脚本
+ ├── engines/video-slicer/         ① 转录、字/句时间、④字幕文字
+ ├── engines/video-framework-render/ ⑤ PPT/字幕画面铸造
+ └── engines/video-clip/           ③ 裁剪、源适配、⑥组装、自检
+```
 
-为什么单独立一节：这条线被反复"好心改坏"过——有 AI 没等指示就自己换排版、改提示词、新建别的版式（卡片版 `vertical_ppt`，已废弃）。所以把"定稿"写死、把"默认"显式化，让"擅自改"一眼可见违规。三个文件是定稿载体，**改任一个 = 改 PPT 定稿**：
+所以文档里出现的“两个引擎”“三个积木厂”“四个引擎”“五个引擎”要这样统一理解：**五个模块 = 一个组合层 + 四个提供能力的引擎**。
 
-| 改这个文件 | = 改 PPT 的哪一面（大白话） | 锁 |
+物理目录继续按运行环境分，不按六环搬家。原因很简单：渲染要 Pillow/OpenCV/Puppeteer，普通裁剪主要靠 FFmpeg，文字时间逻辑可以保持轻量。六环是业务认知，不是安装环境。
+
+## 六环：每条成片的共同骨架
+
+```text
+① 转录 → ② 选题/成片脚本 → 🛑人工确认 → ③ 裁剪 → ④ 字幕 → ⑤ 铸造 → ⑥ 组装
+```
+
+- **① 转录**：视频/音频变成字级或句级时间稿。
+- **② 选题**：决定“剪成什么内容”，产出可审的成片脚本。
+- **🛑 人工确认**：机器门只证明可执行，不能替 owner 决定内容。
+- **③ 裁剪**：粗剪、去口水/长静音、变速。
+- **④ 字幕**：把字搬到剪后时间，唯一 `srt_fix` 只改文字，别动清单再钉回。
+- **⑤ 铸造**：选择 PPT 手写白板或保留原画面，生成最终视觉层。
+- **⑥ 组装**：标题、钩子、片尾、拼接和交付命名。
+
+源适配横跨阶段：录屏裁框/挡 UI、带噪去噪、口播 PIP 轻美颜，只按源况挂，不另造主流程。
+
+## 三条“承重墙”
+
+### 1. 画、音、字幕共用一条时间线
+
+字幕在中间阶段是一张 SRT “便签”，不是提前烧进画面的像素。谁裁画面、去静音、变速或拼钩子，谁就用同一映射处理画、音和字幕；最后只烧一次字。
+
+每个动时间轴的出口跑 `align_check`：
+
+- 门S：视频流和音频流时长一致。
+- 门D：字幕贴口型。
+- 门A：切点落在停顿附近。
+
+失败就停管线，不能带病交付。
+
+### 2. 字级时间先过“源时间基准门”
+
+ASR 时间只对送去识别的音频负责。原 MOV 的音频轨若从 0.751 秒开始，而抽出的 WAV 从 0 开始，直接用 WAV 时间剪 MOV 会整体早 0.751 秒。
+
+`rough_cut` 和字级 `run_cut/cut_video` 现在都要求：
+
+- 切点已是原片轴：`time_basis=source`。
+- 切点来自 ASR 音频：`time_basis=asr_audio`，同时给 `asr_audio` 自动计算，或给 `source_time_offset`。
+- 原片音频起点明显非零却没说明基准：拒绝运行，不再默默早切。
+
+账本保留原 ASR 切点给字幕映射，只在送给 FFmpeg 时加 offset。详细操作见 `skills/video-clip/references/quality-gates.md`。
+
+### 3. 真源各司其职
+
+| 要回答的问题 | 唯一真源 | 大白话 |
 |---|---|---|
-| `engines/video-slicer/profiles/zh_main/pages_system_prompt.txt` | **内容**：分几页、每页讲什么、翻页节奏、文案逻辑 | 🔒 |
-| `engines/video-framework-render/render.py` 的 `PAGE_CSS`（竖版手写段） | **外观**：字体、字号、颜色、排版分层 | 🔒 |
-| `engines/video-framework-render/layouts/vertical.json` | **几何**：人像圆窗大小位置、字幕位置 | 🔒 |
+| 某引擎有哪些能力 | `engines/<engine>/capabilities.json` | 每个工位自己的货架清单 |
+| 全链有哪些能力 | 生成的 `engines/video-compose/catalog.json` | 调度员汇总清单，不能手写 |
+| 默认组合怎么串 | `engines/video-compose/recipes.json` | 标准套餐 |
+| 原子怎么运行 | `run.py` / 专属 runner | 调度接线 |
+| 账号差异 | 各引擎 `profiles/<account>/` | 每个账号自己的尺码 |
+| 项目产物去哪 | `skills/video-clip/output_routing.json` | 收货地址簿 |
+| 日常操作经验 | `skills/video-clip/references/` | 当班手册 |
+| 方案与历史 | `doc/plan/` | 还没上线或已经完成的工程记录 |
 
-锁定政策（也写进了 `skills/video-clip/SKILL.md` 的「PPT 风格·定稿」，那是 AI 干活时读的入口）：
-- **没有用户明确指示，不改上面任何一个，也不新建/改用别的版式。** 想"优化"也不行——风格是用户的决定，不是工具自己能动的。
-- 用户明确要改时：先改 → 出样片给用户看 → 用户拍板，才算新定稿；并提示 **G4 逐帧基线要按新样式重冻**（页面像素 / 人像位置一变，旧基线必然报红，这是预期信号，不是 bug）。
+## 当前默认配方
 
-## 六环主链：剪辑流程的骨架（先看这个）
+| 配方 | 用户得到什么 | 当前执行状态 |
+|---|---|---|
+| `zh_business` | 竖版手写白板 PPT + 圆窗人像 | 生产可用；组合层暂时 delegate 到已薄化业务脚本 |
+| `landscape_business` | 横版方框 PPT | 生产可用；同上 |
+| `zh_clip_cut` | 保留原画面、去废/静音、字幕、默认 1.2x | 真 chain，由 `clip_cut_run.py` 执行 |
+| `raw_quickcut` | 极简词级快剪 | 可审链；原子级执行 |
+| `simple_concat` | 纯拼接 | 原子可用 |
+| `chaptered_growth` | 分幕进度条成长片 | 原子组合可用 |
 
-每条切片都走这条**线性流水线**（像工厂传送带，每件产品都过这几道工位）：
+`semantic_screencast_pip` 仍是待评审提案，见 [`plan/video-clip-semantic-screencast-pip-plan.md`](./plan/video-clip-semantic-screencast-pip-plan.md)，不属于现行配方。
 
-```
-① 转写 → ② 选片 → ③a 粗剪 → ④ 字幕换算/改字 → ③c 去静音 → ③d 变速 → ⑥ 加标题/拼钩子 → ⑤ 末次烧字 → 成片
- 听成字   剪哪句    切段拼身子   源→身子时间·改错词    画+音+字幕   画+音+字幕    画音整体·字幕跟着偏    把字一次性印上去
-                    ★承重墙      字幕变「便签」上车    同一把刀一起裁缩 ───────┘  ★片段画音整体  ★文字只压一道·清晰
-```
+## PPT 风格锁：未经明确要求不动
 
-> **裁剪版（zh_clip_cut）的真实出片顺序**就是上面这条（WS-6 伴随轨重构，2026-06-20）。和「概念六环 ①…⑥」不同的是：**字幕被提到很前面先算好、最后才烧**，中间所有「动时间轴」的工序都连字幕一起动。
+竖版默认已经拍板为“手写白板极简”：白底、手写体、纯黑、左对齐、大留白、标题是问题/结论、列表用 `1. 2. 3.`、圆窗人像右下靠底。
 
-横切层（不占主链，谁需要谁挂）：
-- **源适配**（按「这块毛料是什么」加清洗附件，主要挂③）：干净口播=啥都不挂；录屏=裁切+盖按钮(`reframe_crop`+`name_mask --black`)；带噪=去背景音(`denoise_voice`，demucs，缺失优雅跳过)。
-- **自检门（硬红线）**：每个「动时间轴」的工序出口都跑 `align_check`——门S(画音流等长 `v≈a`)+门D(字幕贴口型)+门A(切点落停顿)，外加 `len_check`(身子时长对)。**任一不过直接报错停管线**（带病片出不了厂），不再带病照样出片。
+三个定稿载体：
 
-**承重墙＝「字幕当便签、谁切画面谁连便签一起裁，最后才把字印上去」**（裁剪版根治「音画对不上 + 字幕错乱」的核心，WS-6）。大白话分三句：
+| 文件 | 决定什么 |
+|---|---|
+| `engines/video-slicer/profiles/zh_main/pages_system_prompt.txt` | 分几页、每页讲什么、翻页节奏 |
+| `engines/video-framework-render/video_framework_render/render.py` 的竖版 `PAGE_CSS` | 字体、字号、颜色、排版 |
+| `engines/video-framework-render/layouts/vertical.json` | 圆窗和字幕几何 |
 
-1. **字幕不提前烧成画面像素，而是一张跟着这块画面走的「便签」**（一份 `.srt` 文本+时间戳）。④ 只做一次简单换算：把每个字从「源时间」搬到「拼好身子(assembled)」的时间，时间一次锁定（`subtitle_align.py`，砍掉了旧版那套事后多级回算）。
-2. **谁切画面，谁就当场用同一把刀把便签一起裁/缩/挪**：去长静音(`trim_silence` 用同一份保留区间 keeps 裁字幕——落在删掉处的字跟着删、跨切口的裁到保留段，所以**永不显示已被切掉的内容**)、变速(`speed_adapt` 用同一个倍速因子缩字幕)、拼钩子(`prepend_hook` 把字幕整体后移一个钩子时长)。画、音、字幕三条轨**永远是同一把刀剪出来的结果**，对不上从构造上就不可能发生。
-3. **直到最后一步才把便签内容印到画面上一次**（`subtitles_cli` 渲药丸 + ffmpeg 烧），所以文字**只过一道编码→清晰不糊**，又不会被后续工序搞乱。
+无用户明确要求，不改、不换、不新建默认样式。要改时先出样片，用户拍板后更新定稿并重冻 G4。`vertical_ppt` 是仍有代码/测试引用的旧兼容面，但不允许当默认。
 
-> 旧版的病根：字幕走「事后照账本回算 4 级时间映射」、画/音走「当场被裁」——两条路一不同步就出「字幕显示已删内容 / 卡屏 14s」。现在三轨同刀，病根结构性消除。账本(`cut_manifest.json` + `_manifest.py`)仍在，但只用于③记账给**自检门**核对，不再用来事后拼字幕时间。
+## 账号定制和输出路由
 
-**看这条线长什么样**：`python engines/video-compose/run.py --plan zh_clip_cut`（按六环分组列出每个原子、挂载点、自检门）。
+账号特定的 prompt、术语、几何和 preset 放在对应引擎的 `profiles/<account>/`，不要散回业务项目，也不要焊进通用原子。
 
-## 四层模型 + 目录布局
+当前 WXP 人像能力用版本化 preset：`engines/video-clip/profiles/beauty_face_pip_presets.json`。`wxp_self_natural_v1` 只处理 PIP crop，正式合成前必须保留 manifest、compare，最好还有 preview。其他账号不自动套瘦脸。
 
-```
-能力组织：① catalog 能力 → ② recipes 配方 → ③ select 选择 → ④ engines 布局（原子住哪）
+产物落点只由 `skills/video-clip/output_routing.json` 决定：
 
-tools/engines/
-├── video-compose/            ★ 组合层 · 唯一对外入口（只指挥，不产原子）
-│   ├── catalog.json          总能力表（真源·跨引擎汇总；每个原子带六环 stage 标签，由 build_catalog.py 重建）
-│   ├── recipes.json          命名配方：zh_business(PPT版) / zh_clip_cut(裁剪版·真chain) / landscape_business / raw_quickcut / simple_concat / chaptered_growth
-│   ├── selector.py           AI 读视频 → 选配方 / 自由组合（--list 按六环分组展示）
-│   ├── run.py                按配方解析能力链 → 跨引擎调原子（--plan 审链 / --run 跑；真chain 委派 runner）
-│   ├── clip_cut_run.py       zh_clip_cut 链式执行器（六环原子按序串起来端到端出片，剪辑账本流转）
-│   └── build_catalog.py      从各引擎 capabilities.json 重建 catalog（透传 stage/layer/required/substep/source_types）
-│
-├── video-select/             第②环·选片 = Eval Harness + 成片脚本（Python 包，单向 import video-slicer 句/时间核心）
-│   ├── prompts/              ★ 5 条提示词全在此（按功能命名·改 prompt 不动代码）
-│   │                          topic-select(选题·基于 dbskill 选片灵魂+标题5铁律) / body-edit(总编·全局取证+精选合并)
-│   │                          refine-deduct(字级去口水决策) / hook(dbs-hook 内容·本项目整句优先排序) / dedup-merge(批量去重)
-│   ├── video_select/         topics(选题) / generate(候选·总编→组装→去口水→钩子) / dedup(流程二后内容级去重) / gates(精选合并门禁) / score(逼近度) / stage_run(单阶段测试口) / select_clips_a(方案A)
-│   ├── eval/                 Harness 数据 + 分阶段评测：fixtures(评测集；每数据集 stages/<N_阶段>/{input,golden}.json) / contracts(5 阶段契约) / scorers(5 把尺+judge+run_all) / build_inputs+seed_golden(派生脚本) / runs(产物·不入库) / notes(经验)；words.json 软链不入库
-│   └── capabilities.json     声明：topic_select / generate_candidate(stage=select) + dedup/gates/score/select_clips_a
-│   ▲ 选题/标题/钩子方法论蒸馏自 vendor/dbskill(dontbesilent·CC BY-NC 4.0) + videocut-zh 03§7/07；闭环 topics→generate→dedup→gates→score
-│
-├── video-slicer/             积木厂 · 剪辑策略 + 内容决策（Python 包，纯 urllib LLM，无独立 venv）
-│   ├── capabilities.json     声明：cut_sentence(句级·线上) / cut_word(词级·方案B) 共存 + transcribe + subtitle_align/subtitle_protect(④承重墙)
-│   ├── video_slicer/         planner + twostage + pages_gen(分页) + srt_fix(字幕纠错)
-│   │   ├── subtitle_align.py     ④把字幕从源时间搬到「拼好身子」时间·一次换算(承重墙·便签上车·砍掉旧版多级回算)·按字级停顿断句
-│   │   ├── subtitle_protect.py   ④别动清单钉回(自造词如「爱马仕」防 LLM 改) + 1:1/无吞字结构自检
-│   │   └── profiles/zh_main/keeplist.json  别动清单（受保护词数组）
-│   │   └── transcribe/       字级转写：火山 seedasr v3 主 / 阿里 paraformer 兜底；公网/OSS 上传
-│   │                          ★第①环固定入口=engines/video-slicer/transcribe-01.sh <视频>(runbook: doc/转录标准流程-01.md)
-│   │                          转录前自动 route-bypass 把国内 ASR API 钉本地出口(--skip-route-bypass 可关)
-│   │                          + align.py(句级带标点 ITN ↔ 字级时间 对齐) + segment.py(分句·优先原生语义句)
-│   ├── personas/zh_main.md   张和选题 persona（含问答可剪）
-│   ├── references/           字级去口水与承接句保护.md（删前保后+承接句红线，cut_word 判断基底）
-│   ├── profiles/zh_main/     {pages,srt_fix}_system_prompt.txt（账号 prompt 定制）
-│   ├── baselines/            ✅ 已迁出 → engines/video-select/（旧址副本停更，README 改指）
-│   └── .env                  → 符号链 var/credentials/llm.env（LLM provider 密钥，tools 侧真源）
-│
-├── video-framework-render/   积木厂 · 框架页渲染（竖版 720×1280 / 横版 1280×720 同源·独立 .venv: pillow+opencv）
-│   ├── video_framework_render/render.py        6 阶段原子 + TEMPLATES(vertical 框架页 / landscape 方框) + PIP 构图锁定/批量标定(--calibrate)
-│   ├── video_framework_render/render_page.js   puppeteer 渲 HTML→PNG（画幅参数化，默认 720×1280）
-│   ├── layouts/              vertical.json / landscape.json / clip_cut.json(裁剪版 1080×1920=vertical×1.5)（几何外置，--layout 选）
-│   ├── video_framework_render/subtitles_cli.py  把药丸渲染(make_subtitles)暴露成独立入口给裁剪版⑤复用（不改渲染逻辑·G4 零触碰）
-│   ├── capabilities.json     声明：framework_reframe / compose / accelerate / subtitles / reframe_locate / raw
-│   ├── profiles/zh_main/     fixes.json（账号 ASR 术语表）
-│   └── requirements.txt      pillow + opencv-python-headless（首跑建 .venv）
-│
-└── video-clip/               积木厂 · 通用叠加/裁剪/自检原子（独立 .venv）
-    ├── atoms/*.py            通用叠加: concat / prepend_hook / progress_bar / endcard / subtitle_burn / subtitle_ai_fix / cover_frame / title_bar / face_locate
-    │                          ③裁剪(承重墙): rough_cut(3a切段拼身子) / trim_silence(3c去长静音吐区间) / speed_adapt(3d固定档+换轨)
-    │                          源适配(录屏/带噪): reframe_crop(裁外框) / name_mask(--black 多块挡UI) / denoise_voice(demucs可选)
-    │                          自检门: align_check(门A切点+门D字幕对齐) / len_check(身子时长防烧错)
-    │                          剪辑账本: _manifest.py(账本读写+remap_time 重放·非原子·承重墙数据模型)
-    ├── assets/fonts/         自带字体（title_bar 用思源宋体超粗体 SourceHanSerifCN-Heavy.otf）
-    └── capabilities.json     声明叠加+③裁剪+源适配+自检 原子（带六环 stage 标签）
-```
+- 用户明确路径优先。
+- `assistant_zh`、`assistant_wxp_self` 等项目任务进入对应 item 体系。
+- 工具试验才进入 `tools/var/video-clip/`。
 
-**铁律**：
-- **依赖单向** `video-compose → 各引擎`；三个积木厂**互不调用**，只各自声明能力。
-- **多租户定制集中**：账号特定的 prompt / 术语 / 几何全在 `engines/<engine>/profiles/<account>/`，**不散回业务项目**。
-- **产物落点（按 `output_routing.json` 路由，不是固定常量）**：剪辑/合成 AI 跑原子前先过「输出落点决策」门——映射真源 `skills/video-clip/output_routing.json`（随 skill 走）。tools 自身样片→默认 `var/video-clip/<任务名>/`；**assistant_zh 语境→该条内容的 item 目录 `content/<persona>/items/<content_id>/`，全部产物（中间+成片）都进去，成片命名 `成片.mp4`**。`--out` / `--out-root` 仍可显式覆盖。接新号 / 改某项目落点只改 `output_routing.json`，不动 SKILL.md、不焊进引擎。（入口门写在 `skills/video-clip/SKILL.md`「输出落点决策」。）
-- **业务侧只剩薄胶水**：`assistant_zh/workflow/video_framework_slicer/` = `run_pipeline.py`(选 profile + 落点) + ③项目加工；渲染 / 选段 / 叠加全在 tools。
-- **片段画音整体**：上游产出的片段是不可分割的画音(+字幕)对象、共享一条时间线。后续动作**可以**单独改某条轨的内容(叠标题/遮挡/裁画幅/换音色，不动时间)，但**绝不能**单独改任何一条轨在时间线上的位置(平移/拉伸/裁时长)——凡动时间轴必须三条轨同一映射一起动。承重墙(③同一把剪刀)延伸到⑥组装。红线：`align_check` 门S(画音流时长 `v≈a`)，谁拆开片段就报红。反例沉淀：钩子素材画长音短(5.800/5.208s)曾让 `prepend_hook` 把正片声音错前 0.59s，已在 `_norm` 把音频补齐到视频时长治本。
+加新账号时，profile 和 output routing 要成对考虑；否则能力有了，成片仍会靠现场人工归位。
 
-## 入口命令（都在 video-compose）
+## 入口命令
 
 ```bash
 cd /Volumes/ExtSSD2601/AI_Assistant/tools
-python engines/video-compose/selector.py --list                 # 看全部能力原子(按六环分组) + 配方
-python engines/video-compose/run.py --plan zh_clip_cut           # 审裁剪版六环链（每环原子→引擎+源适配挂载点+自检门）
+
+# 看能力与配方
+python engines/video-compose/selector.py --list
+
+# 审链，不出片
+python engines/video-compose/run.py --plan zh_clip_cut
+
+# 原视频快剪
+python engines/video-compose/run.py --run zh_clip_cut --job /abs/job.json
+
+# 竖版 PPT
 python engines/video-compose/run.py --run zh_business \
-       --selection sel.json --profile zh_main                    # PPT版：端到端跑一条切片
-python engines/video-compose/run.py --run zh_clip_cut \
-       --job job.json                                            # 裁剪版：一键出片（job 规格见 clip_cut_run.py --help）
+  --selection /abs/selection.json --profile zh_main
+
+# 验证控制面没有漂移
+python engines/video-compose/verify_contracts.py
 ```
 
-## 维护场景：要做某件事 → 改哪里
+## 维护场景：要做什么，去哪改
 
-| 想做的事 | 怎么做 |
-|---|---|
-| **做第①环转录**（视频→逐字稿，日常用） | 固定走一行：`engines/video-slicer/transcribe-01.sh <视频>`。自动开本地分流(整条链路走本地出口·VPN照开)→抽音频→公网上传→火山转录·阿里兜底→出 `words.json`+`transcript.txt` 到 `<视频同目录>/transcript/`。已验证 44s~2.2h。runbook(大白话)：`doc/转录标准流程-01.md`。 |
-| **加一个新能力**（结尾卡、字幕加粗变色、画面多排布…） | ① 在所属积木厂 `engines/<engine>/` 写原子代码 → ② 在该引擎 `capabilities.json` 声明 → ③ 跑 `python engines/video-compose/build_catalog.py` 重建总表 → ④ 在 `recipes.json` 引用（或让 AI 自由组合）。**管线骨架不动。** |
-| **加一条新配方**（新的能力组合预设） | 在 `engines/video-compose/recipes.json` 加一条，`chain` 列出有序原子；`run.py --plan <name>` 审链路。 |
-| **改账号定制**（选题口径 / 术语表 / 版式几何，不碰代码） | 改对应 `engines/<engine>/profiles/<account>/`：选题/分页/纠错 prompt 在 `video-slicer/profiles/`、persona 在 `video-slicer/personas/`、ASR 术语在 `video-framework-render/profiles/<acct>/fixes.json`。 |
-| **接一个新账号 / 第二个号** | 新建 `engines/<engine>/profiles/<新account>/`（拷 zh_main 改），调用时 `--profile <新account>`。引擎代码不动。 |
-| **改产物落点 / 接新项目的落点**（剪辑成片该落哪个目录） | 只改 `skills/video-clip/output_routing.json`：`default` 是 tools 样片落点；每个 `projects` 条目 = 一个项目的 `detect`（怎么认出在为它干活）+ `target`（落点模板）+ 命名/解析规则。当前已配 assistant_zh→`content/<persona>/items/<content_id>/`。**SKILL.md 的落点决策门和引擎代码都不用动。** |
-| **改视觉几何**（画幅 / 圆形人像窗 / 药丸字幕位置） | 改 `video-framework-render/layouts/<vertical|landscape>.json`（CANVAS/GEOM/SUB 已外置，代码不再硬编码）。**改完必跑 G4 回归。** |
-| **改圆窗 PIP 构图**（人物在圆里多大 / 眼睛多高） | 改 `vertical.json` 的 `geom.pip_face_ratio`（脸高占圆比例，越大人越大）/ `pip_face_vpos`（脸心在圆内纵向位置，越小人越靠上）。当前 0.42/0.42(脸占42%·眼略上移)。圆窗在画面上的位置由 `geom.circle_x/circle_y`（当前 435/980，定稿时下移到右下角靠底，给上方内容腾地）+ 字幕 `sub.CY`（当前 1150）。竖版用此构图锁定；横版(landscape)及未配该键的版式仍走旧逻辑(2.2×脸高·脸居中)逐字节不变。**改完必按新构图重冻 G4 基线。** |
-| **保证每条切片圆窗大小/位置一致**（免逐条手调） | 圆窗飘动的根因是「每条片各自做角落小脸检测」噪声大。`run_pipeline.py` 已对整段录屏 `video_speaker` **标定一次**(调 `render.py <video> --calibrate` 取 cx/cy/fh)，把 `pip_calib` 注入每条 job → 所有切片共用同一裁框、零飘动。竖版自动启用；标定失败自动退回每条各自定位(不断流)。 |
-| **改版式排布**（框架页 / 方框 CSS 结构） | 改 `render.py` 的 `PAGE_CSS`（竖版框架页·手写白板）/ `PAGE_CSS_LANDSCAPE`（横版方框），或 `TEMPLATES` 注册新模板。竖版正文区必须靠安全框 + 等比缩小塞进 PIP/字幕上方，不能用 `overflow:hidden` 裁掉底部正文。⚠️ 竖版 `PAGE_CSS` 是 **PPT 定稿载体**，无用户明确指示不要改（见上「PPT 风格·定稿与锁定」）。 |
-| **改 PPT 翻页节奏 / 嫌页数太多** | 框架页是「**内容块驱动翻页**」：一页 = 一个**完整论点**（讲透了才翻），不是按秒数机械切。默认严格 2-3 页，能 2 页讲清就别切 3 页；同一论点不因时长拆页。三道闸：① 软闸在分页 prompt `video-slicer/profiles/<acct>/pages_system_prompt.txt`（宁少勿多、默认 2-3 页、start 贴句边界、原速≥14s）；② 停留硬闸在 `pages_gen.py` 的 `MIN_DWELL_SEC=14`（两页间隔不够久就把后页内容**并进前页**）；③ 总页数硬闸在 `MAX_PAGES=3`（仍超过上限就继续合并相邻页）。想特殊放宽：命令行 `--max-pages N`，或 selection `params.max_pages` / clip `max_pages`。 |
-| **出横屏成片** | `run.py --run landscape_business --selection <sel>.json`（或渲染 `--layout landscape`）。横版=1280×720 方框版式，视觉 DNA 同竖版（配色/手写字/药丸/圆窗）。同一份 pages 既出竖版又出横版。 |
-| **给成片加顶部标题**（贴纸式白底黑字 / 旧黑底白字整条） | `engines/video-clip/atoms/title_bar.py IN OUT --text 标题`。两种样式：`--style bar`（默认·顶部黑底白字整条）；`--style label`（顶部黑色信箱块里**白底黑字圆角贴纸**·单行·块高自动探测顶部黑边）。字色/底色 `--bar-color`/`--text-color` 可覆盖。 |
-| **成片前置开篇钩子 + 翻页转场** | `engines/video-clip/atoms/prepend_hook.py 钩子 正文 OUT [--flip 0.30] [--trans slideleft]`。钩子→翻页(翻页期间正文定格暂停)→正文，自动统一画幅/帧率+音频过渡。与 `concat`（硬切拼接，无转场）互补。 |
-| **出一条裁剪版成片**（录屏裁剪版竖版切片） | `run.py --run zh_clip_cut --job job.json` 一键端到端。job 规格（源/选段spec、words.json、术语表、别动清单、标题、钩子、是否 denoise/ai_fix、基准时长、落点）见 `clip_cut_run.py --help`。剪辑账本(`cut_manifest.json`)在原子间流转，自动跑③④⑤⑥+自检门(门A/D/S)。 |
-| **改完字幕/转场不想重切**（从某阶段重跑） | 阶段：`rough_cut→subtitle→trim→assemble`。`--from subtitle`（复用 body，重算字幕起，连带去静音/变速/组装/烧字）/ `--from trim`（复用 body+字幕便签，重做去静音起；改字幕**文本**就编辑 `clip.srt` 后走这个）/ `--from assemble`（复用 final+final.srt，只重做加标题/拼钩子/**末次烧字**）。阶段产物都落在 out_dir，省掉从 3.3h 源重切。账本 ops 幂等（重跑不叠加）。 |
-| **产物分层 / 清缓存** | 真源(小·永留)：`cut_manifest.json` + `clip.srt`/`clip.final.srt`（有它们+源就能确定性重生一切）；缓存(大·可清)：`body/trimmed/final/subbed/titled.mp4`。`--cleanup-cache` 成功后清缓存只留真源+成片；要重生跑 `--from rough_cut`。 |
-| **改去长静音/变速口径**（裁剪版③） | 去静音：`trim_silence.py` 的 `--min-sil`(多长算长停顿,默认1.5s)/`--keep-pad`(保留缓冲)/`--noise`(静音阈)；变速：`speed_adapt.py --fixed 1.2`(整体倍速)。静音检测**用干净人声当参考最准**——job 给 `vocals` 现成人声、或 `denoise:true` 跑 demucs(需装 audio venv)。 |
-| **改裁剪版药丸字幕位置/大小** | 改 `video-framework-render/layouts/clip_cut.json` 的 `sub`(FS字号/CY纵向中心/H药丸高/R圆角)。它=竖版 vertical.json ×1.5；**复用同一份 make_subtitles 几何**，不在别处再写第二份。 |
-| **改录屏裁切框 / 挡 UI 块**（源适配） | 裁切框：`reframe_crop.py --source X (--crop W:H:X:Y | --detect)` 吐 crop_vf（录屏 UI 版式固定，通常存进 job spec 的 `crop_vf` 当常量）；挡块：`name_mask.py IN OUT --region WxH+X+Y --region ... --black`（多块黑挡）或直接写进 job spec 的 `mask_boxes`(rough_cut 切段同趟盖)。 |
-| **保护字幕里的自造词**（别动清单） | 往 `engines/video-slicer/profiles/zh_main/keeplist.json` 加词（如「爱马仕」「直觉机器」）。`subtitle_protect` 会在 LLM 订正后把被改掉的受保护词强制钉回，并做 1:1 条数 + 无空格吞字自检。 |
-| **整条切片"加标题+拼钩子"一键收尾**（标题取自选题文案） | 业务粘合脚本 `var/zh_main/0618test/finalize_clip.py <clip号>`：自动从对应 item `publish_copy.md`「标题候选」✅ 取标题 → `title_bar --style label` 烧标题 → `prepend_hook` 前置钩子。clip↔item 映射见该脚本与 `var/zh_main/0618test/doc/钩子+标题-成片收尾流程.md`。 |
-| **换/加转写后端**（字级线地基） | `video-slicer/video_slicer/transcribe/`：火山 seedasr v3 主 + 阿里 paraformer 兜底；上传走公网默认(uguu/0x0)。阿里 OSS 备选(`--uploader oss`)⚠ **2026-06 凭证已过期、暂不可用**（续期写回 `var/credentials/aliyun.env` 并设 `OSS_CHANNEL_EXPIRED=0` 恢复）。火山 key 也在该 env。输出对齐 `twostage/resolve.py` 词表 schema。**转录前自动 route-bypass** 把**整条链路**钉到本地出口——国内 ASR API + public 上传站(uguu/0x0)，等价"手动关代理"但 VPN 照开（复用发布的 `engines/route-bypass`，平台名 `transcribe`），`--skip-route-bypass` 可关；钉不上只告警不挡转录。 |
-| **改去口水/承接句判断**（字级线） | 改 `video-slicer/references/字级去口水与承接句保护.md`（删前保后 + 四类高危承接句红线，cut_word 去口水的判断基底）。 |
-| **字幕/文案带标点 ITN**（字级线） | 去口水输入用**句级带标点 ITN 文本**（`run_cut.py` 建富 token → `script_clean.clean_to_keep(rich_tokens=…)`），删后经 `transcribe/align.py` 对回字级拿时间 → 字幕/文案/PPT输入(读 srt)带标点和"90%"。无原生句或对不齐 → 自动降级回字级裸拼（不断流）。原生效果待火山实跑验证。 |
-| **跑一条切片验证** | 竖版 `run.py --run zh_business --selection <sel>.json --profile zh_main`；横版 `run.py --run landscape_business --selection <sel>.json`；产物 `var/<account>/.../accel.mp4`。 |
-| **改完验证不回归（G4）** | `var/zh_main/baseline/` 存了冻结基线（`primaries/` 含可重放 `job.json`）。用引擎 venv 重放该 job.json，与基线逐帧/逐字节比对。方法 + 上次结果见 `var/zh_main/baseline/{STAGE0-baseline.md,G4-result.md}`。**G4 已并入回归套件 T3**（见下行）。 |
-| **跑分层回归测试**（每个能力的回归） | `python engines/video-compose/regression/run_regression.py [t0\|t1\|t2\|t3\|all]`。四层：T0 纯数据·秒级·每次提交；T1 单原子·喂金标准；T2 阶段；T3 端到端+G4+①火山转录·发版前。喂冻结金标准夹具不重头跑。改了金标准跑 `gen_expected.py` 重算期望值。设计/逐能力清单见 `var/zh_main/0619test/doc/视频剪辑skill-回归测试计划.md`，套件说明见 `engines/video-compose/regression/README.md`。 |
-| **改②选片提示词**（选题口径 / 总编精选合并 / 字级去口水 / 钩子 / 批量去重） | 改 `engines/video-select/prompts/` 对应 `.md`（topic-select / body-edit / refine-deduct / hook / dedup-merge），**改 prompt 不动代码**。选题/标题/钩子标准蒸馏自 dbskill（`vendor/dbskill`·CC BY-NC 4.0）+ videocut-zh 03§7/07；钩子排序保持本项目「整句优先」。改完重跑 Harness（下行）验收。 |
-| **建/迭代选片 Eval Harness** | 全在 `engines/video-select/`（不再有顶层 `eval/`）：代码 `video_select/`、Harness 数据 `eval/`（fixtures 入库 / runs 不入库 / words 软链 / notes 经验）。一键闭环（在引擎下跑）：`topics`（选题）→ `generate`（候选 Runner）→ `dedup`（流程二后内容级去重）→ `gates`（门禁）→ `score`（逼近度 vs 冻结 golden）。命令样例见 `engines/video-select/README.md`。设计真源 `doc/plan/视频剪辑skill-第二环选片-plan.md` §6。 |
-| **分阶段评测（per-stage eval）：5 条提示词各一把尺** | 整条链的总分看不出"哪一步烂"，故拆成 5 个独立评测点（每条提示词一个）。结构：`eval/contracts/<N_阶段>.md`（判分契约·真源）、`eval/fixtures/<数据集>/stages/<N_阶段>/{input,golden}.json`（每阶段冻结输入+金标准）、`eval/scorers/<N_阶段>.py`（5 把尺：②句号F1·③字符P/R·⑤配对P/R 纯代码自动；①④硬规则+`judge.py` LLM 评委）。派生脚本 `build_inputs.py`（造各阶段 input）、`seed_golden.py`（从端到端 golden 派生各阶段 golden）。单阶段实跑用 `python3 -m video_select.stage_run --stage <body_edit\|refine_deduct\|hook>`，一键评分 `python3 eval/scorers/run_all.py --dataset <ds>`。**改某条提示词只看那把尺**，其余阶段喂冻结金标准钉死。设计真源 `doc/plan/视频剪辑skill-第二环选片-分阶段评测-plan.md`，规范总纲 `engines/video-select/eval/README.md`。 |
-| **登记 / 结构变更后收口** | 改了引擎结构就更新 `registry.yaml`，跑 `python scripts/check-tools.py`（期望 0 error）。 |
+| 目标 | 改动路径 | 必须验证 |
+|---|---|---|
+| 加原子能力 | 所属引擎代码 + `capabilities.json` → 重建 catalog → recipe/dispatch | 契约检查 + 原子测试 + T0 |
+| 加配方 | `recipes.json` + runner/dispatch | `--plan` + 契约检查 + 对应阶段测试 |
+| 改选题 prompt | `engines/video-select/prompts/` | 对应 stage scorer + gates；必要时真实 LLM |
+| 改账号术语/prompt/preset | 对应 `profiles/<account>/` | profile 单测/样片/人工门 |
+| 加账号/项目落点 | profiles + `output_routing.json` | 路由解析和真实 item 落点 |
+| 改时间轴行为 | `rough_cut`/账本/伴随轨原子 | 时间基准单元 + T0/T1/T2 |
+| 改 PPT 视觉 | 三个锁定载体 | 用户样片确认 + G4 重冻/回归 |
+| 改 Skill 入口/行为 | `skills/video-clip/` | 本文同步 + 契约/T0/check-tools |
 
-## 环境依赖（首跑准备）
+更细步骤见 `skills/video-clip/references/maintenance.md`。
 
-- `video-framework-render`：`python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`（pillow + opencv）；node puppeteer（`PUPPETEER_PATH` 或本机已装）；系统 ffmpeg(含 libass)；字体 Hannotate SC + PingFang SC。
-- `video-clip`：自带 `.venv`（pillow + opencv），首跑 `requirements.txt`。③裁剪/源适配/自检原子多数纯 ffmpeg+系统 python 即可。**带噪去噪**：`denoise_voice` 的 demucs **已装在 `var/zh_main/0618test/.audio_venv`（demucs 4.0.1 + torch 2.12.1，6-18 既有）**，`denoise_voice` 自动探测此处（也认 `VIDEO_AUDIO_VENV` 环境变量、`engines/video-clip/.venv-audio`）；都没有则优雅跳过抽原音轨（不断流）。如需固化可把该 venv 迁到 `engines/video-clip/.venv-audio`。
-- `video-slicer`：纯标准库 + urllib LLM，用系统 python 即可；LLM 密钥走 `.env`（→ `var/credentials/llm.env`）。
-- `run_pipeline`（业务薄胶水）：用系统 python 跑（含 urllib LLM）；渲染子进程自动走 `video-framework-render/.venv`。
+## 验证梯度
 
-## 相关真源
+```bash
+# L0/L1：控制面与时间基准
+python engines/video-compose/verify_contracts.py
+python -m unittest discover -s engines/video-clip/tests -p 'test_*.py'
+(cd engines/video-slicer && python3 -m pytest tests/test_text_pipeline.py -q)
 
-- 决策 / 迁移历史 / 验收清单全文：[`video-tools-migration-plan.md`](./video-tools-migration-plan.md)
-- 六环阶段化 + 裁剪版 + 剪辑账本设计：[`doc/plan/视频剪辑skill-六环阶段化升级-plan.md`](./plan/视频剪辑skill-六环阶段化升级-plan.md)
-- 机器可读引擎清单：`registry.yaml`
-- G4 基线与回归证据：`var/zh_main/baseline/`（裁剪版承重墙在 clip_01 上验证：身子 78.683s 精确 + 3 帧字幕对口型 + 门A）。
-  ⚠️ **WS-6 伴随轨重构（2026-06-20）改了烧字时机/像素时间线**，G4 像素基线需按新序**重冻**后再验；新序端到端证据见 `var/zh_main/ws6_ride/clip_01/`（身子 78.683s 精确·成片门S 0.011s·门D/门A 全 PASS）与诊断收尾 `doc/bug/ws6_chain-clip01-音画字幕-诊断.md`。
-- 裁剪版手搓来源（已产品化·保留参考）：`var/zh_main/0618test/`（`assemble→rough_cut`、`trim_silence→trim_silence`、`build_subs→subtitle_align+subtitles`、`finalize→speed_adapt`）
+# L2：秒级确定性回归
+python engines/video-compose/regression/run_regression.py t0
+
+# L3：通用原子 smoke
+bash engines/video-clip/test_atoms.sh
+
+# 仓库登记
+python scripts/check-tools.py
+```
+
+按风险追加：T1 单原子、T2 阶段集成、T3 端到端 + 火山转录 + G4。金标准变化必须先解释行为为什么变，再重冻；不能为了绿灯直接改期望值。
+
+## 当前已知的过渡面
+
+- `zh_business` / `landscape_business` 仍由组合层 delegate 到 `assistant_zh` 的薄脚本。迁回工具需要跨项目样片和 G4，不能夹进普通整理。
+- `vertical_ppt` 已不是默认，但仍有代码和测试引用；删除要单独做视觉兼容迁移。
+- `var/zh_main/` 的历史大媒体是本机验证证据，不是代码真源；换机器要按 regression README 重建 fixture。
+
+## 完成定义
+
+一次结构或行为修改只有在以下条件同时满足时才完成：代码/配置已改；本架构文档同步；契约、对应测试和 `check-tools.py` 通过；人工门/G4 等本地证据按风险完成或明确记录未跑原因。

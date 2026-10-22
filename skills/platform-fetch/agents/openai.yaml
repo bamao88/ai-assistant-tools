@@ -1,0 +1,4 @@
+interface:
+  display_name: "通用｜平台来源采集"
+  short_description: "读取平台文章、笔记和视频来源，获取后续研究与内容制作需要的材料"
+  default_prompt: "使用 $platform-fetch 采集本次需要的平台原始内容；若为写作、研究或选题任务取材，完成后返回原任务继续。"

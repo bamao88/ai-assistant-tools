@@ -1,0 +1,4 @@
+interface:
+  display_name: "通用｜选题规划"
+  short_description: "寻找、比较选题或深化已选方向，交付有依据的角度、内容范围与取舍"
+  default_prompt: "使用 $content-topic-planning，根据当前账号与已有资料研究选题，比较值得写的方向并说明依据。"

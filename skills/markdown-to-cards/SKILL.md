@@ -5,6 +5,8 @@ description: 将 Markdown 文章转换为小红书风格卡片图片。当用户
 
 # Markdown 转卡片图片
 
+通用能力：账号定位、事实、素材与输出位置遵循当前项目；项目已有专属入口时优先沿其规则衔接。
+
 ## 使用方法
 
 本项目默认调用本地 CLI：
@@ -29,6 +31,7 @@ node /Volumes/ExtSSD2601/AI_Assistant/tools/engines/markdown-to-cards/cli.js \
 - `--cover-style`（可选）：封面样式，`template`（纯文字）、`image`（文字+图片）或 `both`（两者都生成）；提供 `--cover-image` 时默认使用图片封面
 - `--cover-template`（可选）：封面模板来源，`style`（默认，使用当前主题封面）或 `default`（正文用当前主题，封面强制使用默认 legacy 封面）
 - `--style`（可选）：卡片模板风格，默认 `legacy`
+- `--style-config`（可选）：排版编辑器导出的卡片 JSON；使用保存的底稿主题、颜色、字号与布局参数
 - `--color-scheme`（可选）：仅适用于 `legacy` 默认模板的预设配色，默认 `claude-orange-light`
 - `--chapter-label`（可选）：新主题封面/页眉标签，默认 `精选长图文`
 - `--cover-variant`（可选）：新主题封面版式，`primary`、`alt` 或 `all`，默认 `primary`

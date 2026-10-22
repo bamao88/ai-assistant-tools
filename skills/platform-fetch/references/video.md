@@ -1,6 +1,6 @@
 # 视频纯抓取原语（video fetch primitives）
 
-**重要边界：** 本 reference 只覆盖 URL 视频的**纯抓取**（元数据 / 字幕 / 关键帧）。如果用户要的是"本地视频转逐字稿""研究这视频写文章用""跨视频检索""根据逐字稿起标题"等视频内容处理工作流，**切换到独立 `video-content` skill**。
+**重要边界：** 单条音视频的字幕、逐字稿、关键帧和素材研究以 `video-content` 为主入口。本 reference 保留 URL 视频的**纯抓取**（元数据 / 字幕 / 关键帧），供多平台采集或显式调用 `platform-fetch` 的既有流程复用；根据已有逐字稿起标题或写平台配文交给 `content-package-create`。用户要求“把这个 YouTube 视频写成文章”等完整文章时，由 `source-longform-writing` 主责，按需要调用视频取材，拿到逐字稿或研究包后返回原写作任务继续，不能只交素材就结束。
 
 支持 yt-dlp 覆盖的 1000+ 站点（YouTube / Bilibili / 小红书 / 抖音 / Twitter / 视频号 / Vimeo 等）。
 

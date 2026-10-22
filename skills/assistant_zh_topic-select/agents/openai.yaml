@@ -1,0 +1,4 @@
+interface:
+  display_name: "assistant_zh｜选题探索"
+  short_description: "选题探索"
+  default_prompt: "使用 $assistant_zh_topic-select 完成选题探索，遵守本项目现有账号、来源与状态规则。"

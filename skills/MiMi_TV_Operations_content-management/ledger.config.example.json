@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "project_name": "猫猫电视机内容运营",
+  "timezone": "Asia/Shanghai",
+  "primary_scope": "project",
+  "observation_hours": [
+    24,
+    72,
+    168
+  ],
+  "observation_tolerance_hours": 4,
+  "shared_engine": "/Users/xpw/.agents/skills/content-operations-ledger/scripts/ledger.py",
+  "paths": {
+    "master": "CONTENT_MANAGEMENT.md",
+    "review_report": "CONTENT_REVIEW.md",
+    "content_index": "content/index.csv",
+    "publications": "content/publications.csv",
+    "metrics": "reviews/metrics.csv",
+    "checks": "reviews/platform-checks.csv",
+    "maintenance": "reviews/maintenance.csv",
+    "import_receipts": "reviews/ledger-imports",
+    "iteration_brief": "planning/CONTENT_ITERATION_BRIEF.md"
+  },
+  "platform_accounts": {
+    "platform-xhs-example": {
+      "name": "小红书示例",
+      "platform": "xiaohongshu",
+      "native_id": "<从项目账号文件读取>"
+    },
+    "platform-douyin-example": {
+      "name": "抖音示例",
+      "platform": "douyin",
+      "native_id": "<从项目账号文件读取>"
+    },
+    "platform-bilibili-example": {
+      "name": "B站示例",
+      "platform": "bilibili",
+      "native_id": "<从项目账号文件读取>",
+      "headline_window": "rolling"
+    }
+  },
+  "require_official_exports": true,
+  "review_resources": {
+    "workflow": "/Users/xpw/.agents/skills/content-operations-ledger/references/content-review.md",
+    "analysis": "/Users/xpw/.agents/skills/content-operations-ledger/references/retrospective.md"
+  }
+}

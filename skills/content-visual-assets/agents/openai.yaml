@@ -1,0 +1,4 @@
+interface:
+  display_name: 通用｜配图与截图素材
+  short_description: 按内容需要获取网页截图、视频画面与字幕引用卡，并核对素材来源
+  default_prompt: 使用 $content-visual-assets 完成本次配图与截图素材任务。

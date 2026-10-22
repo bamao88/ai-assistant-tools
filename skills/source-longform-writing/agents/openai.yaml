@@ -1,0 +1,4 @@
+interface:
+  display_name: "写作｜文章写作（视频与资料转长文）"
+  short_description: "把 YouTube、播客、访谈、网页或论文写成中文文章，衔接资料获取与润色"
+  default_prompt: "使用 $source-longform-writing，把我提供的 YouTube 视频、链接或资料写成中文文章，先阅读来源并给出选题、摘要和大纲。"

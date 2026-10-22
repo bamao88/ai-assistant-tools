@@ -1,90 +1,42 @@
-# 抖音视频/图文发布（reference）
+# 抖音视频/图文：本机现有 Chrome
 
-把**本地视频或图文发布到抖音**。底层 = `vendor/social-auto-upload` 的 `sau douyin` 子命令（patchright 浏览器自动化 + cookie 登录态）。
+本 reference 处理抖音创作者中心的视频与图文。使用本台电脑中用户已登录的日常 Chrome；先执行 [本机 Chrome 会话门](_local-chrome.md)，在 `before_connect`、`before_upload`、`before_submit` 检查同一任务锁定的浏览器绑定。发现脚本配置、会话替换或另一台电脑立即由 hook 报错并停止。
 
-> ⚠️ 这份 reference 管 **抖音视频 / 抖音图文（笔记）**。注意与 `references/wechatsync.md` 里"抖音图文同步"区分：wechatsync 走的是文章同步链路；本 reference 走的是抖音创作者中心的真实上传。优先用本 reference 发抖音视频。
+不启动 SAU、platform-video 或其它独立浏览器，不运行平台 CLI 登录检查，不导入 Cookie。打开实际平台页面判断登录；要求认证时保留这个 Chrome 的原页，请用户完成登录。
 
-## 引擎路径与前置
+## 接管、身份与查重
 
-```bash
-ENGINE=/Volumes/ExtSSD2601/AI_Assistant/tools/vendor/social-auto-upload
-SAU="$ENGINE/.venv/bin/sau"
-```
+1. 从当前浏览器清单锁定用户日常 Chrome 的真实配置，优先接回本条现存页。新标签只能属于该配置。
+2. 使用已存在实现中的 `https://creator.douyin.com/creator-micro/content/upload`，或从创作者中心“高清发布”正常选择“发布视频/发布图文”；不猜旧 DOM 选择器。
+3. 核对目标账号名称、抖音号等平台原生身份，与本次项目账号映射一致后才继续。脚本账号 slot、Google 用户名和 Cookie 文件存在都不能替代身份核验。
+4. 检查稿件管理页是否已有本条作品；结果未知的上次提交先查重。验证接管时只看身份和稿件状态，不选择文件、不填表、不保存草稿、不发布。
 
-- 账号 cookie 存在 `tools/var/state/social-auto-upload/cookies/douyin_<account>.json`（已软链，凭证只放 var/）。
-- 浏览器用 patchright Chromium（安装时已 `patchright install chromium`）。
-- 账号白名单见 `vendor/wechatsync/config/project-platforms.json` 的 `assistant_zh.expectedAccounts.douyin`（当前：`张和`）。账号标识约定：`张和` = 本项目（assistant_zh，负责张和全部自媒体）名下的抖音号，cookie 落 `douyin_张和.json`。**只发这个账号**，发别的先与用户确认。
+## 发布包与字段
 
-## 当前状态（2026-06-22）
+核对同一作品的 `core_brief.md`、`publish_<account>.md`、素材、封面和本次停止点，按 [素材规格](../assets/platform_rules.yaml) 校验。用户已确认的换行、空行和跨平台同步要求属于版本的一部分，保留并记录平台适配差异。
 
-抖音发布工具入口已恢复，支持人工最终确认需要的填表模式：
+- 视频使用已确认成片，封面分别准备 3:4 竖版、4:3 横版；图文使用已确认的有序图片。
+- 历史图文页面最多 35 张且不支持 GIF，当前选择器限制须现场读回；不把格式改名当转换，不静默替换内容形态。
+- 抖音最多 5 个话题，从已确认关键词中选择本平台适用项；不用其它平台的全部关键词直接填入。
+- 标题、正文/描述的控件随页面形态而变，按当前真实字段填写；发布包规格与当前页面限制同时核对。超限按含义重写并同步包，不机械截断。
 
-- 测试号 `测试号_抖音` 已通过真实 fill-only 复测：上传测试视频、填写标题/简介/话题、上传封面、选择自主声明，最终停在发布页，未点击“发布”。定时 fill-only 也已复测：`--schedule "2026-06-23 20:30"` 成功切到“定时发布”并校验页面时间值。
-- `upload-video` / `upload-note` 支持 `--fill-only`：上传素材、填写标题/正文/标签/封面/定时时间后停在发布页，不点击最终“发布”。
-- 当前测试阶段只允许 `--fill-only`；禁止点击最终“发布/定时发布”。即使命令支持自动提交，也必须等用户之后重新明确授权。
-- 抖音话题/关键词最多 5 个。即使素材文案给了 10 个关键词，发布命令也只能传前 5 个；底层 CLI/uploader 会防御性截断到 5 个。
-- 新版创作者中心必须先点左侧“高清发布”菜单里的“发布视频/发布图文”；底层 CLI 已内置该入口，不再直接等旧的 `div[class^='container'] input`。
-- 视频发布页表单渲染可能在文件解析后才出现，当前 CLI 最长等待 120s；不要把这段等待误判为卡死。
+## 逐项填写与原页补救
 
-真实账号使用前仍必须按总入口契约确认账号和最终提交权限。若 `张和` 等真实账号 cookie 失效，先完成 `login` + `check`，再执行上传。
+1. 上传一条作品的素材，等文件解析及平台表单就绪，观察实际进度。表单可能在解析后才出现；卡住时保留原页看提示，不重新启动一轮上传。
+2. 正文与来源、标签分开，按语义分段输入并读回空行；不能把 source_credit 或普通井号文本拼入正文冒充原生字段。
+3. 话题逐个输入，选择精确联想项并核对实体名称和数量。历史观察为 `data-mention` 实体，具体以当前 DOM 为准。重填正文可能清除话题，重填后重新核对，只补缺失项。
+4. 封面分别上传、保存并检查 3:4 与 4:3 的最终缩略图。新版编辑器可能用顶部步骤切比例，按实际控件操作；按钮禁用、保存失败、弹窗未关闭都不是完成。固定导航可能遮挡长截图，补关键区域截图确认文字不被裁切。
+5. 来源与自主声明按本条真实素材核对。外部转载用“内容为转载信息 → 取材站外”，记录该声明不等于完整署名，原作者和原链接另存来源台账；自有素材不沿用转载例子。其它内容类型声明按本条已确认要求选择并读回。
+6. 设置即时或定时发布后失焦读回日期、小时、分钟和时区。重复点击已选中的“定时发布”可能重置时间，不据按钮文字推断设置成功；禁止复制旧测试时间。
+7. 商品/其它关联仅在本条明确授权时添加，不能将可选关联当默认动作。
 
-## 命令
+## 质量门、提交与收尾
 
-**登录（建议在本地真实终端跑，可加 `--headed` 看页面）：**
-```bash
-"$SAU" douyin login --account <account_name> --headed
-```
-- 登录过程可能生成临时二维码图片；这类图片就是给用户扫的，**优先直接把本地图片展示/发给用户**，不要只给路径。
+按 [执行与质量](_execution-quality.md) 检查账号、视频完成状态、正式正文与空行、最多 5 个原生话题、双比例封面、声明、可见范围和排期，保存视口、关键区域及字段读回证据；`before_submit` hook 必须仍核对原浏览器绑定。
 
-**检查登录态（只读）：**
-```bash
-"$SAU" douyin check --account <account_name>
-```
-上传前必须先跑 `check`。如果不是有效登录态，先 `login`，不要直接上传。
+- 只验证、只填表或 `manual-submit`：原页保留，不提交，不自动保存草稿。
+- 已获 `agent-submit` 且质量通过：在同一页面独立点击发布/定时发布一次，沿用现有授权，不重复确认。
+- 未获得确定回执时先在稿件管理页查重，不重新上传或再次点击发布。
+- 记录“平台接受提交”“审核中/待定时公开”“已公开”的区别。成功后只关闭该作品的任务发布页；用户原标签和其它未完成平台页面保留，每轮刷新未完成页保留标记。
 
-**发视频：**
-```bash
-"$SAU" douyin upload-video --account <account_name> \
-  --file /abs/path/video.mp4 \
-  --title "标题" \
-  --desc "简介" \
-  --tags 运动,训练 \
-  --thumbnail-landscape /abs/cover-4x3.png \
-  --thumbnail-portrait  /abs/cover-3x4.png \
-  --fill-only --hold-seconds 0 \
-  --schedule "2026-06-10 21:30"     # 可选：定时发布
-```
-- 必填：`--account --file --title`。其余可选。
-- 封面：`--thumbnail-landscape`（4:3 横版）、`--thumbnail-portrait`（3:4 竖版）；`--thumbnail` 兼容旧参数=3:4 竖版。
-- 带货可选：`--product-link --product-title`。
-- `--schedule` 格式 `YYYY-MM-DD HH:MM`，传了即切换为抖音定时发布。
-- 抖音最多 5 个话题，`--tags` 只传 5 个以内；如果 `publish_copy.md` 给了 10 个小红书关键词，只取前 5 个用于抖音。
-- 默认 `manual-submit` 时必须传 `--fill-only`；`--hold-seconds 0` 表示浏览器保持打开直到终端 Ctrl-C，`--hold-seconds 60` 表示停 60 秒后关闭，便于自动化复测。
-
-**发图文（笔记）：**
-```bash
-"$SAU" douyin upload-note --account <account_name> \
-  --images /abs/1.png /abs/2.png \
-  --title "图文标题" --note "图文内容" --tags 图文,测试 \
-  --fill-only --hold-seconds 0
-```
-- 抖音图文最多 35 张，不支持 GIF。
-- 抖音图文同样最多 5 个话题。
-
-## 运行时开关
-
-- `--headed` 有头（看页面 / 人工核对）、`--headless` 无头（默认）、`--debug` 失败时留更多调试信息。
-- `--fill-only` 会强制使用有头浏览器并停在最终发布前；未给 `--hold-seconds` 时默认一直等，适合人工检查。
-- 抖音默认无头；要可视核对再显式 `--headed`。
-
-## ⚠️ 安全
-
-- 上传走真实创作者中心。发布前把 标题/简介/标签/封面/视频 与用户确认。
-- 默认 `manual-submit` 场景下必须带 `--fill-only`，让页面停在最终发布前。
-- 只有用户明确授权机器点击最终“发布/定时发布”（`agent-submit`）时，才允许不带 `--fill-only` 执行上传命令；底层 CLI 还要求同一条命令显式设置 `SAU_DOUYIN_ALLOW_SUBMIT=1`。
-- 测试阶段、测试号 `测试号_抖音`、或用户说“不要点击发布”时，绝不设置 `SAU_DOUYIN_ALLOW_SUBMIT=1`。
-- check 失效 / 报 cookie missing or expired → 让用户重跑 `douyin login`。
-
-## 素材准备（可选）
-
-- 字幕/封面/关键帧 → `video-content`；剪辑 → engines/video-slicer；封面 → video-cover kit；开头优化 → `dbs-hook`。
+旧 CLI、Cookie 恢复与历史故障验证原文保存在 `history/douyin-legacy.md`，不再作为执行入口。历史填表测试不证明本轮接管、封面保存或最终提交已通过，真实验证按当前页面结果单独报告。

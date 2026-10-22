@@ -1,0 +1,6 @@
+interface:
+  display_name: MiMi_TV_Operations｜运营台账与复盘
+  short_description: 维护猫猫电视机发布排期和官方数据，复盘表现并追踪下一批实际采用
+  default_prompt: 使用 $MiMi_TV_Operations_content-management 读取项目现有数据与复盘，更新报告并优化下一批笔记。
+policy:
+  allow_implicit_invocation: true

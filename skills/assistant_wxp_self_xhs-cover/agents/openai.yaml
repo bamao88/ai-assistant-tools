@@ -1,0 +1,6 @@
+interface:
+  display_name: assistant_wxp_self｜小红书封面
+  short_description: 按八毛账号已认可视觉制作封面，保留人物身份和已定文案并归档素材
+  default_prompt: Use $assistant_wxp_self_xhs-cover to generate three Xiaohongshu
+    cover variants for this WXP personal-account note.
+  brand_color: '#ff4fa3'

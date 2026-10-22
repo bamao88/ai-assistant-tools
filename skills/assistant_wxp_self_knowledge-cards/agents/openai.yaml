@@ -1,0 +1,6 @@
+interface:
+  display_name: assistant_wxp_self｜知识卡片制作
+  short_description: 为八毛完成知识拆分、分页、画风选择、逐页生图和本地成品质检
+  default_prompt: 使用 $assistant_wxp_self_knowledge-cards，把提供的内容制作成知识卡片，按本包内置流程完成逐页图文、大纲、提示词、生图、打包和检查。
+policy:
+  allow_implicit_invocation: true

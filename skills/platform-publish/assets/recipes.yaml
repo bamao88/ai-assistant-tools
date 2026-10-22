@@ -1,0 +1,20 @@
+_doc: |
+  发布套装声明。套装只决定“默认发哪些平台”，每个平台仍按 platform_rules.yaml 产包，
+  按 platform_capabilities.yaml 选择上传/降级路径。
+
+recipes:
+  口播切片三平台:
+    content_form: video
+    targets:
+      - shipinhao
+      - xiaohongshu
+      - douyin
+    note: 视频号 + 小红书视频 + 抖音；B站视频因不可逆，不放入默认套装。
+
+  长文全网:
+    content_form: article
+    targets:
+      - gongzhonghao
+      - wechatsync
+      - xiaohongshu
+    note: 公众号 + 文章草稿直传平台 + 小红书图文卡片；具体平台由账号和白名单确认。

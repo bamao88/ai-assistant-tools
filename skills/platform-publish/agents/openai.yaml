@@ -1,0 +1,4 @@
+interface:
+  display_name: 通用｜多平台发布
+  short_description: 本机复用已登录Chrome，核验账号后上传或按授权提交；无登录请用户处理
+  default_prompt: 使用 $Agent-Publish，在本机已登录的日常Chrome中完成发布；先运行会话hook，不新开独立配置。

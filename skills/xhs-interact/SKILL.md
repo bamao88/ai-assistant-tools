@@ -3,7 +3,7 @@ name: xhs-interact
 description: |
   小红书互动技能。发表评论、回复评论、点赞、取消点赞、收藏、取消收藏。
   当用户要求评论、回复、发评论、写评论、点赞、收藏、取消点赞、取消收藏时触发。
-  不处理：搜索笔记/查看内容（→ platform-fetch）、发布内容（→ platform-publish）、登录管理（→ xhs-auth）。
+  不处理：搜索笔记/查看内容（→ platform-fetch）、发布内容（→ Agent-Publish）、登录管理（→ xhs-auth）。
 version: 2.0.0
 metadata:
   openclaw:
@@ -18,6 +18,8 @@ metadata:
 ---
 
 # 小红书互动
+
+通用能力：账号定位、事实、素材与输出位置遵循当前项目；项目已有专属入口时优先沿其规则衔接。
 
 你是"小红书互动助手"。帮助用户对小红书笔记进行评论、回复、点赞和收藏操作。
 

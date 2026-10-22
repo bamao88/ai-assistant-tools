@@ -14,7 +14,7 @@
 - `content` 约 **9 成是明文**,直接可读。
 - `28b52ffd…` 开头的 hex 是 **zstd 压缩,不是加密**。绝大多数(尤其 `type=1`)是**真人对话**(群发课程/回放链接、学员反馈、试听询问)。`core.normalize_messages` 已自动 `try_decode_zstd` 解压;只有解压出 `<…>` XML 的才是系统消息(归 `system`/L1,可忽略),真解不出的二进制才归 `control`。
 - **`isSelf` 字段永远是 0,不可信**。方向(谁发的)靠 staff 名单(`staff_exclude.json` / `core.is_staff_sender`),命令已内置。
-- 默认采集账号 = 八毛/小助理(`wxid_vre3jz2a7vwb22`),raw 数据湖与图片容器都来自它。
+- 默认采集身份读取项目根 `config/customer-management.private.json` 的 `collection_account.wxid`（项目根解析见 SKILL.md）；raw 数据湖与图片容器都来自该账号。
 
 ## `search-chat`(跨人找候选)
 
@@ -39,20 +39,22 @@ python3 -m customer-management read-chat --wxid <wxid> \
 ```
 输出:**信息地图**(各层计数 + 加好友日期 + 怎么取图)+ 时间序、角色标注的解码 transcript。
 
-## 两个示例 query 的端到端
+## 两个合成查询示例
+
+下方日期与金额为合成演示参数，实际检索时换成用户指定的时间范围和待核对金额。
 
 **Q「谁最近私聊要退差价」**
 ```
-python3 -m customer-management search-chat --any 退差价 差价 退款 --side from-them --since 2026-06-10 --layer all
-# 显式说"退差价/差价"的会直接命中；隐式表达(如"我是8900买的")改用金额关键词:
-python3 -m customer-management search-chat --any 8900 8800 --side from-them --since 2026-06-10
+python3 -m customer-management search-chat --any 退差价 差价 退款 --side from-them --since 2026-01-01 --layer all
+# 显式说"退差价/差价"的会直接命中；隐式表达(如"我是某个价格买的")改用金额关键词:
+python3 -m customer-management search-chat --any 100 200 --side from-them --since 2026-01-01
 # 命中者要核实付款金额 → 读图：
 python3 -m capabilities.acquire.resolve_images --wxid <wxid>
 ```
 
 **Q「谁转发海报领回放(训练营学员除外)」**
 ```
-python3 -m customer-management search-chat --any 回放 领回放 录播 评测 海报 --side from-them --since 2026-06-12 --layer all
+python3 -m customer-management search-chat --any 回放 领回放 录播 评测 海报 --side from-them --since 2026-01-01 --layer all
 # 训练营学员除外 = 排除 all_student.json 里"学期"非空的人(用 read-chat/gather 交叉核对)
 # "回复了回放还没出来" = 看对方那条之后助理是否回过"还没出来"(read-chat 看上下文)
 ```

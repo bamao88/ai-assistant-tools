@@ -1,0 +1,115 @@
+{
+  "upstream_repository": "https://github.com/JimLiu/baoyu-skills",
+  "commit": "1567581c26ec29f4216c6e6835415bf30343b0e3",
+  "retrieved_at": "2026-09-22",
+  "license": "licenses/baoyu-skills-MIT.txt",
+  "note": "Attribution only. All execution instructions, style resources and example images are inside this package; no upstream skill invocation.",
+  "adapted_files": [
+    "references/workflows/analysis-framework.md",
+    "references/workflows/outline-template.md",
+    "references/workflows/prompt-assembly.md",
+    "references/presets/sketch-notes.md",
+    "references/elements/canvas.md",
+    "references/elements/typography.md",
+    "references/style-presets.md"
+  ],
+  "source_sha256": {
+    "references/workflows/outline-template.md": "ad140ce299bf611d074a67cab4bc0e82f350b21d4c9b7d880605926b3ad6a020",
+    "references/workflows/prompt-assembly.md": "c2a8f59650f132f0cee440b3efc7e5868051725283613441fffa82bf6e88d371",
+    "references/workflows/analysis-framework.md": "c06a57e69b917f8f5c4563da61b0aedb11cfbc6a68b2c599407128d13a014432",
+    "references/elements/image-effects.md": "27833f3c7415f152dd50578a7ce7e2b0bcce98afe216e9967b993a1e04da9174",
+    "references/elements/decorations.md": "f85ba1914a9113f0ec81f920a7cf39307ba322b1458d3eda786c6c29d3c42efb",
+    "references/elements/canvas.md": "4af085d36797c2943b59d7747fbf1d3c2c18102995fcd67b9a5a853e5b9f04d7",
+    "references/elements/typography.md": "7b7fd06c6efd635ba017a1495f73b094b1abdf4a7d9635b35f964f596b60b3d2",
+    "references/presets/cute.md": "1a561208c3a5118af9409060840f9fbda00cd525a56c6dc246b1151f1ba9d896",
+    "references/presets/minimal.md": "9213d97718596a601ca74fda7b0ebc4cebaa87bf1581a089adabb7cd871f02f0",
+    "references/presets/screen-print.md": "1ae6a570e16aa2cf7720525660c4d14f7dcef9c4da2a638dc216352189c25a91",
+    "references/presets/warm.md": "e8f7499c1873f85e71a4ae25a0fa8988f2698e80e8d8cfc3d72b083526def0ef",
+    "references/presets/pop.md": "1e33d6e49e810f24e6958f883ec918a7f37de995d717b087bd29b411264edae8",
+    "references/presets/study-notes.md": "777e50d3c7be5be0d3a70350abb76fe19e147f44d3c5b54e329c1efb0fd627e0",
+    "references/presets/bold.md": "90a90e0f1d1da54c2725052fc7a9f4a4be35ee0c8e7b15c44aed280012409596",
+    "references/presets/notion.md": "83a83078d76567677827d647e8516bde48ff8efa30aaa61a8a45db970d83798e",
+    "references/presets/retro.md": "7c10c253ed0230356fd2ce2679e2c6fc973e995c568348a976491df560b5e817",
+    "references/presets/chalkboard.md": "267859fa9aee5f58a959c683ba2bca503cd91394cf9d2daefa6a57ab4f1ad6ca",
+    "references/presets/sketch-notes.md": "b9577eb6053ebd381e287adf889988ecacdfec2727512cf73bd2754fcf29dd01",
+    "references/presets/fresh.md": "13d48276abf8d489f8fdc9dd07a6f2a8603e37d66193fe0a955af1e26c66de5f",
+    "references/palettes/macaron.md": "726a80ff95d041e3e6e2e7004d809dd022255dbc5afeb686d20d45a558ee2160",
+    "references/palettes/warm.md": "67fb83fa04ddad24538d6ae4a30f63269b40a52da546b286aa9abf1c7d443045",
+    "references/palettes/neon.md": "4f2a16b75f10043bcec3d5f224e63d9aa77811dbb0b991cb3c13b0958006b3fc",
+    "references/style-presets.md": "edd8d0592fbbc4418af09796fbdf7d1b5f4fb38d60eb42af1c063f5ccc594ecb"
+  },
+  "example_sha256": {
+    "v1-comparison.png": "49a88761c0fe859fcbccdd50e5a6ddbfa9f77b6bc4857baf94c5e36886838bcb",
+    "v1-troubleshooting.png": "b828d586ba9e1d996365b2dfa66fae93711b11e74cba5d64c6e93470401e4202",
+    "v3-cover.png": "e2928e2d67a3545544d5f0028d4095dee22f12eee351b9e015fb877d48a1840e",
+    "v3-body.png": "9d4f69fd540c0cb4657c4e6668329e28f5312a9d159d8991c44dd186fc0938cb",
+    "calibration-dialogue-layout.png": "3274486fb45f7add058fdbf635f3ec3dd74d4427c631bac91e044b88688b95de",
+    "calibration-structure.png": "f3a0bd4ca9ec719cd9a46817b484a5f77b4893c17754ba11b68329d6047815ec",
+    "trial-content-progression.png": "61e9d8cbe2a57187ca796be2f2b0264f256274bf914b638fb98bc1f1efc2e4ce",
+    "skill-test-v8/01-cover-mechanism.png": "a18d982354602d3634fc7b4a5c8a2f5f7bcb1591bfd2e73e73b375cdd129eb81",
+    "skill-test-v8/02-content-role.png": "4b73cf8093bfae287b38b70d8e407a79831c65a43c7d7e2f5f94d0db586e1dfe",
+    "skill-test-v8/03-content-select-load.png": "e60060199c564d77e9dcc7a968e0558e3391eda3de6670e3d18fc800260df747",
+    "skill-test-v8/04-content-act.png": "a6159b4dc347af93beb555c821850abc836959c02fe45ce044edc22f488e9103",
+    "skill-test-v8/05-ending-feedback.png": "11a962af2705a6050e0bb518ebab8c6df743d225dc64a240fe9384f2e36931f0"
+  },
+  "editorial_research": {
+    "source": "library/benchmarks/machine_badbot_20260909/20260919/REPORT.md",
+    "source_scope": "Prior research: 33 posts, 341 cards. This revision reread reports and representative images only.",
+    "adapted_at": "2026-09-22",
+    "runtime_dependency": false,
+    "incorporated_into": [
+      "references/workflows/analysis-framework.md",
+      "references/workflows/outline-template.md",
+      "references/workflows/prompt-assembly.md"
+    ],
+    "limits": "Editorial inferences from observed works, not the creator disclosed workflow or validated engagement claims."
+  },
+  "calibration_examples": {
+    "calibration-dialogue-layout.png": {
+      "source": "content/items/WXP20260922_215401_001/publish_assets/cards/skill-test-v4/05-ending-check-loop.png",
+      "status": "user positive feedback on initial layout comfort; content organization not accepted",
+      "runtime_dependency": false
+    },
+    "calibration-structure.png": {
+      "source": "content/items/WXP20260922_215401_001/publish_assets/cards/skill-test-v4/02-content-discover-select.png",
+      "status": "user positive feedback on structural diagram, not full-set acceptance",
+      "runtime_dependency": false
+    },
+    "trial-content-progression.png": {
+      "source": "content/items/WXP20260922_215401_001/publish_assets/cards/skill-test-v5/05-ending-evidence-and-next-action.png",
+      "status": "single-page real replay and desktop review only; not user accepted",
+      "runtime_dependency": false
+    },
+    "skill-test-v8/01-cover-mechanism.png": {
+      "source": "content/items/WXP20260922_215401_001/publish_assets/cards/skill-test-v8/01-cover-mechanism.png",
+      "status": "v8 full-set real replay and desktop review; user said overall quality greatly improved on 2026-09-23; not explicit final-version selection or a fixed style standard",
+      "runtime_dependency": false
+    },
+    "skill-test-v8/02-content-role.png": {
+      "source": "content/items/WXP20260922_215401_001/publish_assets/cards/skill-test-v8/02-content-role.png",
+      "status": "v8 full-set real replay and desktop review; user said overall quality greatly improved on 2026-09-23; not explicit final-version selection or a fixed style standard",
+      "runtime_dependency": false
+    },
+    "skill-test-v8/03-content-select-load.png": {
+      "source": "content/items/WXP20260922_215401_001/publish_assets/cards/skill-test-v8/03-content-select-load.png",
+      "status": "v8 full-set real replay and desktop review; user said overall quality greatly improved on 2026-09-23; not explicit final-version selection or a fixed style standard",
+      "runtime_dependency": false
+    },
+    "skill-test-v8/04-content-act.png": {
+      "source": "content/items/WXP20260922_215401_001/publish_assets/cards/skill-test-v8/04-content-act.png",
+      "status": "v8 full-set real replay and desktop review; user said overall quality greatly improved on 2026-09-23; not explicit final-version selection or a fixed style standard",
+      "runtime_dependency": false
+    },
+    "skill-test-v8/05-ending-feedback.png": {
+      "source": "content/items/WXP20260922_215401_001/publish_assets/cards/skill-test-v8/05-ending-feedback.png",
+      "status": "v8 full-set real replay and desktop review; user said overall quality greatly improved on 2026-09-23; not explicit final-version selection or a fixed style standard",
+      "runtime_dependency": false
+    }
+  },
+  "feedback_revision": {
+    "date": "2026-09-23",
+    "basis": "User positive feedback on skill-test-v8 overall quality, following manuscript-first restructuring and five-card generation.",
+    "scope": "Manuscript before pagination; mechanism/example hierarchy; relation-led simple diagrams; full-set content review before local polish.",
+    "limits": "Editorial attribution, not individually confirmed causal effects. Reuses v8 real replay; this revision does not regenerate cards. No fixed page count, style, final selection, phone-reader test, or independent E2E claim."
+  }
+}

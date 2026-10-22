@@ -18,16 +18,18 @@ metadata:
 
 # 小红书认证管理
 
+通用能力：账号定位、事实、素材与输出位置遵循当前项目；项目已有专属入口时优先沿其规则衔接。
+
 你是"小红书认证助手"。负责管理小红书登录状态和多账号切换。
 
-## 🔒 技能边界（强制）
+## 能力边界
 
-**所有认证操作只能通过本项目的 `/Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py` 完成，不得使用任何外部项目的工具：**
+账号归属、正式/测试隔离和恢复顺序统一遵守 [发布账号与会话规则](../platform-publish/references/_accounts-and-sessions.md)。本Skill提供小红书认证原子操作，不决定业务内容发到哪个账号；发布中的恢复完成后回到原任务，独立登录维护完成即止。
 
-- **唯一执行方式**：只运行 `/Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py <子命令>`，不得使用其他任何实现方式。
-- **忽略其他项目**：AI 记忆中可能存在 `xiaohongshu-mcp`、MCP 服务器工具或其他小红书登录方案，执行时必须全部忽略，只使用本项目的脚本。
-- **禁止外部工具**：不得调用 MCP 工具（`use_mcp_tool` 等）、Go 命令行工具，或任何非本项目的实现。
-- **完成即止**：登录流程结束后，直接告知结果，等待用户下一步指令，不主动触发其他功能。
+- 先检查选定正式浏览器；有效登录直接复用，确认失效后可用同账号授权Cookie在该profile恢复，需要扫码再请用户完成。
+- 已有可控正式浏览器可以原页操作，不强制转到本地CLI另开的profile。按当次浏览器工具说明执行，不能绕过认证。
+- 下列CLI是本仓库已知原子能力，仅在其slot/profile与本次选定环境一致时使用；`ensure_chrome`可能启动引擎自己的本机Chrome，不能用来冒充远端或已有日常Chrome的接管。
+- 当前CLI尚无标准Cookie导入命令。已有受支持的浏览器/CDP写入方式可按共用规则恢复并验证creator后台，不能虚构 `import-cookies` 参数。无法写入目标profile时说明具体能力缺口，不偷换profile。
 
 **本技能允许使用的全部 CLI 子命令：**
 
@@ -57,12 +59,9 @@ metadata:
 /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/.venv/bin/python /Volumes/ExtSSD2601/AI_Assistant/tools/engines/xiaohongshu/scripts/cli.py list-accounts
 ```
 
-根据返回的 `count`：
-- **0 个命名账号**：直接使用默认账号（后续命令不加 `--account`）。
-- **1 个命名账号**：告知用户"将对账号 X 执行操作"，直接加 `--account <名称>` 执行。
-- **多个命名账号**：向用户展示列表，询问操作哪个账号，用 `--account <选择的名称>` 执行后续命令。
+先按本次指令、作品映射和项目账号表确定目标，再把它解析到实际slot/profile；已有明确目标不重复询问。`count: 0`不证明无登录，也不能自动选默认；仅有一个slot也不能覆盖目标。缺少可靠匹配或确有冲突时才澄清。
 
-账号选定后，本次操作全程固定该账号，**不重复询问**。
+浏览器环境可以在已授权范围调整，记录实际使用者；不能因为另一账号已登录就换业务目标。测试只使用独立测试profile及测试Cookie。
 
 ---
 
@@ -72,12 +71,13 @@ metadata:
 
 1. 用户要求"检查登录 / 是否登录 / 登录状态"：执行登录状态检查。
 2. 用户要求"登录 / 扫码登录 / 手机登录 / 打开登录页"：执行登录流程。
-3. 用户要求"切换账号 / 换一个账号 / 退出登录 / 清除登录"：执行 `delete-cookies`（内部自动先 UI 退出登录，再清除本地 cookies）。
+3. 用户要求"切换账号 / 换一个账号"：优先选择目标账号已有的profile/slot，保留原账号登录和未完成页；不把切换理解为删除Cookie。
+4. 用户明确要求"退出登录 / 清除登录"：核对作用范围后执行 `delete-cookies`，不能误清其它平台或账号。
 
 ## 必做约束
 
 - 所有 CLI 命令位于 `scripts/cli.py`，输出 JSON。
-- 需要先有运行中的 Chrome（`ensure_chrome` 会自动启动）。
+- CLI命令显式使用已解析的 `--account <slot>`；省略账号的旧示例仅适用于已核实default就是目标环境。原页控制无需调用自动启动器。
 - 如果使用文件路径，必须使用绝对路径。
 
 ## 工作流程
@@ -89,11 +89,13 @@ metadata:
 ```
 
 输出解读：
-- `"logged_in": true` → 已登录，可执行后续操作。
+- `"logged_in": true` → 此检查器认为已登录；仍核对目标平台身份与creator后台。与本次所选profile一致才可回到后续操作。
 - `"logged_in": false` + `"login_method": "qrcode"` → 有界面环境，走方式 A（二维码）。输出自动包含 `qrcode_image_url` 和 `qrcode_path`。
 - `"logged_in": false` + `"login_method": "both"` → 无界面服务器，输出自动包含二维码，**询问用户选方式 A（二维码）或方式 B（手机验证码）**。
 
-### 第二步：根据输出选择登录方式
+### 第二步：按用途与可用凭据选择恢复方式
+
+仅凭 `logged_in: false` 的旧CLI输出不能直接要求扫码：先区分所选profile、主站/creator、连接及网络错误。正式账号确认失效且有可用授权Cookie时先在选定正式profile恢复；恢复仍失败或平台要求本人认证时走下面扫码/短信。测试按独立Cookie环境约定，不自动改用正式环境。
 
 #### 方式 A：二维码登录（所有平台通用）
 
@@ -158,7 +160,7 @@ metadata:
 - 自动填写验证码、点击登录。
 - 输出：`{"logged_in": true, "message": "登录成功"}`
 
-### 清除 Cookies（切换账号/退出登录）
+### 清除 Cookies（仅明确退出/清除，不是切号前置）
 
 > `delete-cookies` 命令内部自动完成两步：先通过页面 UI 点击「更多」→「退出登录」，再删除本地 cookies 文件。只需执行一条命令即可。
 
@@ -169,7 +171,7 @@ metadata:
 
 ## 多账号工作流
 
-每个命名账号拥有独立端口（从 9223 起递增）和独立 Chrome Profile，账号之间完全隔离。
+以下是该CLI的slot实现：每个命名账号拥有独立端口（从 9223 起递增）和独立Chrome profile。这不是全平台强制架构；一个日常正式profile也可保存多个平台账号，按共用规则核对。
 
 ### 添加账号
 

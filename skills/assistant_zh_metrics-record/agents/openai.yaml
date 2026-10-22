@@ -1,0 +1,4 @@
+interface:
+  display_name: "assistant_zh｜内容数据记录"
+  short_description: "内容数据记录"
+  default_prompt: "使用 $assistant_zh_metrics-record 完成内容数据记录，遵守本项目现有账号、来源与状态规则。"

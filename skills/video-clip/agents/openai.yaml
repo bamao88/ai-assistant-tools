@@ -1,0 +1,4 @@
+interface:
+  display_name: 通用｜视频剪辑与成片
+  short_description: 基于已确认脚本剪辑、制作字幕与画面，输出可供审核和发布的成片
+  default_prompt: 使用 $video-clip 完成本次视频剪辑与成片任务。

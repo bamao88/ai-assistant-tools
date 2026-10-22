@@ -2,13 +2,17 @@
 name: platform-fetch
 description: |
   指定平台的内容抓取统一入口。覆盖 WebFetch / mcp-fetch 拿不到的封闭平台：小红书、微信公众号、视频号博主作品列表、腾讯会议（官方 MCP）、以及视频站点（YouTube/B站/抖音/小红书视频等 1000+ 站点）的字幕/封面/关键帧。
-  当用户给出这些平台的链接、要求获取这些平台上的内容（搜笔记、搜公众号、拉文章、看博主、下载会议逐字稿、扒视频字幕、抽关键帧、抓元数据等），或在做自媒体/竞品调研、爆款分析、选题、素材整理时，**优先使用本 skill**，不要先尝试 WebFetch 或 mcp-fetch —— 那些会失败或拿到空壳页面。
-  本 skill 不处理：通用网页/API 抓取（用 mcp-fetch）、视频内容处理和素材整理（用 video-content）、飞书会议/妙记（用 lark-vc / lark-minutes）、NotebookLM 问答（用 notebooklm）、多源结构化研报（用 deep-research）、内容发布与多平台分发（用 platform-publish）、互动（用 xhs-interact）。
+  当用户要求搜笔记、搜公众号、拉文章、看博主作品列表、下载腾讯会议逐字稿等平台原始内容，或其他任务需要这些采集步骤时，优先使用本 skill，不要先尝试 WebFetch 或 mcp-fetch。单条音视频的字幕、逐字稿、关键帧与素材研究优先 video-content；本 skill 保留视频 reference 供多平台采集或显式调用复用。完整文章由 source-longform-writing 负责，研究、选题任务仍由对应技能负责；本 skill 取材后交回原任务继续。
+  本 skill 不处理：通用网页/API 抓取（用 mcp-fetch）、视频内容处理和素材整理（用 video-content）、飞书会议/妙记（用 lark-vc / lark-minutes）、NotebookLM 问答（用 notebooklm）、多源结构化研报（用 deep-research）、内容发布与多平台分发（用 Agent-Publish）、互动（用 xhs-interact）。
 ---
 
 # 平台内容抓取
 
+通用能力：账号定位、事实、素材与输出位置遵循当前项目；项目已有专属入口时优先沿其规则衔接。
+
 你是"平台抓取路由器"。当用户需要从下面这些平台拿数据时，本 skill 是统一入口：
+
+单条音视频的字幕、逐字稿、关键帧或研究素材直接以 `video-content` 为主入口。下表的视频分支保留供多平台采集、既有流程或用户显式调用本 Skill 时复用，不改变视频素材入口的主责。
 
 | 平台 | 信号 | 用哪份 reference |
 |------|------|------------------|
@@ -33,8 +37,9 @@ description: |
 | 列表 / 批量 | "拉这博主全部公开笔记""最近发了什么""一批爆款""扫一下监控列表" | 走 search / list / monitor 类命令 |
 | 单条 / 详情 | "看这篇""这条详情""下载这个""抽这视频的字幕" | 走 detail / download / transcript 类命令 |
 
-**步骤 4 — 执行并把结构化结果交给用户。**
+**步骤 4 — 执行并交付结构化结果。**
 保留可继续深挖的 ID、xsec_token、fakeid、short_code、video_id、本地输出路径等 —— 用户下一步可能要拿这些做后续操作。
+独立采集请求将结果交给用户；为写作、研究或选题任务取材时，将结果交回原任务并继续完成其目标，不能以采集结果替代最终交付。
 
 ## 多平台/多链接
 
@@ -45,7 +50,10 @@ description: |
 读到 reference 前先确认 —— 如果用户的需求落在下面，**不要用本 skill**：
 
 - **通用 URL（普通网页/API/JSON）** → `mcp-fetch`（`fetch_html` / `fetch_markdown` / `fetch_json` / `fetch_txt`）
-- **要处理本地视频逐字稿、生成标题，或把视频内容整理成素材包**（生成 RESEARCH.md、跨视频检索） → `video-content`。本 skill 只覆盖 URL 视频的纯抓取原语（`info` / `transcript` / `keyframes`）。
+- **单条音视频的字幕、逐字稿、关键帧或素材研究**（本地文件或 URL） → `video-content`。本 skill 的视频 reference 保留 URL 纯抓取原语（`info` / `transcript` / `keyframes`），供平台混合采集或显式调用复用。
+- **根据 YouTube 等来源写完整文章/公众号长文** → `source-longform-writing` 主责；需要平台原始材料时再调用本 Skill，取材后返回写作流程。
+- **账号、竞品研究或选题规划** → 对应研究或选题 Skill 主责，本 Skill 只执行其需要的平台采集步骤。
+- **根据已有材料起标题、封面文案或发布正文** → `content-package-create`。
 - **飞书妙记/视频会议** → `lark-minutes` / `lark-vc`（走 lark-cli）
 - **NotebookLM 上你自己上传的源做问答** → `notebooklm`
 - **跨多个来源做带引用的研报** → `deep-research`

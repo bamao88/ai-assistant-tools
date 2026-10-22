@@ -1,0 +1,4 @@
+interface:
+  display_name: 通用｜小红书登录管理
+  short_description: 检查和恢复小红书登录状态，管理既有账号身份与授权登录会话
+  default_prompt: 使用 $xhs-auth 完成本次小红书登录管理任务。

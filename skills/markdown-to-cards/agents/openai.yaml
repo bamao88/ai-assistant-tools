@@ -1,0 +1,4 @@
+interface:
+  display_name: 通用｜Markdown 卡片排版
+  short_description: 把已经写好的 Markdown 排版为图片卡片，供内容审阅和发布使用
+  default_prompt: 使用 $markdown-to-cards 完成本次Markdown 卡片排版任务。

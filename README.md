@@ -6,6 +6,8 @@
 
 查找新媒体运营能力，从 [按用途分类的 Skill 导航](doc/media-operations-catalog.md) 开始；通用方法、项目工作台、平台执行及下一轮合并安排见 [体系说明](doc/media-operations-architecture.md)。本轮集中 Skill 源码，实际运行继续依赖本机项目、引擎和登录环境。
 
+固定命名与字段关系见 [权威规则](doc/media-operations-contract.md)；项目和 Skill 的 [本轮迁移计划](doc/plan/media-operations-restructure.md) 按“合并、更新、删除在前，重命名在后”推进。
+
 ---
 
 ## 它是怎么组织的
@@ -26,7 +28,7 @@ tools/
 
 自媒体流程按结果衔接：研究来源与账号 → 比较选题 → 管理制作素材与版本 → 完成长文/卡片/成片 → 制作发布文案与内容包 → 按授权进入平台发布 → 维护发布记录、官方数据和复盘。
 
-列表显示名使用用途或项目名辅助查找；项目新建或更名的调用名以前缀“项目名_”开头。废弃入口以 `registry.yaml: deprecated` 为准，不再参与自动发现；历史正文从 Git 查找，底层引擎继续复用。
+名称、显示名和退出规则统一按 [权威规则](doc/media-operations-contract.md) 执行。现役清单以 `registry.yaml` 为准，历史正文从 Git 查找，底层引擎继续复用。
 
 ## 能力与代码
 
@@ -116,14 +118,14 @@ python3 scripts/sync-skills.py --host codex
 - **新增 / 拆分 / 合并 / 优化技能前**：先读 [`doc/skill-governance-architecture.md`](doc/skill-governance-architecture.md)。里面只保存本项目治理规则和官方文档入口；具体 Skill 设计最佳实践以 OpenAI / Anthropic 官方文档实时版本为准。
 - **新增 / 修改一个技能**：编辑 `skills/<name>/SKILL.md`（薄入口 + `references/`），在 `registry.yaml` 的 `skills:` 登记，跑 `sync-skills.py`。
 - **新增 / 修改一个引擎**：放进 `engines/<name>/`（kebab-case），在 `registry.yaml` 的 `engines:` 登记。引擎只放代码，跑出来的数据写在引擎内部 `data/`（已 gitignore）。
-- **改目录结构 / 重命名**：注意技能和引擎里有**硬编码绝对路径**，重命名要全局改写并 `grep` 归零。
+- **改目录结构 / 重命名**：按 [权威规则](doc/media-operations-contract.md) 更新并扫描现役引用；历史证据和独立认证、算法参数键分别核对，避免机械全局替换。
 - **不要复活已废弃的触发**：`publish-prep`/`dbs-xhs-title` 的内容制作入口由 `content-package-create` 接管；`xhs-publish`/`gzh-publish`/`wechatsync` 的发布入口由 `Agent-Publish` 接管；抓取类 `xhs-fetch`/`gzh-scraper`/`tencent-meeting-downloader`/`content-research-hub` 已合并进 `platform-fetch`。完整废弃清单见 `registry.yaml: deprecated`。
 
 ## 几条铁律
 
 - **凭证、状态、日志、草稿、下载产物一律放 `var/`**，绝不进 git。
 - **`vendor/` 整体不进 git**（各自保留 upstream git，避免嵌套仓库冲突）。
-- **通用目录用 kebab-case，项目专属目录保留完整项目名前缀**；每个技能的入口文件统一叫 `SKILL.md`（没有 `.claude.md` / `.openclaw.md` 变体）。
+- **命名和目录关系遵循权威规则**；每个技能的入口文件统一叫 `SKILL.md`（没有 `.claude.md` / `.openclaw.md` 变体）。
 - Agent 可以按任务需要修改 Skill、工具代码、测试和文档。动手前先定位所属 git 仓库，查看 `git status --short`，必要时先提交 checkpoint，并且不要把无关改动混进提交。
 
 ---

@@ -26,7 +26,7 @@
 | 新增 | 建 `skills/<name>/SKILL.md`，必要时加 `references/`、`assets/`、`scripts/` | `scripts/check-tools.py` 要求它登记进 `registry.yaml` |
 | 接入 engine | 代码放 `engines/<id>/`，Skill 通过 reference 或命令调用 | `uses_engines` 必须指向 registry 里存在的 engine |
 | 迭代行为 | 同步改 Skill、engine、测试、架构文档 | `CLAUDE.md` 要求结构/行为改动同步更新 `doc/*-architecture.md` |
-| 废弃 | 在 `registry.yaml: deprecated` 标明 `replaced_by`，删除或显式标记旧入口 | `sync-skills.py` 移除旧软链；`check-tools.py` 检查遗留入口必须写清“已废弃” |
+| 废弃 | 通用治理允许在 `registry.yaml: deprecated` 标明 `replaced_by` 后删除或显式标记旧入口；新媒体本轮按[权威规则](media-operations-contract.md)删除旧入口，不适用保留标记选项 | `sync-skills.py` 移除旧软链；`check-tools.py` 检查遗留入口；本轮额外检查无旧名兼容入口 |
 | 归档 | 历史计划放 `doc/plan/`，旧运行数据放 `var/` 或归档区 | 不允许把旧触发入口悄悄留在正式清单外 |
 
 ## 3. 新增或优化 Skill 前先看官方文档
@@ -113,19 +113,10 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/scripts/skill-audit.py
 7. 有反馈文件时，把处理状态写回 `feedback/`。
 
 
-## 自媒体命名与多端发现（2026-10-21）
+## 自媒体命名、字段与发现位置
 
-显示名统一为“通用｜具体任务”或“项目名｜具体任务”；项目调用名以完整项目名加下划线开头。已有清楚的通用调用名保持稳定；仅有歧义的入口随职责收敛更名。显示名、frontmatter、目录、默认提示、registry 与当前引用一起迁移。
+新媒体运营体系的固定规则统一在 [项目与字段合同](media-operations-contract.md)，本文件不再复制命名、归属和安装字段规则。现役清单仍以 `registry.yaml` 为准。
 
-registry 每个共享入口可声明 hosts: [claude, codex]；缺省保持 Claude。Codex 的受管发现路径为 ~/.agents/skills，Claude 为 ~/.claude/skills；相同源不在同一 host 的用户和项目范围重复注册。项目特有流程留在项目，通用桥接不再复制到每个项目。工具目录保留通用代码与可按项目配置复用的引擎。
+本轮 [迁移计划](plan/media-operations-restructure.md) 规定先合并、更新、删除，验证后再统一项目和 Skill 名称，不保留旧名兼容入口。迁移完成前，当前注册仍描述当前可用入口。
 
-同步使用 scripts/sync-skills.py --dry-run 预览，再实际执行；--host 可只选一个 host。遇真实目录、无关软链或含其他文件的外部包装目录，保留内容并报告冲突。废弃清理只移除已确认指向 tools 根目录的自有链接，涵盖旧 ~/.codex/skills。绝不删除真实内容目录来“修复”注册。
-
-scripts/check-tools.py --strict 检查所有已声明 host，并将漏安装和废弃残留作为失败；--host 可以缩小范围。第一方 frontmatter.name 必须等于 registry 名字；名称允许用户要求的完整项目名前缀。scope 非 global 的入口按既有项目规则安装，不擅自全局套用。
-
-本轮废弃的轻量研究、独立巡看、综合小红书运营与发布准备包不再保留可触发 SKILL.md；历史参考与引擎分开保留。研究统一 content-creator-research，巡看归入 content-topic-planning，制作管理使用 content-production-prep，发布字段制作使用 content-package-create，实际平台动作使用 Agent-Publish。
-
-官方行为依据：[Build skills](https://learn.chatgpt.com/docs/build-skills) 说明 Codex 使用 ~/.agents/skills、支持目录软链，以及同名入口可能在列表重复。本地结构检查不代替真实制作或平台验收。
-
-
-项目归属与发现位置分别登记：project 标记只能应用哪个项目，scope/hosts 决定在哪里供选择。八毛三项和 MiMi 两项沿原来的全局可选方式登记到同一 registry（显示名与调用名仍带完整项目名）；张和现有本地流程仍只在项目中发现。通用规则不从这些项目专属 Skill 自动继承。这些字段及 source 使同步器也能恢复项目入口，避免手工链接另成一套清单。
+Codex 结构与安装检查使用 `scripts/check-tools.py --host codex --strict`；同步先用 `scripts/sync-skills.py --host codex --dry-run`。遇非本轮入口、真实业务目录或其他任务内容，不以清理安装为由删除。新调用名、目录、显示名和业务身份的验收按权威规则执行。

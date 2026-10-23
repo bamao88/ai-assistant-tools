@@ -117,6 +117,6 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/scripts/skill-audit.py
 
 新媒体运营体系的固定规则统一在 [项目与字段合同](media-operations-contract.md)，本文件不再复制命名、归属和安装字段规则。现役清单仍以 `registry.yaml` 为准。
 
-本轮 [迁移计划](plan/media-operations-restructure.md) 规定先合并、更新、删除，验证后再统一项目和 Skill 名称，不保留旧名兼容入口。迁移完成前，当前注册仍描述当前可用入口。
+业务职责按 [统一架构](media-operations-architecture.md) 的领域入口、内部模块、专业工作流和平台执行组织，避免按动词逐项注册。所有自有命名统一小写。本轮 [迁移计划](plan/media-operations-restructure.md) 规定先合并、更新、删除，验证后再统一项目和 Skill 名称，不保留旧名兼容入口。迁移完成前，当前注册仍描述当前可用入口。
 
 Codex 结构与安装检查使用 `scripts/check-tools.py --host codex --strict`；同步先用 `scripts/sync-skills.py --host codex --dry-run`。遇非本轮入口、真实业务目录或其他任务内容，不以清理安装为由删除。新调用名、目录、显示名和业务身份的验收按权威规则执行。

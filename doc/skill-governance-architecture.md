@@ -13,6 +13,7 @@
 | `README.md` | 给人看的导览 | 不当机器校验依据 |
 | `skills/<name>/SKILL.md` | 触发入口和执行规则 | 不放大段历史计划 |
 | `skills/<name>/references/` | 按平台/场景拆开的操作细则 | 不放计划草稿 |
+| tools 内 `shared/` | 确有多消费者的共同合同与方法 | 不复制工作流独用 reference，不存账号/内容等私有运行事实 |
 | `engines/<name>/` | 代码、CLI、测试、能力声明 | 不做可触发入口 |
 | `doc/*-architecture.md` | 一条 skill/engine 线的现状、结构、维护方法 | 不当临时 todo |
 | `doc/plan/` | 维护/迁移/迭代计划 | 不替代现状架构文档 |
@@ -117,6 +118,8 @@ python3 /Volumes/ExtSSD2601/AI_Assistant/tools/scripts/skill-audit.py
 
 新媒体运营体系的固定规则统一在 [项目与字段合同](media-operations-contract.md)，本文件不再复制命名、归属和安装字段规则。现役清单仍以 `registry.yaml` 为准。
 
-业务职责按 [统一架构](media-operations-architecture.md) 的领域入口、内部模块、专业工作流和平台执行组织，避免按动词逐项注册。所有自有命名统一小写。本轮 [迁移计划](plan/media-operations-restructure.md) 规定先合并、更新、删除，验证后再统一项目和 Skill 名称，不保留旧名兼容入口。迁移完成前，当前注册仍描述当前可用入口。
+业务职责和复用范围按 [统一架构](media-operations-architecture.md) 两个维度组织：每个领域、专业工作流及平台执行都有共享方法、可复用特化、项目差异和运行事实。避免按旧包整体定归属或按动词逐项注册。本轮 [迁移计划](plan/media-operations-restructure.md) 先双向拆分并统一方法、更新调用与删除重复，经跨项目正向验证后再更名，不留旧名兼容。所有自有标识小写；迁移前 registry 仍描述现役入口。
+
+依赖声明、实际加载和验证必须一起落实；计划中的 `uses_methods` 尚未进入检查器，不能把文档引用当作自动继承或已验证的复用能力。当前具体错位见 [审计记录](plan/media-cross-project-reuse-audit-2026-10-23.md)。
 
 Codex 结构与安装检查使用 `scripts/check-tools.py --host codex --strict`；同步先用 `scripts/sync-skills.py --host codex --dry-run`。遇非本轮入口、真实业务目录或其他任务内容，不以清理安装为由删除。新调用名、目录、显示名和业务身份的验收按权威规则执行。

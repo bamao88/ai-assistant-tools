@@ -4,7 +4,7 @@
 
 > 这份 README 是**给人看的**导览。给 AI/Agent 看的规则在 `CLAUDE.md`，机器可读的清单在 `registry.yaml`。
 
-查找新媒体运营能力，从 [按用途分类的 Skill 导航](doc/media-operations-catalog.md) 开始；通用方法、项目工作台、平台执行及下一轮合并安排见 [体系说明](doc/media-operations-architecture.md)。本轮集中 Skill 源码，实际运行继续依赖本机项目、引擎和登录环境。
+查找当前新媒体运营能力，从 [按用途分类的 Skill 导航](doc/media-operations-catalog.md) 开始；目标职责及跨项目复用见 [体系说明](doc/media-operations-architecture.md)，现役错位证据见 [复用审计](doc/plan/media-cross-project-reuse-audit-2026-10-23.md)。本轮集中 Skill 源码，实际运行继续依赖本机项目、引擎和登录环境。
 
 固定命名与字段关系见 [权威规则](doc/media-operations-contract.md)；项目和 Skill 的 [本轮迁移计划](doc/plan/media-operations-restructure.md) 按“合并、更新、删除在前，重命名在后”推进。
 
@@ -26,7 +26,7 @@ tools/
 
 技能分为跨平台动作入口、业务工作流和配套工具。当前入口、源目录、适用项目及 Claude/Codex 安装范围只在 `registry.yaml` 维护；运行 `scripts/check-tools.py --strict` 核对真实安装状态。
 
-统一架构以内容管理为中心：入库、选题、版本、排期、渠道事实、指标分析和复盘属于同一生命周期，按需调用调研、制作和平台执行。知识与客户管理分别维护各自对象；内部步骤按模式组织，不逐项增加平级 Skill。
+统一架构按职责组织内容管理、知识/客户管理、专业制作和平台执行；每个职责层再区分共享方法、媒介/平台等适配、项目政策、运行事实。通用卡片与研究工艺不因最初在某项目使用就归为项目专属，公共流程也不能默认采用某个账号身份。独立工作流可直接调用，内部步骤不逐项增加 Skill。
 
 名称、显示名和退出规则统一按 [权威规则](doc/media-operations-contract.md) 执行。现役清单以 `registry.yaml` 为准，历史正文从 Git 查找，底层引擎继续复用。
 

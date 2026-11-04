@@ -18,6 +18,8 @@ Install / repair `~/.claude/skills` symlinks (idempotent):
 python3 /Volumes/ExtSSD2601/AI_Assistant/tools/scripts/sync-skills.py
 ```
 
+Cross-Mac source transfer and per-machine installation follow [`doc/skill-sync-architecture.md`](doc/skill-sync-architecture.md). Use `scripts/import-skill.py` to migrate standalone manual installs with backups; `sync-skills.py` and `check-tools.py` accept repeatable `--skill NAME` selectors. Git exchanges source versions; installation links and private host configuration are local. Preserve uncommitted work and isolate the requested change when publishing from an active development branch.
+
 ## Four-tier layout
 
 ```

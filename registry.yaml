@@ -1,6 +1,6 @@
 schema_version: 2
-root: /Volumes/ExtSSD2601/AI_Assistant/tools
-updated: 2026-06-04
+root: .  # Resolved relative to this registry; each Mac chooses its checkout path.
+updated: 2026-11-04
 
 # Single source of truth for the shared tools directory.
 # Four-tier layout:
@@ -255,6 +255,15 @@ skills:
     external: true
     purpose: 合并多次诊断存档为报告
     uses_vendor: [dbskill]
+
+
+  - name: daily-planning-partner
+    source: skills/daily-planning-partner
+    install_kind: dir
+    hosts:
+    - codex
+    scope: global
+    purpose: Plan realistic days and weeks using Apple Calendar, and maintain calendar events, completion records, and grouped publishing views. Use for prioritization, availability, time blocks, calendar synchronization, status updates, and duplicate cleanup.
 
 engines:
   - id: xiaohongshu

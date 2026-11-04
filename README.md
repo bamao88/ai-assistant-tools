@@ -4,6 +4,8 @@
 
 > 这份 README 是**给人看的**导览。给 AI/Agent 看的规则在 `CLAUDE.md`，机器可读的清单在 `registry.yaml`。
 
+两台 Mac 共用轻量 Skill，从 [跨 Mac 安装与双向同步](doc/skill-sync-architecture.md) 开始：源文件集中在本仓库，通过 GitHub 交换版本，各机只安装需要的入口；现先接入日程规划 Skill，后续逐个加入。
+
 ---
 
 ## 它是怎么组织的

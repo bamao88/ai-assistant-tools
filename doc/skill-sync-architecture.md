@@ -47,6 +47,8 @@ Codex 支持在 `~/.agents/skills/` 中发现软链接。更改通常会自动�
 
 在共享的 `main` 分支上工作。开始修改前，先取另一台机器的版本：
 
+另一台 Mac 第一次上传前，需要在那台机器配置自己的 Git 作者信息和 GitHub 推送身份；已有可用的 SSH 或 Git 凭证就直接复用。公开仓库的下载不需要登录，但两台都具备推送权限后才能双向维护。
+
 ```bash
 git status --short
 git pull --ff-only origin main
